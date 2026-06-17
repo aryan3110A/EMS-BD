@@ -1,0 +1,393 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Office {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  city      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  contracts Contract[]
+  buyers    Buyer[]
+
+  @@index([isActive])
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String
+  officeId     String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  office            Office?            @relation(fields: [officeId], references: [id])
+  contractsCreated  Contract[]         @relation("ContractCreatedBy")
+  auditLogs         AuditLog[]
+  contractDocuments ContractDocument[]
+
+  @@index([officeId])
+  @@index([role])
+}
+
+model Salesperson {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contracts Contract[]
+
+  @@index([isActive])
+}
+
+model Country {
+  id               String   @id @default(cuid())
+  name             String   @unique
+  code             String   @unique
+  region           String?
+  euClassification String
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  buyers Buyer[]
+  ports  Port[]
+}
+
+model Buyer {
+  id               String   @id @default(cuid())
+  code             String   @unique
+  name             String
+  countryId        String
+  officeId         String?
+  address          String?
+  contactPerson    String?
+  email            String?
+  phone            String?
+  euClassification String?
+  defaultPortId    String?
+  remarks          String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  country     Country    @relation(fields: [countryId], references: [id])
+  office      Office?    @relation(fields: [officeId], references: [id])
+  defaultPort Port?      @relation(fields: [defaultPortId], references: [id])
+  contracts   Contract[]
+
+  @@index([countryId])
+  @@index([officeId])
+}
+
+model Product {
+  id                   String   @id @default(cuid())
+  code                 String   @unique
+  name                 String
+  category             String?
+  defaultSpecification String?
+  standardContainerMt  Float    @default(28)
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  variants  ProductVariant[]
+  contracts Contract[]
+}
+
+model ProductVariant {
+  id             String   @id @default(cuid())
+  productId      String
+  code           String
+  name           String
+  processingType String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  contracts Contract[]
+
+  @@unique([productId, code])
+}
+
+model PackagingType {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  material  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sizes     PackagingSize[]
+  contracts Contract[]
+}
+
+model PackagingSize {
+  id              String   @id @default(cuid())
+  packagingTypeId String
+  label           String
+  weightKg        Float
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  packagingType PackagingType @relation(fields: [packagingTypeId], references: [id], onDelete: Cascade)
+  contracts     Contract[]
+
+  @@index([packagingTypeId])
+}
+
+model Port {
+  id               String   @id @default(cuid())
+  name             String
+  countryId        String
+  portType         String   @default("DESTINATION")
+  euClassification String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  country          Country       @relation(fields: [countryId], references: [id])
+  buyers           Buyer[]
+  contractsLoading Contract[]    @relation("PortOfLoading")
+  contractsDest    Contract[]    @relation("DestinationPort")
+  lots             ShipmentLot[]
+
+  @@index([countryId])
+}
+
+model Contract {
+  id                         String    @id @default(cuid())
+  officeId                   String
+  contractNumber             String    @unique
+  receivedDate               DateTime?
+  contractDate               DateTime?
+  signedContractReceivedDate DateTime?
+  contractSentDate           DateTime?
+  contractOnBehalfOf         String?
+  salespersonId              String?
+  buyerId                    String
+  productId                  String
+  productVariantId           String?
+  buyerLotNo                 String?
+  invoiceNumber              String?
+  invoiceDate                DateTime?
+  shippingBillNo             String?
+  shippingBillDate           DateTime?
+  containerNo                String?
+
+  specification      String?
+  qualityRequirement String?
+  productRemarks     String?
+  buyerRemarks       String?
+  processingType     String?
+  quantityUnit       String  @default("MT")
+  totalMt              Float   @default(0)
+  numberOfContainers   Int     @default(1)
+  numberOfLots         Int     @default(1)
+  standardContainerMt  Float   @default(28)
+
+  incoterm              String  @default("FOB")
+  fobPrice              Float?
+  fobCurrency           String  @default("USD")
+  fobPriceUnit          String  @default("PER_MT")
+  freight               Float?
+  freightUnit           String?
+  insurance             Float?
+  cifPrice              Float?
+  exchangeRate          Float?
+  fobInrPerKg           Float?
+  originalContractPrice Float?
+  amendmentPrice        Float?
+  amendmentCurrency     String?
+  amendmentDate         DateTime?
+  amendmentReason       String?
+  cifManualOverride     Boolean @default(false)
+
+  packagingTypeId    String?
+  packagingSizeId    String?
+  packingDescription String?
+  numberOfBags       Int?
+  markingRequired    Boolean   @default(false)
+  markingDetails     String?
+  markingReceivedDate  DateTime?
+  markingApprovalDate  DateTime?
+
+  paymentType         String?
+  advancePercentage   Float?
+  advanceAmount       Float?
+  balancePercentage   Float?
+  balancePaymentMode  String?
+  balancePaymentStage String?
+  paymentDescription  String?
+
+  portOfLoadingId      String?
+  destinationPortId    String?
+  destinationCountry   String?
+  euClassification     String?
+  shipmentPeriodStart  DateTime?
+  shipmentPeriodEnd    DateTime?
+  expectedShipmentDate DateTime?
+  shipmentMonth        String?
+  shipmentYear         Int?
+  shipmentHalf         String?
+  shippingLine         String?
+  finalShipmentDate    DateTime?
+
+  orderMt      Float?
+  filledMt     Float?
+  readyMt      Float?
+  dispatchedMt Float?
+
+  status                 String   @default("DRAFT")
+  productionInformed     Boolean  @default(false)
+  productionInformedDate DateTime?
+  remarks                String?
+  internalRemarks        String?
+  commercialRemarks      String?
+
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  office          Office                  @relation(fields: [officeId], references: [id])
+  salesperson     Salesperson?            @relation(fields: [salespersonId], references: [id])
+  buyer           Buyer                   @relation(fields: [buyerId], references: [id])
+  product         Product                 @relation(fields: [productId], references: [id])
+  productVariant  ProductVariant?         @relation(fields: [productVariantId], references: [id])
+  packagingType   PackagingType?          @relation(fields: [packagingTypeId], references: [id])
+  packagingSize   PackagingSize?          @relation(fields: [packagingSizeId], references: [id])
+  portOfLoading   Port?                   @relation("PortOfLoading", fields: [portOfLoadingId], references: [id])
+  destinationPort Port?                   @relation("DestinationPort", fields: [destinationPortId], references: [id])
+  createdBy       User                    @relation("ContractCreatedBy", fields: [createdById], references: [id])
+  lots            ShipmentLot[]
+  amendments      ContractAmendment[]
+  statusHistory   ContractStatusHistory[]
+  documents       ContractDocument[]
+
+  @@index([officeId])
+  @@index([status])
+  @@index([salespersonId])
+  @@index([buyerId])
+  @@index([contractDate])
+  @@index([shipmentMonth, shipmentYear])
+}
+
+model ShipmentLot {
+  id                   String    @id @default(cuid())
+  contractId           String
+  lotNumber            String
+  quantityMt           Float
+  numberOfContainers   Int       @default(1)
+  expectedShipmentDate DateTime?
+  shipmentMonth        String?
+  shipmentYear         Int?
+  shipmentHalf         String?
+  destinationPortId    String?
+  productionStatus     String    @default("PLANNED")
+  dispatchStatus       String    @default("PLANNED")
+  remarks              String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  contract        Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  destinationPort Port?    @relation(fields: [destinationPortId], references: [id])
+
+  @@unique([contractId, lotNumber])
+  @@index([contractId])
+}
+
+model ContractAmendment {
+  id              String   @id @default(cuid())
+  contractId      String
+  amendmentNumber String   @unique
+  amendmentDate   DateTime
+  amendmentType   String
+  originalValue   String?
+  amendedValue    String?
+  originalPrice   Float?
+  amendmentPrice  Float?
+  currency        String?
+  reason          String
+  status          String   @default("DRAFT")
+  remarks         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+}
+
+model ContractStatusHistory {
+  id         String   @id @default(cuid())
+  contractId String
+  fromStatus String?
+  toStatus   String
+  changedBy  String?
+  remarks    String?
+  createdAt  DateTime @default(now())
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+}
+
+model ContractDocument {
+  id           String   @id @default(cuid())
+  contractId   String
+  name         String
+  category     String
+  filePath     String
+  uploadedById String
+  remarks      String?
+  createdAt    DateTime @default(now())
+
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  uploadedBy User     @relation(fields: [uploadedById], references: [id])
+
+  @@index([contractId])
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  userId        String?
+  module        String
+  action        String
+  recordId      String?
+  previousValue String?
+  newValue      String?
+  reason        String?
+  createdAt     DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([module, recordId])
+  @@index([createdAt])
+}
+
+model AppSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
