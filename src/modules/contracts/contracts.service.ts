@@ -8,12 +8,14 @@ import type { JwtPayload } from '../../common/decorators/current-user.decorator'
 
 @Injectable()
 export class ContractsService {
+  private readonly txOptions = { maxWait: 15000, timeout: 30000 };
+
   constructor(
     private prisma: PrismaService,
     private calc: CalculationService,
   ) {}
 
-  private contractInclude = {
+  private detailInclude = {
     office: true,
     salesperson: true,
     buyer: { include: { country: true } },
@@ -27,6 +29,14 @@ export class ContractsService {
     lots: { include: { destinationPort: true }, orderBy: { lotNumber: 'asc' as const } },
     amendments: { orderBy: { createdAt: 'desc' as const } },
     statusHistory: { orderBy: { createdAt: 'desc' as const }, take: 20 },
+  };
+
+  /** Lightweight relations for contract register / list views */
+  private listInclude = {
+    salesperson: { select: { id: true, name: true, code: true } },
+    buyer: { select: { id: true, name: true, code: true } },
+    product: { select: { id: true, code: true, name: true } },
+    destinationPort: { select: { id: true, name: true } },
   };
 
   private scopeOffice(user: JwtPayload, officeId?: string): string | undefined {
@@ -104,7 +114,7 @@ export class ContractsService {
     const enriched = this.enrichCommercialFields(dto);
     const status = dto.status ?? ContractStatus.DRAFT;
 
-    const contract = await this.prisma.$transaction(async (tx) => {
+    const contractId = await this.prisma.$transaction(async (tx) => {
       const created = await tx.contract.create({
         data: {
           officeId,
@@ -212,7 +222,7 @@ export class ContractsService {
                 ],
               },
         },
-        include: this.contractInclude,
+        select: { id: true },
       });
 
       await tx.contractStatusHistory.create({
@@ -224,10 +234,10 @@ export class ContractsService {
         },
       });
 
-      return created;
-    });
+      return created.id;
+    }, this.txOptions);
 
-    return contract;
+    return this.findOne(contractId, user);
   }
 
   async findAll(query: ContractQueryDto, user: JwtPayload) {
@@ -241,9 +251,9 @@ export class ContractsService {
       ...(query.search
         ? {
             OR: [
-              { contractNumber: { contains: query.search } },
-              { buyer: { name: { contains: query.search } } },
-              { invoiceNumber: { contains: query.search } },
+              { contractNumber: { contains: query.search, mode: 'insensitive' as const } },
+              { buyer: { name: { contains: query.search, mode: 'insensitive' as const } } },
+              { invoiceNumber: { contains: query.search, mode: 'insensitive' as const } },
             ],
           }
         : {}),
@@ -251,7 +261,7 @@ export class ContractsService {
 
     return this.prisma.contract.findMany({
       where,
-      include: this.contractInclude,
+      include: this.listInclude,
       orderBy: [{ contractDate: 'desc' }, { createdAt: 'desc' }],
     });
   }
@@ -259,7 +269,7 @@ export class ContractsService {
   async findOne(id: string, user: JwtPayload) {
     const contract = await this.prisma.contract.findUnique({
       where: { id },
-      include: this.contractInclude,
+      include: this.detailInclude,
     });
     if (!contract) throw new NotFoundException('Contract not found');
     if (user.role !== UserRole.SUPER_ADMIN && user.officeId !== contract.officeId) {
@@ -335,7 +345,7 @@ export class ContractsService {
         internalRemarks: dto.internalRemarks,
         status: dto.status,
       },
-      include: this.contractInclude,
+      include: this.detailInclude,
     });
   }
 
@@ -350,7 +360,7 @@ export class ContractsService {
             ? { productionInformed: true, productionInformedDate: new Date() }
             : {}),
         },
-        include: this.contractInclude,
+        select: { id: true },
       });
       await tx.contractStatusHistory.create({
         data: {
@@ -361,37 +371,51 @@ export class ContractsService {
           remarks,
         },
       });
-      return u;
-    });
-    return updated;
+      return u.id;
+    }, this.txOptions);
+    return this.findOne(updated, user);
   }
 
   async getDashboardStats(user: JwtPayload) {
     const officeId = this.scopeOffice(user);
     const where = officeId ? { officeId } : {};
 
-    const [total, draft, awaitingSigned, confirmed, inProduction, ready] = await Promise.all([
-      this.prisma.contract.count({ where }),
-      this.prisma.contract.count({ where: { ...where, status: ContractStatus.DRAFT } }),
-      this.prisma.contract.count({ where: { ...where, status: ContractStatus.AWAITING_SIGNED } }),
-      this.prisma.contract.count({
-        where: { ...where, status: ContractStatus.CONFIRMED_FOR_PRODUCTION },
+    const [grouped, recent] = await Promise.all([
+      this.prisma.contract.groupBy({
+        by: ['status'],
+        where,
+        _count: { _all: true },
       }),
-      this.prisma.contract.count({ where: { ...where, status: ContractStatus.IN_PRODUCTION } }),
-      this.prisma.contract.count({ where: { ...where, status: ContractStatus.READY_FOR_DISPATCH } }),
+      this.prisma.contract.findMany({
+        where,
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          contractNumber: true,
+          receivedDate: true,
+          totalMt: true,
+          status: true,
+          salesperson: { select: { name: true } },
+          buyer: { select: { name: true } },
+          product: { select: { code: true } },
+        },
+      }),
     ]);
 
-    const recent = await this.prisma.contract.findMany({
-      where,
-      take: 5,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        buyer: true,
-        product: true,
-        salesperson: true,
-      },
-    });
+    const countFor = (status: ContractStatus) =>
+      grouped.find((g) => g.status === status)?._count._all ?? 0;
 
-    return { total, draft, awaitingSigned, confirmed, inProduction, ready, recent };
+    const total = grouped.reduce((sum, g) => sum + g._count._all, 0);
+
+    return {
+      total,
+      draft: countFor(ContractStatus.DRAFT),
+      awaitingSigned: countFor(ContractStatus.AWAITING_SIGNED),
+      confirmed: countFor(ContractStatus.CONFIRMED_FOR_PRODUCTION),
+      inProduction: countFor(ContractStatus.IN_PRODUCTION),
+      ready: countFor(ContractStatus.READY_FOR_DISPATCH),
+      recent,
+    };
   }
 }

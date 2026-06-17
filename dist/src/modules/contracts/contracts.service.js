@@ -17,11 +17,12 @@ const calculation_service_1 = require("../../common/services/calculation.service
 let ContractsService = class ContractsService {
     prisma;
     calc;
+    txOptions = { maxWait: 15000, timeout: 30000 };
     constructor(prisma, calc) {
         this.prisma = prisma;
         this.calc = calc;
     }
-    contractInclude = {
+    detailInclude = {
         office: true,
         salesperson: true,
         buyer: { include: { country: true } },
@@ -35,6 +36,12 @@ let ContractsService = class ContractsService {
         lots: { include: { destinationPort: true }, orderBy: { lotNumber: 'asc' } },
         amendments: { orderBy: { createdAt: 'desc' } },
         statusHistory: { orderBy: { createdAt: 'desc' }, take: 20 },
+    };
+    listInclude = {
+        salesperson: { select: { id: true, name: true, code: true } },
+        buyer: { select: { id: true, name: true, code: true } },
+        product: { select: { id: true, code: true, name: true } },
+        destinationPort: { select: { id: true, name: true } },
     };
     scopeOffice(user, officeId) {
         if (user.role === enums_1.UserRole.SUPER_ADMIN)
@@ -104,7 +111,7 @@ let ContractsService = class ContractsService {
         const contractNumber = dto.contractNumber ?? (await this.generateContractNumber(officeId));
         const enriched = this.enrichCommercialFields(dto);
         const status = dto.status ?? enums_1.ContractStatus.DRAFT;
-        const contract = await this.prisma.$transaction(async (tx) => {
+        const contractId = await this.prisma.$transaction(async (tx) => {
             const created = await tx.contract.create({
                 data: {
                     officeId,
@@ -212,7 +219,7 @@ let ContractsService = class ContractsService {
                             ],
                         },
                 },
-                include: this.contractInclude,
+                select: { id: true },
             });
             await tx.contractStatusHistory.create({
                 data: {
@@ -222,9 +229,9 @@ let ContractsService = class ContractsService {
                     remarks: 'Contract created',
                 },
             });
-            return created;
-        });
-        return contract;
+            return created.id;
+        }, this.txOptions);
+        return this.findOne(contractId, user);
     }
     async findAll(query, user) {
         const officeId = this.scopeOffice(user, query.officeId);
@@ -237,23 +244,23 @@ let ContractsService = class ContractsService {
             ...(query.search
                 ? {
                     OR: [
-                        { contractNumber: { contains: query.search } },
-                        { buyer: { name: { contains: query.search } } },
-                        { invoiceNumber: { contains: query.search } },
+                        { contractNumber: { contains: query.search, mode: 'insensitive' } },
+                        { buyer: { name: { contains: query.search, mode: 'insensitive' } } },
+                        { invoiceNumber: { contains: query.search, mode: 'insensitive' } },
                     ],
                 }
                 : {}),
         };
         return this.prisma.contract.findMany({
             where,
-            include: this.contractInclude,
+            include: this.listInclude,
             orderBy: [{ contractDate: 'desc' }, { createdAt: 'desc' }],
         });
     }
     async findOne(id, user) {
         const contract = await this.prisma.contract.findUnique({
             where: { id },
-            include: this.contractInclude,
+            include: this.detailInclude,
         });
         if (!contract)
             throw new common_1.NotFoundException('Contract not found');
@@ -328,7 +335,7 @@ let ContractsService = class ContractsService {
                 internalRemarks: dto.internalRemarks,
                 status: dto.status,
             },
-            include: this.contractInclude,
+            include: this.detailInclude,
         });
     }
     async updateStatus(id, status, user, remarks) {
@@ -342,7 +349,7 @@ let ContractsService = class ContractsService {
                         ? { productionInformed: true, productionInformedDate: new Date() }
                         : {}),
                 },
-                include: this.contractInclude,
+                select: { id: true },
             });
             await tx.contractStatusHistory.create({
                 data: {
@@ -353,34 +360,46 @@ let ContractsService = class ContractsService {
                     remarks,
                 },
             });
-            return u;
-        });
-        return updated;
+            return u.id;
+        }, this.txOptions);
+        return this.findOne(updated, user);
     }
     async getDashboardStats(user) {
         const officeId = this.scopeOffice(user);
         const where = officeId ? { officeId } : {};
-        const [total, draft, awaitingSigned, confirmed, inProduction, ready] = await Promise.all([
-            this.prisma.contract.count({ where }),
-            this.prisma.contract.count({ where: { ...where, status: enums_1.ContractStatus.DRAFT } }),
-            this.prisma.contract.count({ where: { ...where, status: enums_1.ContractStatus.AWAITING_SIGNED } }),
-            this.prisma.contract.count({
-                where: { ...where, status: enums_1.ContractStatus.CONFIRMED_FOR_PRODUCTION },
+        const [grouped, recent] = await Promise.all([
+            this.prisma.contract.groupBy({
+                by: ['status'],
+                where,
+                _count: { _all: true },
             }),
-            this.prisma.contract.count({ where: { ...where, status: enums_1.ContractStatus.IN_PRODUCTION } }),
-            this.prisma.contract.count({ where: { ...where, status: enums_1.ContractStatus.READY_FOR_DISPATCH } }),
+            this.prisma.contract.findMany({
+                where,
+                take: 5,
+                orderBy: { createdAt: 'desc' },
+                select: {
+                    id: true,
+                    contractNumber: true,
+                    receivedDate: true,
+                    totalMt: true,
+                    status: true,
+                    salesperson: { select: { name: true } },
+                    buyer: { select: { name: true } },
+                    product: { select: { code: true } },
+                },
+            }),
         ]);
-        const recent = await this.prisma.contract.findMany({
-            where,
-            take: 5,
-            orderBy: { createdAt: 'desc' },
-            include: {
-                buyer: true,
-                product: true,
-                salesperson: true,
-            },
-        });
-        return { total, draft, awaitingSigned, confirmed, inProduction, ready, recent };
+        const countFor = (status) => grouped.find((g) => g.status === status)?._count._all ?? 0;
+        const total = grouped.reduce((sum, g) => sum + g._count._all, 0);
+        return {
+            total,
+            draft: countFor(enums_1.ContractStatus.DRAFT),
+            awaitingSigned: countFor(enums_1.ContractStatus.AWAITING_SIGNED),
+            confirmed: countFor(enums_1.ContractStatus.CONFIRMED_FOR_PRODUCTION),
+            inProduction: countFor(enums_1.ContractStatus.IN_PRODUCTION),
+            ready: countFor(enums_1.ContractStatus.READY_FOR_DISPATCH),
+            recent,
+        };
     }
 };
 exports.ContractsService = ContractsService;

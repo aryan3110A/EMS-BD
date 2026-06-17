@@ -6,8 +6,10 @@ import type { JwtPayload } from '../../common/decorators/current-user.decorator'
 export declare class ContractsService {
     private prisma;
     private calc;
+    private readonly txOptions;
     constructor(prisma: PrismaService, calc: CalculationService);
-    private contractInclude;
+    private detailInclude;
+    private listInclude;
     private scopeOffice;
     generateContractNumber(officeId: string): Promise<string>;
     private enrichCommercialFields;
@@ -274,181 +276,25 @@ export declare class ContractsService {
         createdById: string;
     }>;
     findAll(query: ContractQueryDto, user: JwtPayload): Promise<({
-        office: {
-            id: string;
-            code: string;
-            name: string;
-            city: string;
-            isActive: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-        };
         salesperson: {
             id: string;
             code: string;
             name: string;
-            isActive: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            phone: string | null;
         } | null;
-        lots: ({
-            destinationPort: {
-                id: string;
-                name: string;
-                isActive: boolean;
-                createdAt: Date;
-                updatedAt: Date;
-                euClassification: string | null;
-                portType: string;
-                countryId: string;
-            } | null;
-        } & {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            remarks: string | null;
-            numberOfContainers: number;
-            destinationPortId: string | null;
-            expectedShipmentDate: Date | null;
-            shipmentMonth: string | null;
-            shipmentYear: number | null;
-            shipmentHalf: string | null;
-            lotNumber: string;
-            quantityMt: number;
-            productionStatus: string;
-            dispatchStatus: string;
-            contractId: string;
-        })[];
         product: {
             id: string;
             code: string;
             name: string;
-            isActive: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            category: string | null;
-            defaultSpecification: string | null;
-            standardContainerMt: number;
         };
-        productVariant: {
-            id: string;
-            code: string;
-            name: string;
-            isActive: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            productId: string;
-            processingType: string | null;
-        } | null;
-        packagingType: {
-            id: string;
-            code: string;
-            name: string;
-            isActive: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            material: string;
-        } | null;
-        packagingSize: {
-            id: string;
-            isActive: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            packagingTypeId: string;
-            label: string;
-            weightKg: number;
-        } | null;
         buyer: {
-            country: {
-                id: string;
-                code: string;
-                name: string;
-                isActive: boolean;
-                createdAt: Date;
-                updatedAt: Date;
-                region: string | null;
-                euClassification: string;
-            };
-        } & {
             id: string;
             code: string;
             name: string;
-            isActive: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            email: string | null;
-            officeId: string | null;
-            phone: string | null;
-            euClassification: string | null;
-            countryId: string;
-            address: string | null;
-            contactPerson: string | null;
-            defaultPortId: string | null;
-            remarks: string | null;
         };
-        portOfLoading: {
+        destinationPort: {
             id: string;
             name: string;
-            isActive: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            euClassification: string | null;
-            portType: string;
-            countryId: string;
         } | null;
-        destinationPort: ({
-            country: {
-                id: string;
-                code: string;
-                name: string;
-                isActive: boolean;
-                createdAt: Date;
-                updatedAt: Date;
-                region: string | null;
-                euClassification: string;
-            };
-        } & {
-            id: string;
-            name: string;
-            isActive: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            euClassification: string | null;
-            portType: string;
-            countryId: string;
-        }) | null;
-        createdBy: {
-            id: string;
-            name: string;
-            email: string;
-        };
-        amendments: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            remarks: string | null;
-            amendmentPrice: number | null;
-            amendmentDate: Date;
-            status: string;
-            contractId: string;
-            amendmentNumber: string;
-            amendmentType: string;
-            originalValue: string | null;
-            amendedValue: string | null;
-            originalPrice: number | null;
-            currency: string | null;
-            reason: string;
-        }[];
-        statusHistory: {
-            id: string;
-            createdAt: Date;
-            remarks: string | null;
-            fromStatus: string | null;
-            toStatus: string;
-            changedBy: string | null;
-            contractId: string;
-        }[];
     } & {
         id: string;
         createdAt: Date;
@@ -1328,129 +1174,21 @@ export declare class ContractsService {
         confirmed: number;
         inProduction: number;
         ready: number;
-        recent: ({
+        recent: {
+            id: string;
             salesperson: {
-                id: string;
-                code: string;
                 name: string;
-                isActive: boolean;
-                createdAt: Date;
-                updatedAt: Date;
-                phone: string | null;
             } | null;
             product: {
-                id: string;
                 code: string;
-                name: string;
-                isActive: boolean;
-                createdAt: Date;
-                updatedAt: Date;
-                category: string | null;
-                defaultSpecification: string | null;
-                standardContainerMt: number;
             };
             buyer: {
-                id: string;
-                code: string;
                 name: string;
-                isActive: boolean;
-                createdAt: Date;
-                updatedAt: Date;
-                email: string | null;
-                officeId: string | null;
-                phone: string | null;
-                euClassification: string | null;
-                countryId: string;
-                address: string | null;
-                contactPerson: string | null;
-                defaultPortId: string | null;
-                remarks: string | null;
             };
-        } & {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            officeId: string;
-            euClassification: string | null;
-            standardContainerMt: number;
-            productId: string;
-            processingType: string | null;
-            packagingTypeId: string | null;
-            remarks: string | null;
             contractNumber: string;
             receivedDate: Date | null;
-            contractDate: Date | null;
-            signedContractReceivedDate: Date | null;
-            contractSentDate: Date | null;
-            contractOnBehalfOf: string | null;
-            salespersonId: string | null;
-            buyerId: string;
-            productVariantId: string | null;
-            buyerLotNo: string | null;
-            invoiceNumber: string | null;
-            invoiceDate: Date | null;
-            shippingBillNo: string | null;
-            shippingBillDate: Date | null;
-            containerNo: string | null;
-            specification: string | null;
-            qualityRequirement: string | null;
-            productRemarks: string | null;
-            buyerRemarks: string | null;
-            quantityUnit: string;
             totalMt: number;
-            numberOfContainers: number;
-            numberOfLots: number;
-            incoterm: string;
-            fobPrice: number | null;
-            fobCurrency: string;
-            fobPriceUnit: string;
-            freight: number | null;
-            freightUnit: string | null;
-            insurance: number | null;
-            cifPrice: number | null;
-            exchangeRate: number | null;
-            fobInrPerKg: number | null;
-            originalContractPrice: number | null;
-            amendmentPrice: number | null;
-            amendmentCurrency: string | null;
-            amendmentDate: Date | null;
-            amendmentReason: string | null;
-            cifManualOverride: boolean;
-            packagingSizeId: string | null;
-            packingDescription: string | null;
-            numberOfBags: number | null;
-            markingRequired: boolean;
-            markingDetails: string | null;
-            markingReceivedDate: Date | null;
-            markingApprovalDate: Date | null;
-            paymentType: string | null;
-            advancePercentage: number | null;
-            advanceAmount: number | null;
-            balancePercentage: number | null;
-            balancePaymentMode: string | null;
-            balancePaymentStage: string | null;
-            paymentDescription: string | null;
-            portOfLoadingId: string | null;
-            destinationPortId: string | null;
-            destinationCountry: string | null;
-            shipmentPeriodStart: Date | null;
-            shipmentPeriodEnd: Date | null;
-            expectedShipmentDate: Date | null;
-            shipmentMonth: string | null;
-            shipmentYear: number | null;
-            shipmentHalf: string | null;
-            shippingLine: string | null;
-            finalShipmentDate: Date | null;
-            orderMt: number | null;
-            filledMt: number | null;
-            readyMt: number | null;
-            dispatchedMt: number | null;
             status: string;
-            productionInformed: boolean;
-            productionInformedDate: Date | null;
-            internalRemarks: string | null;
-            commercialRemarks: string | null;
-            createdById: string;
-        })[];
+        }[];
     }>;
 }

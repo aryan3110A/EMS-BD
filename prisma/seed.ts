@@ -15,10 +15,10 @@ async function main() {
 
   const ahmedabad = await prisma.office.upsert({
     where: { code: 'AMD' },
-    update: {},
+    update: { name: 'Contract Office' },
     create: {
       code: 'AMD',
-      name: 'Ahmedabad Contract Office',
+      name: 'Contract Office',
       city: 'Ahmedabad',
     },
   });
@@ -49,12 +49,12 @@ async function main() {
   });
 
   await prisma.user.upsert({
-    where: { email: 'ahmedabad@ems.com' },
-    update: {},
+    where: { email: 'sales@ems.com' },
+    update: { email: 'sales@ems.com', name: 'Contract Sales Team' },
     create: {
-      email: 'ahmedabad@ems.com',
+      email: 'sales@ems.com',
       passwordHash,
-      name: 'Ahmedabad Contract Team',
+      name: 'Contract Sales Team',
       role: UserRole.CONTRACT_TEAM,
       officeId: ahmedabad.id,
     },
@@ -235,7 +235,7 @@ async function main() {
     });
   }
 
-  console.log('Seed completed. Login: admin@ems.com / admin123');
+  console.log('Seed completed. Login: sales@ems.com / admin123 or admin@ems.com / admin123');
 }
 
 main()

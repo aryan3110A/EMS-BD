@@ -5,17 +5,16 @@ export declare class MastersController {
     private mastersService;
     constructor(mastersService: MastersService);
     getSalespersons(): import(".prisma/client").Prisma.PrismaPromise<{
-        phone: string | null;
         id: string;
         code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        phone: string | null;
     }[]>;
     getBuyers(user: JwtPayload, officeId?: string): import(".prisma/client").Prisma.PrismaPromise<({
         country: {
-            euClassification: string;
             id: string;
             code: string;
             name: string;
@@ -23,36 +22,36 @@ export declare class MastersController {
             createdAt: Date;
             updatedAt: Date;
             region: string | null;
+            euClassification: string;
         };
         defaultPort: {
-            euClassification: string | null;
             id: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            countryId: string;
+            euClassification: string | null;
             portType: string;
+            countryId: string;
         } | null;
     } & {
-        address: string | null;
-        contactPerson: string | null;
-        email: string | null;
-        phone: string | null;
-        euClassification: string | null;
         id: string;
         code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        email: string | null;
         officeId: string | null;
+        phone: string | null;
+        euClassification: string | null;
         countryId: string;
+        address: string | null;
+        contactPerson: string | null;
         defaultPortId: string | null;
         remarks: string | null;
     })[]>;
     getCountries(): import(".prisma/client").Prisma.PrismaPromise<{
-        euClassification: string;
         id: string;
         code: string;
         name: string;
@@ -60,6 +59,7 @@ export declare class MastersController {
         createdAt: Date;
         updatedAt: Date;
         region: string | null;
+        euClassification: string;
     }[]>;
     getProducts(): import(".prisma/client").Prisma.PrismaPromise<({
         variants: {
@@ -104,7 +104,6 @@ export declare class MastersController {
     })[]>;
     getPorts(): import(".prisma/client").Prisma.PrismaPromise<({
         country: {
-            euClassification: string;
             id: string;
             code: string;
             name: string;
@@ -112,20 +111,20 @@ export declare class MastersController {
             createdAt: Date;
             updatedAt: Date;
             region: string | null;
+            euClassification: string;
         };
     } & {
-        euClassification: string | null;
         id: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        countryId: string;
+        euClassification: string | null;
         portType: string;
+        countryId: string;
     })[]>;
     updateBuyer(id: string, dto: UpdateBuyerDto): Promise<{
         country: {
-            euClassification: string;
             id: string;
             code: string;
             name: string;
@@ -133,31 +132,32 @@ export declare class MastersController {
             createdAt: Date;
             updatedAt: Date;
             region: string | null;
+            euClassification: string;
         };
         defaultPort: {
-            euClassification: string | null;
             id: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            countryId: string;
+            euClassification: string | null;
             portType: string;
+            countryId: string;
         } | null;
     } & {
-        address: string | null;
-        contactPerson: string | null;
-        email: string | null;
-        phone: string | null;
-        euClassification: string | null;
         id: string;
         code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        email: string | null;
         officeId: string | null;
+        phone: string | null;
+        euClassification: string | null;
         countryId: string;
+        address: string | null;
+        contactPerson: string | null;
         defaultPortId: string | null;
         remarks: string | null;
     }>;
