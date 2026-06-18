@@ -14,6 +14,7 @@ const common_1 = require("@nestjs/common");
 const enums_1 = require("../../common/constants/enums");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const calculation_service_1 = require("../../common/services/calculation.service");
+const pending_masters_resolver_1 = require("./pending-masters.resolver");
 let ContractsService = class ContractsService {
     prisma;
     calc;
@@ -34,6 +35,10 @@ let ContractsService = class ContractsService {
         destinationPort: { include: { country: true } },
         createdBy: { select: { id: true, name: true, email: true } },
         lots: { include: { destinationPort: true }, orderBy: { lotNumber: 'asc' } },
+        containers: {
+            include: { product: true, productVariant: true, destinationPort: { include: { country: true } } },
+            orderBy: { containerIndex: 'asc' },
+        },
         amendments: { orderBy: { createdAt: 'desc' } },
         statusHistory: { orderBy: { createdAt: 'desc' }, take: 20 },
     };
@@ -42,9 +47,20 @@ let ContractsService = class ContractsService {
         buyer: { select: { id: true, name: true, code: true } },
         product: { select: { id: true, code: true, name: true } },
         destinationPort: { select: { id: true, name: true } },
+        containers: {
+            include: {
+                product: { select: { id: true, code: true, name: true } },
+                productVariant: { select: { id: true, name: true } },
+                destinationPort: { select: { id: true, name: true } },
+            },
+            orderBy: { containerIndex: 'asc' },
+        },
     };
+    canAccessAnyOffice(user) {
+        return user.role === enums_1.UserRole.SUPER_ADMIN || user.role === enums_1.UserRole.CONTRACT_TEAM;
+    }
     scopeOffice(user, officeId) {
-        if (user.role === enums_1.UserRole.SUPER_ADMIN)
+        if (this.canAccessAnyOffice(user))
             return officeId;
         return user.officeId;
     }
@@ -66,7 +82,7 @@ let ContractsService = class ContractsService {
     }
     enrichCommercialFields(dto) {
         const capacity = dto.standardContainerMt ?? 28;
-        const containers = this.calc.calculateContainers(dto.totalMt, capacity);
+        const containers = dto.numberOfContainers ?? this.calc.calculateContainers(dto.totalMt, capacity);
         let fobInrPerKg;
         if (dto.fobPrice && dto.exchangeRate) {
             fobInrPerKg = this.calc.calculateFobInrPerKg(dto.fobPrice, dto.exchangeRate, dto.fobPriceUnit ?? 'PER_MT');
@@ -75,14 +91,17 @@ let ContractsService = class ContractsService {
         if (!dto.cifManualOverride && !cifPrice && dto.fobPrice != null) {
             cifPrice = this.calc.calculateCif(dto.fobPrice, dto.freight ?? 0, dto.insurance ?? 0);
         }
-        let shipmentMonth;
-        let shipmentYear;
-        let shipmentHalf;
+        let shipmentMonth = dto.shipmentMonth;
+        let shipmentYear = dto.shipmentYear;
+        let shipmentHalf = dto.shipmentHalf;
         if (dto.expectedShipmentDate) {
             const d = new Date(dto.expectedShipmentDate);
-            shipmentMonth = this.calc.formatShipmentMonth(d);
-            shipmentYear = d.getFullYear();
-            shipmentHalf = this.calc.getShipmentHalf(d);
+            if (!shipmentMonth)
+                shipmentMonth = this.calc.formatShipmentMonth(d);
+            if (!shipmentYear)
+                shipmentYear = d.getFullYear();
+            if (!shipmentHalf)
+                shipmentHalf = this.calc.getShipmentHalf(d);
         }
         let advanceAmount;
         let balancePercentage;
@@ -104,134 +123,189 @@ let ContractsService = class ContractsService {
         };
     }
     async create(dto, user) {
-        const officeId = dto.officeId;
-        if (user.role !== enums_1.UserRole.SUPER_ADMIN && user.officeId !== officeId) {
+        const contractId = await this.prisma.$transaction((tx) => this.createContractInTx(tx, dto, user), this.txOptions);
+        return this.findOne(contractId, user);
+    }
+    async submit(dto, user) {
+        const contractId = await this.prisma.$transaction(async (tx) => {
+            const idMap = await (0, pending_masters_resolver_1.resolvePendingMastersInTx)(tx, dto.pendingMasters, dto.contract.officeId, dto.contract.buyerId, dto.buyerUpdate);
+            const resolvedContract = (0, pending_masters_resolver_1.applyPendingIdsToContractDto)(dto.contract, idMap);
+            if (dto.buyerUpdate && resolvedContract.buyerId) {
+                await (0, pending_masters_resolver_1.updateBuyerInTx)(tx, resolvedContract.buyerId, dto.buyerUpdate, idMap);
+            }
+            return this.createContractInTx(tx, resolvedContract, user);
+        }, this.txOptions);
+        return this.findOne(contractId, user);
+    }
+    async createContractInTx(tx, dto, user) {
+        const canSelectAnyOffice = this.canAccessAnyOffice(user);
+        const officeId = canSelectAnyOffice ? dto.officeId : user.officeId;
+        if (!officeId) {
+            throw new common_1.ForbiddenException(canSelectAnyOffice ? 'Office is required' : 'Your account is not assigned to an office');
+        }
+        if (!canSelectAnyOffice && user.officeId !== officeId) {
             throw new common_1.ForbiddenException('Cannot create contract for another office');
+        }
+        const office = await tx.office.findFirst({
+            where: { id: officeId, isActive: true },
+        });
+        if (!office) {
+            throw new common_1.NotFoundException('Office not found');
         }
         const contractNumber = dto.contractNumber ?? (await this.generateContractNumber(officeId));
         const enriched = this.enrichCommercialFields(dto);
         const status = dto.status ?? enums_1.ContractStatus.DRAFT;
-        const contractId = await this.prisma.$transaction(async (tx) => {
-            const created = await tx.contract.create({
-                data: {
-                    officeId,
-                    contractNumber,
-                    receivedDate: dto.receivedDate ? new Date(dto.receivedDate) : null,
-                    contractDate: dto.contractDate ? new Date(dto.contractDate) : new Date(),
-                    contractSentDate: dto.contractSentDate ? new Date(dto.contractSentDate) : null,
-                    signedContractReceivedDate: dto.signedContractReceivedDate
-                        ? new Date(dto.signedContractReceivedDate)
-                        : null,
-                    contractOnBehalfOf: dto.contractOnBehalfOf,
-                    salespersonId: dto.salespersonId,
-                    buyerId: dto.buyerId,
+        const containerRows = dto.containerProducts?.length
+            ? dto.containerProducts
+            : [
+                {
+                    containerIndex: 1,
                     productId: dto.productId,
                     productVariantId: dto.productVariantId,
                     processingType: dto.processingType,
-                    buyerLotNo: dto.buyerLotNo,
-                    buyerRemarks: dto.buyerRemarks,
-                    invoiceNumber: dto.invoiceNumber,
                     specification: dto.specification,
-                    qualityRequirement: dto.qualityRequirement,
                     productRemarks: dto.productRemarks,
-                    quantityUnit: dto.quantityUnit ?? 'MT',
-                    totalMt: dto.totalMt,
-                    numberOfContainers: enriched.containers,
-                    numberOfLots: dto.lots?.length ?? 1,
-                    standardContainerMt: enriched.capacity,
-                    incoterm: dto.incoterm ?? 'FOB',
-                    fobPrice: dto.fobPrice,
-                    fobCurrency: dto.fobCurrency ?? 'USD',
-                    fobPriceUnit: dto.fobPriceUnit ?? 'PER_MT',
-                    freight: dto.freight,
-                    freightUnit: dto.freightUnit,
-                    insurance: dto.insurance,
-                    cifPrice: enriched.cifPrice,
-                    cifManualOverride: dto.cifManualOverride ?? false,
-                    exchangeRate: dto.exchangeRate,
-                    fobInrPerKg: enriched.fobInrPerKg,
-                    originalContractPrice: dto.originalContractPrice ?? dto.fobPrice,
-                    amendmentPrice: dto.amendmentPrice,
-                    amendmentCurrency: dto.amendmentCurrency,
-                    amendmentDate: dto.amendmentDate ? new Date(dto.amendmentDate) : null,
-                    amendmentReason: dto.amendmentReason,
-                    commercialRemarks: dto.commercialRemarks,
-                    packagingTypeId: dto.packagingTypeId,
-                    packagingSizeId: dto.packagingSizeId,
-                    packingDescription: dto.packingDescription,
-                    paymentType: dto.paymentType,
-                    advancePercentage: dto.advancePercentage,
-                    advanceAmount: enriched.advanceAmount,
-                    balancePercentage: enriched.balancePercentage,
-                    balancePaymentMode: dto.balancePaymentMode,
-                    balancePaymentStage: dto.balancePaymentStage,
-                    paymentDescription: dto.paymentDescription,
-                    portOfLoadingId: dto.portOfLoadingId,
-                    destinationPortId: dto.destinationPortId,
-                    euClassification: dto.euClassification,
-                    shipmentPeriodStart: dto.shipmentPeriodStart ? new Date(dto.shipmentPeriodStart) : null,
-                    shipmentPeriodEnd: dto.shipmentPeriodEnd ? new Date(dto.shipmentPeriodEnd) : null,
-                    expectedShipmentDate: dto.expectedShipmentDate ? new Date(dto.expectedShipmentDate) : null,
-                    shipmentMonth: enriched.shipmentMonth,
-                    shipmentYear: enriched.shipmentYear,
-                    shipmentHalf: enriched.shipmentHalf,
-                    containerNo: dto.containerNo,
-                    orderMt: dto.totalMt,
-                    remarks: dto.remarks,
-                    internalRemarks: dto.internalRemarks,
-                    status,
-                    createdById: user.sub,
-                    lots: dto.lots?.length
-                        ? {
-                            create: dto.lots.map((lot, i) => {
-                                const lotDate = lot.expectedShipmentDate
-                                    ? new Date(lot.expectedShipmentDate)
-                                    : dto.expectedShipmentDate
-                                        ? new Date(dto.expectedShipmentDate)
-                                        : null;
-                                return {
-                                    lotNumber: `LOT-${String(i + 1).padStart(2, '0')}`,
-                                    quantityMt: lot.quantityMt,
-                                    numberOfContainers: lot.numberOfContainers ?? 1,
-                                    expectedShipmentDate: lotDate,
-                                    shipmentMonth: lotDate ? this.calc.formatShipmentMonth(lotDate) : enriched.shipmentMonth,
-                                    shipmentYear: lotDate?.getFullYear() ?? enriched.shipmentYear,
-                                    shipmentHalf: lotDate ? this.calc.getShipmentHalf(lotDate) : enriched.shipmentHalf,
-                                    destinationPortId: lot.destinationPortId ?? dto.destinationPortId,
-                                    remarks: lot.remarks,
-                                };
-                            }),
-                        }
-                        : {
-                            create: [
-                                {
-                                    lotNumber: 'LOT-01',
-                                    quantityMt: dto.totalMt,
-                                    numberOfContainers: enriched.containers,
-                                    expectedShipmentDate: dto.expectedShipmentDate
-                                        ? new Date(dto.expectedShipmentDate)
-                                        : null,
-                                    shipmentMonth: enriched.shipmentMonth,
-                                    shipmentYear: enriched.shipmentYear,
-                                    shipmentHalf: enriched.shipmentHalf,
-                                    destinationPortId: dto.destinationPortId,
-                                },
-                            ],
-                        },
+                    quantityMt: dto.totalMt / enriched.containers,
                 },
-                select: { id: true },
-            });
-            await tx.contractStatusHistory.create({
-                data: {
-                    contractId: created.id,
-                    toStatus: status,
-                    changedBy: user.name,
-                    remarks: 'Contract created',
+            ];
+        const primary = containerRows[0];
+        const created = await tx.contract.create({
+            data: {
+                officeId,
+                contractNumber,
+                receivedDate: dto.receivedDate ? new Date(dto.receivedDate) : null,
+                contractDate: dto.contractDate ? new Date(dto.contractDate) : new Date(),
+                contractSentDate: dto.contractSentDate ? new Date(dto.contractSentDate) : null,
+                signedContractReceivedDate: dto.signedContractReceivedDate
+                    ? new Date(dto.signedContractReceivedDate)
+                    : null,
+                contractOnBehalfOf: dto.contractOnBehalfOf,
+                salespersonId: dto.salespersonId,
+                buyerId: dto.buyerId,
+                productId: primary.productId,
+                productVariantId: primary.productVariantId,
+                processingType: primary.processingType,
+                buyerLotNo: dto.buyerLotNo,
+                buyerRemarks: dto.buyerRemarks,
+                invoiceNumber: dto.invoiceNumber,
+                specification: primary.specification,
+                qualityRequirement: dto.qualityRequirement,
+                productRemarks: primary.productRemarks,
+                quantityUnit: dto.quantityUnit ?? 'MT',
+                totalMt: dto.totalMt,
+                numberOfContainers: enriched.containers,
+                numberOfLots: dto.lots?.length ?? 1,
+                standardContainerMt: enriched.capacity,
+                incoterm: dto.incoterm ?? 'FOB',
+                fobPrice: dto.fobPrice,
+                fobCurrency: dto.fobCurrency ?? 'USD',
+                fobPriceUnit: dto.fobPriceUnit ?? 'PER_MT',
+                freight: dto.freight,
+                freightUnit: dto.freightUnit,
+                insurance: dto.insurance,
+                cifPrice: enriched.cifPrice,
+                cifManualOverride: dto.cifManualOverride ?? false,
+                exchangeRate: dto.exchangeRate,
+                fobInrPerKg: enriched.fobInrPerKg,
+                originalContractPrice: dto.originalContractPrice ?? dto.fobPrice,
+                amendmentPrice: dto.amendmentPrice,
+                amendmentCurrency: dto.amendmentCurrency,
+                amendmentDate: dto.amendmentDate ? new Date(dto.amendmentDate) : null,
+                amendmentReason: dto.amendmentReason,
+                commercialRemarks: dto.commercialRemarks,
+                packagingTypeId: dto.packagingTypeId,
+                packagingSizeId: dto.packagingSizeId,
+                packingDescription: dto.packingDescription,
+                packingSizeValue: dto.packingSizeValue,
+                packingSizeUnit: dto.packingSizeUnit,
+                paymentType: dto.paymentType,
+                advancePercentage: dto.advancePercentage,
+                advanceAmount: enriched.advanceAmount,
+                balancePercentage: enriched.balancePercentage,
+                balancePaymentMode: dto.balancePaymentMode,
+                balancePaymentStage: dto.balancePaymentStage,
+                paymentDescription: dto.paymentDescription,
+                portOfLoadingId: dto.portOfLoadingId,
+                destinationPortId: dto.destinationPortId,
+                euClassification: dto.euClassification,
+                shipmentPeriodStart: dto.shipmentPeriodStart ? new Date(dto.shipmentPeriodStart) : null,
+                shipmentPeriodEnd: dto.shipmentPeriodEnd ? new Date(dto.shipmentPeriodEnd) : null,
+                expectedShipmentDate: dto.expectedShipmentDate ? new Date(dto.expectedShipmentDate) : null,
+                shipmentMonth: enriched.shipmentMonth,
+                shipmentYear: enriched.shipmentYear,
+                shipmentHalf: enriched.shipmentHalf,
+                containerNo: dto.containerNo,
+                orderMt: dto.totalMt,
+                remarks: dto.remarks,
+                internalRemarks: dto.internalRemarks,
+                status,
+                createdById: user.sub,
+                containers: {
+                    create: containerRows.map((c) => ({
+                        containerIndex: c.containerIndex,
+                        productId: c.productId,
+                        productVariantId: c.productVariantId || null,
+                        processingType: c.processingType || null,
+                        specification: c.specification || null,
+                        productRemarks: c.productRemarks || null,
+                        quantityMt: c.quantityMt ?? dto.totalMt / enriched.containers,
+                        containerNo: c.containerNo || null,
+                        destinationPortId: c.destinationPortId || null,
+                        expectedShipmentDate: c.expectedShipmentDate ? new Date(c.expectedShipmentDate) : null,
+                        shipmentMonth: c.shipmentMonth || null,
+                        shipmentYear: c.shipmentYear ?? null,
+                        shipmentHalf: c.shipmentHalf || null,
+                    })),
                 },
-            });
-            return created.id;
-        }, this.txOptions);
-        return this.findOne(contractId, user);
+                lots: dto.lots?.length
+                    ? {
+                        create: dto.lots.map((lot, i) => {
+                            const lotDate = lot.expectedShipmentDate
+                                ? new Date(lot.expectedShipmentDate)
+                                : dto.expectedShipmentDate
+                                    ? new Date(dto.expectedShipmentDate)
+                                    : null;
+                            return {
+                                lotNumber: `LOT-${String(i + 1).padStart(2, '0')}`,
+                                quantityMt: lot.quantityMt,
+                                numberOfContainers: lot.numberOfContainers ?? 1,
+                                expectedShipmentDate: lotDate,
+                                shipmentMonth: lotDate ? this.calc.formatShipmentMonth(lotDate) : enriched.shipmentMonth,
+                                shipmentYear: lotDate?.getFullYear() ?? enriched.shipmentYear,
+                                shipmentHalf: lotDate ? this.calc.getShipmentHalf(lotDate) : enriched.shipmentHalf,
+                                destinationPortId: lot.destinationPortId ?? dto.destinationPortId,
+                                remarks: lot.remarks,
+                            };
+                        }),
+                    }
+                    : {
+                        create: [
+                            {
+                                lotNumber: 'LOT-01',
+                                quantityMt: dto.totalMt,
+                                numberOfContainers: enriched.containers,
+                                expectedShipmentDate: dto.expectedShipmentDate
+                                    ? new Date(dto.expectedShipmentDate)
+                                    : null,
+                                shipmentMonth: enriched.shipmentMonth,
+                                shipmentYear: enriched.shipmentYear,
+                                shipmentHalf: enriched.shipmentHalf,
+                                destinationPortId: dto.destinationPortId,
+                            },
+                        ],
+                    },
+            },
+            select: { id: true },
+        });
+        await tx.contractStatusHistory.create({
+            data: {
+                contractId: created.id,
+                toStatus: status,
+                changedBy: user.name,
+                remarks: 'Contract created',
+            },
+        });
+        return created.id;
     }
     async findAll(query, user) {
         const officeId = this.scopeOffice(user, query.officeId);
@@ -242,13 +316,7 @@ let ContractsService = class ContractsService {
             ...(query.buyerId ? { buyerId: query.buyerId } : {}),
             ...(query.shipmentMonth ? { shipmentMonth: query.shipmentMonth } : {}),
             ...(query.search
-                ? {
-                    OR: [
-                        { contractNumber: { contains: query.search, mode: 'insensitive' } },
-                        { buyer: { name: { contains: query.search, mode: 'insensitive' } } },
-                        { invoiceNumber: { contains: query.search, mode: 'insensitive' } },
-                    ],
-                }
+                ? { buyer: { name: { contains: query.search, mode: 'insensitive' } } }
                 : {}),
         };
         return this.prisma.contract.findMany({
@@ -264,7 +332,7 @@ let ContractsService = class ContractsService {
         });
         if (!contract)
             throw new common_1.NotFoundException('Contract not found');
-        if (user.role !== enums_1.UserRole.SUPER_ADMIN && user.officeId !== contract.officeId) {
+        if (!this.canAccessAnyOffice(user) && user.officeId !== contract.officeId) {
             throw new common_1.ForbiddenException('Access denied');
         }
         return contract;
@@ -317,6 +385,8 @@ let ContractsService = class ContractsService {
                 packagingTypeId: dto.packagingTypeId,
                 packagingSizeId: dto.packagingSizeId,
                 packingDescription: dto.packingDescription,
+                packingSizeValue: dto.packingSizeValue,
+                packingSizeUnit: dto.packingSizeUnit,
                 paymentType: dto.paymentType,
                 advancePercentage: dto.advancePercentage,
                 advanceAmount: enriched.advanceAmount,

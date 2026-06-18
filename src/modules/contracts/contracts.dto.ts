@@ -42,6 +42,59 @@ export class CreateLotDto {
   remarks?: string;
 }
 
+export class CreateContainerProductDto {
+  @IsNumber()
+  @Min(1)
+  containerIndex: number;
+
+  @IsString()
+  productId: string;
+
+  @IsOptional()
+  @IsString()
+  productVariantId?: string;
+
+  @IsOptional()
+  @IsString()
+  processingType?: string;
+
+  @IsOptional()
+  @IsString()
+  specification?: string;
+
+  @IsOptional()
+  @IsString()
+  productRemarks?: string;
+
+  @IsOptional()
+  @IsNumber()
+  quantityMt?: number;
+
+  @IsOptional()
+  @IsString()
+  containerNo?: string;
+
+  @IsOptional()
+  @IsString()
+  destinationPortId?: string;
+
+  @IsOptional()
+  @IsDateString()
+  expectedShipmentDate?: string;
+
+  @IsOptional()
+  @IsString()
+  shipmentMonth?: string;
+
+  @IsOptional()
+  @IsNumber()
+  shipmentYear?: number;
+
+  @IsOptional()
+  @IsIn(['FIRST_HALF', 'SECOND_HALF'])
+  shipmentHalf?: string;
+}
+
 export class CreateContractDto {
   @IsString()
   officeId: string;
@@ -214,6 +267,14 @@ export class CreateContractDto {
   packagingSizeId?: string;
 
   @IsOptional()
+  @IsNumber()
+  packingSizeValue?: number;
+
+  @IsOptional()
+  @IsString()
+  packingSizeUnit?: string;
+
+  @IsOptional()
   @IsString()
   packingDescription?: string;
 
@@ -254,6 +315,23 @@ export class CreateContractDto {
   shipmentPeriodEnd?: string;
 
   @IsOptional()
+  @IsNumber()
+  @Min(1)
+  numberOfContainers?: number;
+
+  @IsOptional()
+  @IsString()
+  shipmentMonth?: string;
+
+  @IsOptional()
+  @IsNumber()
+  shipmentYear?: number;
+
+  @IsOptional()
+  @IsIn(['FIRST_HALF', 'SECOND_HALF'])
+  shipmentHalf?: string;
+
+  @IsOptional()
   @IsDateString()
   expectedShipmentDate?: string;
 
@@ -270,6 +348,12 @@ export class CreateContractDto {
   @ValidateNested({ each: true })
   @Type(() => CreateLotDto)
   lots?: CreateLotDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateContainerProductDto)
+  containerProducts?: CreateContainerProductDto[];
 }
 
 export class UpdateContractDto extends CreateContractDto {}

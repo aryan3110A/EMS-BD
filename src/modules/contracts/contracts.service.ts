@@ -4,6 +4,12 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CalculationService } from '../../common/services/calculation.service';
 import { CreateContractDto, UpdateContractDto, ContractQueryDto } from './contracts.dto';
+import { SubmitContractDto } from './submit-contract.dto';
+import {
+  applyPendingIdsToContractDto,
+  resolvePendingMastersInTx,
+  updateBuyerInTx,
+} from './pending-masters.resolver';
 import type { JwtPayload } from '../../common/decorators/current-user.decorator';
 
 @Injectable()
@@ -27,6 +33,10 @@ export class ContractsService {
     destinationPort: { include: { country: true } },
     createdBy: { select: { id: true, name: true, email: true } },
     lots: { include: { destinationPort: true }, orderBy: { lotNumber: 'asc' as const } },
+    containers: {
+      include: { product: true, productVariant: true, destinationPort: { include: { country: true } } },
+      orderBy: { containerIndex: 'asc' as const },
+    },
     amendments: { orderBy: { createdAt: 'desc' as const } },
     statusHistory: { orderBy: { createdAt: 'desc' as const }, take: 20 },
   };
@@ -37,10 +47,22 @@ export class ContractsService {
     buyer: { select: { id: true, name: true, code: true } },
     product: { select: { id: true, code: true, name: true } },
     destinationPort: { select: { id: true, name: true } },
+    containers: {
+      include: {
+        product: { select: { id: true, code: true, name: true } },
+        productVariant: { select: { id: true, name: true } },
+        destinationPort: { select: { id: true, name: true } },
+      },
+      orderBy: { containerIndex: 'asc' as const },
+    },
   };
 
+  private canAccessAnyOffice(user: JwtPayload) {
+    return user.role === UserRole.SUPER_ADMIN || user.role === UserRole.CONTRACT_TEAM;
+  }
+
   private scopeOffice(user: JwtPayload, officeId?: string): string | undefined {
-    if (user.role === UserRole.SUPER_ADMIN) return officeId;
+    if (this.canAccessAnyOffice(user)) return officeId;
     return user.officeId;
   }
 
@@ -62,7 +84,7 @@ export class ContractsService {
 
   private enrichCommercialFields(dto: CreateContractDto | UpdateContractDto) {
     const capacity = dto.standardContainerMt ?? 28;
-    const containers = this.calc.calculateContainers(dto.totalMt, capacity);
+    const containers = dto.numberOfContainers ?? this.calc.calculateContainers(dto.totalMt, capacity);
     let fobInrPerKg: number | undefined;
     if (dto.fobPrice && dto.exchangeRate) {
       fobInrPerKg = this.calc.calculateFobInrPerKg(
@@ -75,14 +97,14 @@ export class ContractsService {
     if (!dto.cifManualOverride && !cifPrice && dto.fobPrice != null) {
       cifPrice = this.calc.calculateCif(dto.fobPrice, dto.freight ?? 0, dto.insurance ?? 0);
     }
-    let shipmentMonth: string | undefined;
-    let shipmentYear: number | undefined;
-    let shipmentHalf: string | undefined;
+    let shipmentMonth: string | undefined = dto.shipmentMonth;
+    let shipmentYear: number | undefined = dto.shipmentYear;
+    let shipmentHalf: string | undefined = dto.shipmentHalf;
     if (dto.expectedShipmentDate) {
       const d = new Date(dto.expectedShipmentDate);
-      shipmentMonth = this.calc.formatShipmentMonth(d);
-      shipmentYear = d.getFullYear();
-      shipmentHalf = this.calc.getShipmentHalf(d);
+      if (!shipmentMonth) shipmentMonth = this.calc.formatShipmentMonth(d);
+      if (!shipmentYear) shipmentYear = d.getFullYear();
+      if (!shipmentHalf) shipmentHalf = this.calc.getShipmentHalf(d);
     }
     let advanceAmount: number | undefined;
     let balancePercentage: number | undefined;
@@ -105,17 +127,82 @@ export class ContractsService {
   }
 
   async create(dto: CreateContractDto, user: JwtPayload) {
-    const officeId = dto.officeId;
-    if (user.role !== UserRole.SUPER_ADMIN && user.officeId !== officeId) {
+    const contractId = await this.prisma.$transaction(
+      (tx) => this.createContractInTx(tx, dto, user),
+      this.txOptions,
+    );
+    return this.findOne(contractId, user);
+  }
+
+  async submit(dto: SubmitContractDto, user: JwtPayload) {
+    const contractId = await this.prisma.$transaction(async (tx) => {
+      const idMap = await resolvePendingMastersInTx(
+        tx,
+        dto.pendingMasters,
+        dto.contract.officeId,
+        dto.contract.buyerId,
+        dto.buyerUpdate,
+      );
+      const resolvedContract = applyPendingIdsToContractDto(dto.contract, idMap);
+
+      if (dto.buyerUpdate && resolvedContract.buyerId) {
+        await updateBuyerInTx(tx, resolvedContract.buyerId, dto.buyerUpdate, idMap);
+      }
+
+      return this.createContractInTx(tx, resolvedContract, user);
+    }, this.txOptions);
+
+    return this.findOne(contractId, user);
+  }
+
+  private async createContractInTx(
+    tx: Prisma.TransactionClient,
+    dto: CreateContractDto,
+    user: JwtPayload,
+  ): Promise<string> {
+    const canSelectAnyOffice = this.canAccessAnyOffice(user);
+
+    const officeId = canSelectAnyOffice ? dto.officeId : user.officeId;
+
+    if (!officeId) {
+      throw new ForbiddenException(
+        canSelectAnyOffice ? 'Office is required' : 'Your account is not assigned to an office',
+      );
+    }
+
+    if (!canSelectAnyOffice && user.officeId !== officeId) {
       throw new ForbiddenException('Cannot create contract for another office');
+    }
+
+    const office = await tx.office.findFirst({
+      where: { id: officeId, isActive: true },
+    });
+    if (!office) {
+      throw new NotFoundException('Office not found');
     }
 
     const contractNumber = dto.contractNumber ?? (await this.generateContractNumber(officeId));
     const enriched = this.enrichCommercialFields(dto);
     const status = dto.status ?? ContractStatus.DRAFT;
 
-    const contractId = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.contract.create({
+    const containerRows =
+      dto.containerProducts?.length
+        ? dto.containerProducts
+        : [
+            {
+              containerIndex: 1,
+              productId: dto.productId,
+              productVariantId: dto.productVariantId,
+              processingType: dto.processingType,
+              specification: dto.specification,
+              productRemarks: dto.productRemarks,
+              quantityMt: dto.totalMt / enriched.containers,
+            },
+          ];
+
+    const primary = containerRows[0];
+
+    const created = await tx.contract.create({
         data: {
           officeId,
           contractNumber,
@@ -128,15 +215,15 @@ export class ContractsService {
           contractOnBehalfOf: dto.contractOnBehalfOf,
           salespersonId: dto.salespersonId,
           buyerId: dto.buyerId,
-          productId: dto.productId,
-          productVariantId: dto.productVariantId,
-          processingType: dto.processingType,
+          productId: primary.productId,
+          productVariantId: primary.productVariantId,
+          processingType: primary.processingType,
           buyerLotNo: dto.buyerLotNo,
           buyerRemarks: dto.buyerRemarks,
           invoiceNumber: dto.invoiceNumber,
-          specification: dto.specification,
+          specification: primary.specification,
           qualityRequirement: dto.qualityRequirement,
-          productRemarks: dto.productRemarks,
+          productRemarks: primary.productRemarks,
           quantityUnit: dto.quantityUnit ?? 'MT',
           totalMt: dto.totalMt,
           numberOfContainers: enriched.containers,
@@ -162,6 +249,8 @@ export class ContractsService {
           packagingTypeId: dto.packagingTypeId,
           packagingSizeId: dto.packagingSizeId,
           packingDescription: dto.packingDescription,
+          packingSizeValue: dto.packingSizeValue,
+          packingSizeUnit: dto.packingSizeUnit,
           paymentType: dto.paymentType,
           advancePercentage: dto.advancePercentage,
           advanceAmount: enriched.advanceAmount,
@@ -184,6 +273,23 @@ export class ContractsService {
           internalRemarks: dto.internalRemarks,
           status,
           createdById: user.sub,
+          containers: {
+            create: containerRows.map((c) => ({
+              containerIndex: c.containerIndex,
+              productId: c.productId,
+              productVariantId: c.productVariantId || null,
+              processingType: c.processingType || null,
+              specification: c.specification || null,
+              productRemarks: c.productRemarks || null,
+              quantityMt: c.quantityMt ?? dto.totalMt / enriched.containers,
+              containerNo: c.containerNo || null,
+              destinationPortId: c.destinationPortId || null,
+              expectedShipmentDate: c.expectedShipmentDate ? new Date(c.expectedShipmentDate) : null,
+              shipmentMonth: c.shipmentMonth || null,
+              shipmentYear: c.shipmentYear ?? null,
+              shipmentHalf: c.shipmentHalf || null,
+            })),
+          },
           lots: dto.lots?.length
             ? {
                 create: dto.lots.map((lot, i) => {
@@ -222,22 +328,19 @@ export class ContractsService {
                 ],
               },
         },
-        select: { id: true },
-      });
+      select: { id: true },
+    });
 
-      await tx.contractStatusHistory.create({
-        data: {
-          contractId: created.id,
-          toStatus: status,
-          changedBy: user.name,
-          remarks: 'Contract created',
-        },
-      });
+    await tx.contractStatusHistory.create({
+      data: {
+        contractId: created.id,
+        toStatus: status,
+        changedBy: user.name,
+        remarks: 'Contract created',
+      },
+    });
 
-      return created.id;
-    }, this.txOptions);
-
-    return this.findOne(contractId, user);
+    return created.id;
   }
 
   async findAll(query: ContractQueryDto, user: JwtPayload) {
@@ -249,13 +352,7 @@ export class ContractsService {
       ...(query.buyerId ? { buyerId: query.buyerId } : {}),
       ...(query.shipmentMonth ? { shipmentMonth: query.shipmentMonth } : {}),
       ...(query.search
-        ? {
-            OR: [
-              { contractNumber: { contains: query.search, mode: 'insensitive' as const } },
-              { buyer: { name: { contains: query.search, mode: 'insensitive' as const } } },
-              { invoiceNumber: { contains: query.search, mode: 'insensitive' as const } },
-            ],
-          }
+        ? { buyer: { name: { contains: query.search, mode: 'insensitive' as const } } }
         : {}),
     };
 
@@ -272,7 +369,7 @@ export class ContractsService {
       include: this.detailInclude,
     });
     if (!contract) throw new NotFoundException('Contract not found');
-    if (user.role !== UserRole.SUPER_ADMIN && user.officeId !== contract.officeId) {
+    if (!this.canAccessAnyOffice(user) && user.officeId !== contract.officeId) {
       throw new ForbiddenException('Access denied');
     }
     return contract;
@@ -327,6 +424,8 @@ export class ContractsService {
         packagingTypeId: dto.packagingTypeId,
         packagingSizeId: dto.packagingSizeId,
         packingDescription: dto.packingDescription,
+        packingSizeValue: dto.packingSizeValue,
+        packingSizeUnit: dto.packingSizeUnit,
         paymentType: dto.paymentType,
         advancePercentage: dto.advancePercentage,
         advanceAmount: enriched.advanceAmount,

@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "PackagingSize" ADD COLUMN IF NOT EXISTS "weightUnit" TEXT NOT NULL DEFAULT 'KG';
+
+-- AlterTable
+ALTER TABLE "Contract" ADD COLUMN IF NOT EXISTS "packingSizeValue" DOUBLE PRECISION;
+ALTER TABLE "Contract" ADD COLUMN IF NOT EXISTS "packingSizeUnit" TEXT;

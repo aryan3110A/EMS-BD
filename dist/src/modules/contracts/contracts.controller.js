@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const contracts_service_1 = require("./contracts.service");
 const contracts_dto_1 = require("./contracts.dto");
+const submit_contract_dto_1 = require("./submit-contract.dto");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const roles_guard_1 = require("../../common/guards/roles.guard");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
@@ -35,6 +36,9 @@ let ContractsController = class ContractsController {
     }
     findOne(id, user) {
         return this.contractsService.findOne(id, user);
+    }
+    submit(dto, user) {
+        return this.contractsService.submit(dto, user);
     }
     create(dto, user) {
         return this.contractsService.create(dto, user);
@@ -70,6 +74,15 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], ContractsController.prototype, "findOne", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM),
+    (0, common_1.Post)('submit'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [submit_contract_dto_1.SubmitContractDto, Object]),
+    __metadata("design:returntype", void 0)
+], ContractsController.prototype, "submit", null);
 __decorate([
     (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM),
     (0, common_1.Post)(),

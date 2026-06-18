@@ -6,6 +6,21 @@ export declare class CreateLotDto {
     destinationPortId?: string;
     remarks?: string;
 }
+export declare class CreateContainerProductDto {
+    containerIndex: number;
+    productId: string;
+    productVariantId?: string;
+    processingType?: string;
+    specification?: string;
+    productRemarks?: string;
+    quantityMt?: number;
+    containerNo?: string;
+    destinationPortId?: string;
+    expectedShipmentDate?: string;
+    shipmentMonth?: string;
+    shipmentYear?: number;
+    shipmentHalf?: string;
+}
 export declare class CreateContractDto {
     officeId: string;
     contractNumber?: string;
@@ -49,6 +64,8 @@ export declare class CreateContractDto {
     commercialRemarks?: string;
     packagingTypeId?: string;
     packagingSizeId?: string;
+    packingSizeValue?: number;
+    packingSizeUnit?: string;
     packingDescription?: string;
     paymentType?: PaymentType;
     advancePercentage?: number;
@@ -59,10 +76,15 @@ export declare class CreateContractDto {
     destinationPortId?: string;
     shipmentPeriodStart?: string;
     shipmentPeriodEnd?: string;
+    numberOfContainers?: number;
+    shipmentMonth?: string;
+    shipmentYear?: number;
+    shipmentHalf?: string;
     expectedShipmentDate?: string;
     containerNo?: string;
     status?: ContractStatus;
     lots?: CreateLotDto[];
+    containerProducts?: CreateContainerProductDto[];
 }
 export declare class UpdateContractDto extends CreateContractDto {
 }

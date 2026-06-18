@@ -8,11 +8,42 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OfficesModule = exports.OfficesController = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
+const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
+const class_validator_1 = require("class-validator");
+class CreateOfficeDto {
+    name;
+    city;
+    code;
+}
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateOfficeDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateOfficeDto.prototype, "city", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateOfficeDto.prototype, "code", void 0);
+function officeCode(name) {
+    const base = name
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, '')
+        .slice(0, 6);
+    return `${base || 'OFF'}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
+}
 let OfficesController = class OfficesController {
     prisma;
     constructor(prisma) {
@@ -24,6 +55,15 @@ let OfficesController = class OfficesController {
             orderBy: { name: 'asc' },
         });
     }
+    create(dto) {
+        return this.prisma.office.create({
+            data: {
+                code: dto.code?.trim().toUpperCase() || officeCode(dto.name),
+                name: dto.name.trim(),
+                city: dto.city?.trim() || dto.name.trim(),
+            },
+        });
+    }
 };
 exports.OfficesController = OfficesController;
 __decorate([
@@ -33,6 +73,14 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], OfficesController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)(),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [CreateOfficeDto]),
+    __metadata("design:returntype", void 0)
+], OfficesController.prototype, "create", null);
 exports.OfficesController = OfficesController = __decorate([
     (0, common_1.Controller)('offices'),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService])

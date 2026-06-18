@@ -73,13 +73,89 @@ async function main() {
   });
 
   const countries = [
+    // EU
+    { name: 'Austria', code: 'AT', euClassification: EuClassification.EU },
+    { name: 'Belgium', code: 'BE', euClassification: EuClassification.EU },
+    { name: 'Bulgaria', code: 'BG', euClassification: EuClassification.EU },
+    { name: 'Croatia', code: 'HR', euClassification: EuClassification.EU },
+    { name: 'Cyprus', code: 'CY', euClassification: EuClassification.EU },
+    { name: 'Czech Republic', code: 'CZ', euClassification: EuClassification.EU },
+    { name: 'Denmark', code: 'DK', euClassification: EuClassification.EU },
+    { name: 'Estonia', code: 'EE', euClassification: EuClassification.EU },
+    { name: 'Finland', code: 'FI', euClassification: EuClassification.EU },
+    { name: 'France', code: 'FR', euClassification: EuClassification.EU },
+    { name: 'Germany', code: 'DE', euClassification: EuClassification.EU },
     { name: 'Greece', code: 'GR', euClassification: EuClassification.EU },
     { name: 'Hungary', code: 'HU', euClassification: EuClassification.EU },
-    { name: 'Australia', code: 'AU', euClassification: EuClassification.NON_EU },
+    { name: 'Ireland', code: 'IE', euClassification: EuClassification.EU },
+    { name: 'Italy', code: 'IT', euClassification: EuClassification.EU },
+    { name: 'Latvia', code: 'LV', euClassification: EuClassification.EU },
+    { name: 'Lithuania', code: 'LT', euClassification: EuClassification.EU },
+    { name: 'Luxembourg', code: 'LU', euClassification: EuClassification.EU },
+    { name: 'Malta', code: 'MT', euClassification: EuClassification.EU },
+    { name: 'Netherlands', code: 'NL', euClassification: EuClassification.EU },
+    { name: 'Poland', code: 'PL', euClassification: EuClassification.EU },
+    { name: 'Portugal', code: 'PT', euClassification: EuClassification.EU },
+    { name: 'Romania', code: 'RO', euClassification: EuClassification.EU },
+    { name: 'Slovakia', code: 'SK', euClassification: EuClassification.EU },
+    { name: 'Slovenia', code: 'SI', euClassification: EuClassification.EU },
+    { name: 'Spain', code: 'ES', euClassification: EuClassification.EU },
+    { name: 'Sweden', code: 'SE', euClassification: EuClassification.EU },
+    // Non-EU — Americas
+    { name: 'United States', code: 'US', euClassification: EuClassification.NON_EU },
     { name: 'Canada', code: 'CA', euClassification: EuClassification.NON_EU },
+    { name: 'Mexico', code: 'MX', euClassification: EuClassification.NON_EU },
+    { name: 'Brazil', code: 'BR', euClassification: EuClassification.NON_EU },
+    { name: 'Argentina', code: 'AR', euClassification: EuClassification.NON_EU },
+    { name: 'Chile', code: 'CL', euClassification: EuClassification.NON_EU },
+    { name: 'Colombia', code: 'CO', euClassification: EuClassification.NON_EU },
+    { name: 'Peru', code: 'PE', euClassification: EuClassification.NON_EU },
+    // Non-EU — Middle East
+    { name: 'United Arab Emirates', code: 'AE', euClassification: EuClassification.NON_EU },
+    { name: 'Saudi Arabia', code: 'SA', euClassification: EuClassification.NON_EU },
+    { name: 'Qatar', code: 'QA', euClassification: EuClassification.NON_EU },
+    { name: 'Kuwait', code: 'KW', euClassification: EuClassification.NON_EU },
+    { name: 'Oman', code: 'OM', euClassification: EuClassification.NON_EU },
+    { name: 'Bahrain', code: 'BH', euClassification: EuClassification.NON_EU },
+    { name: 'Israel', code: 'IL', euClassification: EuClassification.NON_EU },
+    { name: 'Turkey', code: 'TR', euClassification: EuClassification.NON_EU },
     { name: 'Egypt', code: 'EG', euClassification: EuClassification.NON_EU },
-    { name: 'Russia', code: 'RU', euClassification: EuClassification.NON_EU },
+    { name: 'Jordan', code: 'JO', euClassification: EuClassification.NON_EU },
+    { name: 'Lebanon', code: 'LB', euClassification: EuClassification.NON_EU },
+    { name: 'Iraq', code: 'IQ', euClassification: EuClassification.NON_EU },
+    { name: 'Iran', code: 'IR', euClassification: EuClassification.NON_EU },
+    // Non-EU — Asia Pacific
     { name: 'India', code: 'IN', euClassification: EuClassification.NON_EU },
+    { name: 'China', code: 'CN', euClassification: EuClassification.NON_EU },
+    { name: 'Japan', code: 'JP', euClassification: EuClassification.NON_EU },
+    { name: 'South Korea', code: 'KR', euClassification: EuClassification.NON_EU },
+    { name: 'Singapore', code: 'SG', euClassification: EuClassification.NON_EU },
+    { name: 'Malaysia', code: 'MY', euClassification: EuClassification.NON_EU },
+    { name: 'Indonesia', code: 'ID', euClassification: EuClassification.NON_EU },
+    { name: 'Thailand', code: 'TH', euClassification: EuClassification.NON_EU },
+    { name: 'Vietnam', code: 'VN', euClassification: EuClassification.NON_EU },
+    { name: 'Philippines', code: 'PH', euClassification: EuClassification.NON_EU },
+    { name: 'Pakistan', code: 'PK', euClassification: EuClassification.NON_EU },
+    { name: 'Bangladesh', code: 'BD', euClassification: EuClassification.NON_EU },
+    { name: 'Sri Lanka', code: 'LK', euClassification: EuClassification.NON_EU },
+    { name: 'Nepal', code: 'NP', euClassification: EuClassification.NON_EU },
+    { name: 'Australia', code: 'AU', euClassification: EuClassification.NON_EU },
+    { name: 'New Zealand', code: 'NZ', euClassification: EuClassification.NON_EU },
+    // Non-EU — Africa
+    { name: 'South Africa', code: 'ZA', euClassification: EuClassification.NON_EU },
+    { name: 'Kenya', code: 'KE', euClassification: EuClassification.NON_EU },
+    { name: 'Nigeria', code: 'NG', euClassification: EuClassification.NON_EU },
+    { name: 'Ghana', code: 'GH', euClassification: EuClassification.NON_EU },
+    { name: 'Morocco', code: 'MA', euClassification: EuClassification.NON_EU },
+    { name: 'Tunisia', code: 'TN', euClassification: EuClassification.NON_EU },
+    { name: 'Algeria', code: 'DZ', euClassification: EuClassification.NON_EU },
+    { name: 'Ethiopia', code: 'ET', euClassification: EuClassification.NON_EU },
+    // Non-EU — Europe (non-EU)
+    { name: 'United Kingdom', code: 'GB', euClassification: EuClassification.NON_EU },
+    { name: 'Switzerland', code: 'CH', euClassification: EuClassification.NON_EU },
+    { name: 'Norway', code: 'NO', euClassification: EuClassification.NON_EU },
+    { name: 'Russia', code: 'RU', euClassification: EuClassification.NON_EU },
+    { name: 'Ukraine', code: 'UA', euClassification: EuClassification.NON_EU },
   ];
 
   for (const c of countries) {
@@ -112,33 +188,80 @@ async function main() {
     if (!existing) await prisma.port.create({ data: p });
   }
 
-  const products = [
-    { code: 'HSS', name: 'Hulled Sesame Seeds', variants: [{ code: 'TOASTED', name: 'Toasted', processingType: 'Toasted' }] },
-    { code: 'NSS', name: 'Natural Sesame Seeds', variants: [{ code: 'ROASTED', name: 'Roasted', processingType: 'Roasted' }] },
-    { code: 'BSS', name: 'Black Sesame Seeds', variants: [{ code: 'ROASTED', name: 'Roasted', processingType: 'Roasted' }] },
-    { code: 'THSS', name: 'Toasted Hulled Sesame Seeds', variants: [] },
-    { code: 'TURMERIC-FINGER', name: 'Turmeric Finger', variants: [{ code: 'FINGER', name: 'Finger', processingType: 'Finger' }] },
-  ];
-
-  for (const p of products) {
+  async function upsertProductWithVariants(
+    code: string,
+    name: string,
+    extraVariants: { code: string; name: string; processingType?: string }[] = [],
+  ) {
     const product = await prisma.product.upsert({
-      where: { code: p.code },
-      update: {},
-      create: { code: p.code, name: p.name, category: 'Seeds & Spices' },
+      where: { code },
+      update: { name, isActive: true },
+      create: { code, name, category: 'Seeds & Spices' },
     });
-    for (const v of p.variants) {
+    const variants = [
+      { code: 'NORMAL', name: 'Normal', processingType: 'Normal' },
+      ...extraVariants,
+    ];
+    for (const v of variants) {
       await prisma.productVariant.upsert({
         where: { productId_code: { productId: product.id, code: v.code } },
-        update: {},
-        create: { ...v, productId: product.id },
+        update: { name: v.name, processingType: v.processingType ?? v.name, isActive: true },
+        create: {
+          productId: product.id,
+          code: v.code,
+          name: v.name,
+          processingType: v.processingType ?? v.name,
+        },
       });
     }
   }
+
+  await upsertProductWithVariants('HSS', 'Hulled Sesame Seeds', [
+    { code: 'TOASTED', name: 'Toasted', processingType: 'Toasted' },
+  ]);
+  await upsertProductWithVariants('NSS', 'Natural Sesame Seeds', [
+    { code: 'ROASTED', name: 'Roasted', processingType: 'Roasted' },
+    { code: 'TOASTED', name: 'Toasted', processingType: 'Toasted' },
+  ]);
+  await upsertProductWithVariants('BSS', 'Black Sesame Seeds', [
+    { code: 'ROASTED', name: 'Roasted', processingType: 'Roasted' },
+    { code: 'TOASTED', name: 'Toasted', processingType: 'Toasted' },
+  ]);
+  await upsertProductWithVariants('CUMIN', 'Cumin Seeds');
+  await upsertProductWithVariants('FLAX', 'Flax Seeds');
+  await upsertProductWithVariants('AMARANTH', 'Amaranth Seeds');
+  await upsertProductWithVariants('TURMERIC', 'Turmeric', [
+    { code: 'FINGER', name: 'Finger', processingType: 'Finger' },
+    { code: 'POWDER', name: 'Powder', processingType: 'Powder' },
+  ]);
+  await upsertProductWithVariants('CHIA', 'Chia Seeds');
+  await upsertProductWithVariants('QUINOA', 'Quinoa Seeds');
+  await upsertProductWithVariants('PSYLLIUM', 'Psyllium Husk');
+  await upsertProductWithVariants('NIGELLA', 'Nigella Seeds');
+  await upsertProductWithVariants('FENNEL', 'Fennel Seeds');
+  await upsertProductWithVariants('FENUGREEK', 'Fenugreek');
+
+  await prisma.product.updateMany({
+    where: { code: { in: ['THSS', 'TURMERIC-FINGER'] } },
+    data: { isActive: false },
+  });
 
   const paper = await prisma.packagingType.upsert({
     where: { code: 'PAPER' },
     update: {},
     create: { code: 'PAPER', name: 'Paper Bags', material: 'Paper' },
+  });
+
+  await prisma.packagingType.upsert({
+    where: { code: 'PP' },
+    update: {},
+    create: { code: 'PP', name: 'PP', material: 'PP' },
+  });
+
+  await prisma.packagingType.upsert({
+    where: { code: 'JUMBO' },
+    update: {},
+    create: { code: 'JUMBO', name: 'Jumbo', material: 'Jumbo' },
   });
 
   await prisma.packagingSize.upsert({

@@ -108,8 +108,9 @@ model Product {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
-  variants  ProductVariant[]
-  contracts Contract[]
+  variants           ProductVariant[]
+  contracts          Contract[]
+  contractContainers ContractContainer[]
 }
 
 model ProductVariant {
@@ -124,6 +125,7 @@ model ProductVariant {
 
   product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
   contracts Contract[]
+  contractContainers ContractContainer[]
 
   @@unique([productId, code])
 }
@@ -146,6 +148,7 @@ model PackagingSize {
   packagingTypeId String
   label           String
   weightKg        Float
+  weightUnit      String   @default("KG")
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -171,6 +174,7 @@ model Port {
   contractsLoading Contract[]    @relation("PortOfLoading")
   contractsDest    Contract[]    @relation("DestinationPort")
   lots             ShipmentLot[]
+  contractContainers ContractContainer[]
 
   @@index([countryId])
 }
@@ -226,6 +230,8 @@ model Contract {
   packagingTypeId    String?
   packagingSizeId    String?
   packingDescription String?
+  packingSizeValue   Float?
+  packingSizeUnit    String?
   numberOfBags       Int?
   markingRequired    Boolean   @default(false)
   markingDetails     String?
@@ -280,6 +286,7 @@ model Contract {
   destinationPort Port?                   @relation("DestinationPort", fields: [destinationPortId], references: [id])
   createdBy       User                    @relation("ContractCreatedBy", fields: [createdById], references: [id])
   lots            ShipmentLot[]
+  containers      ContractContainer[]
   amendments      ContractAmendment[]
   statusHistory   ContractStatusHistory[]
   documents       ContractDocument[]
@@ -314,6 +321,35 @@ model ShipmentLot {
 
   @@unique([contractId, lotNumber])
   @@index([contractId])
+}
+
+model ContractContainer {
+  id                   String    @id @default(cuid())
+  contractId           String
+  containerIndex       Int
+  productId            String
+  productVariantId     String?
+  processingType       String?
+  specification        String?
+  productRemarks       String?
+  quantityMt           Float?
+  containerNo          String?
+  destinationPortId    String?
+  expectedShipmentDate DateTime?
+  shipmentMonth        String?
+  shipmentYear         Int?
+  shipmentHalf         String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  contract        Contract        @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  product         Product         @relation(fields: [productId], references: [id])
+  productVariant  ProductVariant? @relation(fields: [productVariantId], references: [id])
+  destinationPort Port?           @relation(fields: [destinationPortId], references: [id])
+
+  @@unique([contractId, containerIndex])
+  @@index([contractId])
+  @@index([destinationPortId])
 }
 
 model ContractAmendment {

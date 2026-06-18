@@ -91,13 +91,83 @@ async function main() {
         create: { code: 'SP-BRAHMA', name: 'Brahma Sir' },
     });
     const countries = [
+        { name: 'Austria', code: 'AT', euClassification: enums_1.EuClassification.EU },
+        { name: 'Belgium', code: 'BE', euClassification: enums_1.EuClassification.EU },
+        { name: 'Bulgaria', code: 'BG', euClassification: enums_1.EuClassification.EU },
+        { name: 'Croatia', code: 'HR', euClassification: enums_1.EuClassification.EU },
+        { name: 'Cyprus', code: 'CY', euClassification: enums_1.EuClassification.EU },
+        { name: 'Czech Republic', code: 'CZ', euClassification: enums_1.EuClassification.EU },
+        { name: 'Denmark', code: 'DK', euClassification: enums_1.EuClassification.EU },
+        { name: 'Estonia', code: 'EE', euClassification: enums_1.EuClassification.EU },
+        { name: 'Finland', code: 'FI', euClassification: enums_1.EuClassification.EU },
+        { name: 'France', code: 'FR', euClassification: enums_1.EuClassification.EU },
+        { name: 'Germany', code: 'DE', euClassification: enums_1.EuClassification.EU },
         { name: 'Greece', code: 'GR', euClassification: enums_1.EuClassification.EU },
         { name: 'Hungary', code: 'HU', euClassification: enums_1.EuClassification.EU },
-        { name: 'Australia', code: 'AU', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Ireland', code: 'IE', euClassification: enums_1.EuClassification.EU },
+        { name: 'Italy', code: 'IT', euClassification: enums_1.EuClassification.EU },
+        { name: 'Latvia', code: 'LV', euClassification: enums_1.EuClassification.EU },
+        { name: 'Lithuania', code: 'LT', euClassification: enums_1.EuClassification.EU },
+        { name: 'Luxembourg', code: 'LU', euClassification: enums_1.EuClassification.EU },
+        { name: 'Malta', code: 'MT', euClassification: enums_1.EuClassification.EU },
+        { name: 'Netherlands', code: 'NL', euClassification: enums_1.EuClassification.EU },
+        { name: 'Poland', code: 'PL', euClassification: enums_1.EuClassification.EU },
+        { name: 'Portugal', code: 'PT', euClassification: enums_1.EuClassification.EU },
+        { name: 'Romania', code: 'RO', euClassification: enums_1.EuClassification.EU },
+        { name: 'Slovakia', code: 'SK', euClassification: enums_1.EuClassification.EU },
+        { name: 'Slovenia', code: 'SI', euClassification: enums_1.EuClassification.EU },
+        { name: 'Spain', code: 'ES', euClassification: enums_1.EuClassification.EU },
+        { name: 'Sweden', code: 'SE', euClassification: enums_1.EuClassification.EU },
+        { name: 'United States', code: 'US', euClassification: enums_1.EuClassification.NON_EU },
         { name: 'Canada', code: 'CA', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Mexico', code: 'MX', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Brazil', code: 'BR', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Argentina', code: 'AR', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Chile', code: 'CL', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Colombia', code: 'CO', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Peru', code: 'PE', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'United Arab Emirates', code: 'AE', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Saudi Arabia', code: 'SA', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Qatar', code: 'QA', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Kuwait', code: 'KW', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Oman', code: 'OM', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Bahrain', code: 'BH', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Israel', code: 'IL', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Turkey', code: 'TR', euClassification: enums_1.EuClassification.NON_EU },
         { name: 'Egypt', code: 'EG', euClassification: enums_1.EuClassification.NON_EU },
-        { name: 'Russia', code: 'RU', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Jordan', code: 'JO', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Lebanon', code: 'LB', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Iraq', code: 'IQ', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Iran', code: 'IR', euClassification: enums_1.EuClassification.NON_EU },
         { name: 'India', code: 'IN', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'China', code: 'CN', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Japan', code: 'JP', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'South Korea', code: 'KR', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Singapore', code: 'SG', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Malaysia', code: 'MY', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Indonesia', code: 'ID', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Thailand', code: 'TH', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Vietnam', code: 'VN', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Philippines', code: 'PH', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Pakistan', code: 'PK', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Bangladesh', code: 'BD', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Sri Lanka', code: 'LK', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Nepal', code: 'NP', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Australia', code: 'AU', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'New Zealand', code: 'NZ', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'South Africa', code: 'ZA', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Kenya', code: 'KE', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Nigeria', code: 'NG', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Ghana', code: 'GH', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Morocco', code: 'MA', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Tunisia', code: 'TN', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Algeria', code: 'DZ', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Ethiopia', code: 'ET', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'United Kingdom', code: 'GB', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Switzerland', code: 'CH', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Norway', code: 'NO', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Russia', code: 'RU', euClassification: enums_1.EuClassification.NON_EU },
+        { name: 'Ukraine', code: 'UA', euClassification: enums_1.EuClassification.NON_EU },
     ];
     for (const c of countries) {
         await prisma.country.upsert({
@@ -126,31 +196,71 @@ async function main() {
         if (!existing)
             await prisma.port.create({ data: p });
     }
-    const products = [
-        { code: 'HSS', name: 'Hulled Sesame Seeds', variants: [{ code: 'TOASTED', name: 'Toasted', processingType: 'Toasted' }] },
-        { code: 'NSS', name: 'Natural Sesame Seeds', variants: [{ code: 'ROASTED', name: 'Roasted', processingType: 'Roasted' }] },
-        { code: 'BSS', name: 'Black Sesame Seeds', variants: [{ code: 'ROASTED', name: 'Roasted', processingType: 'Roasted' }] },
-        { code: 'THSS', name: 'Toasted Hulled Sesame Seeds', variants: [] },
-        { code: 'TURMERIC-FINGER', name: 'Turmeric Finger', variants: [{ code: 'FINGER', name: 'Finger', processingType: 'Finger' }] },
-    ];
-    for (const p of products) {
+    async function upsertProductWithVariants(code, name, extraVariants = []) {
         const product = await prisma.product.upsert({
-            where: { code: p.code },
-            update: {},
-            create: { code: p.code, name: p.name, category: 'Seeds & Spices' },
+            where: { code },
+            update: { name, isActive: true },
+            create: { code, name, category: 'Seeds & Spices' },
         });
-        for (const v of p.variants) {
+        const variants = [
+            { code: 'NORMAL', name: 'Normal', processingType: 'Normal' },
+            ...extraVariants,
+        ];
+        for (const v of variants) {
             await prisma.productVariant.upsert({
                 where: { productId_code: { productId: product.id, code: v.code } },
-                update: {},
-                create: { ...v, productId: product.id },
+                update: { name: v.name, processingType: v.processingType ?? v.name, isActive: true },
+                create: {
+                    productId: product.id,
+                    code: v.code,
+                    name: v.name,
+                    processingType: v.processingType ?? v.name,
+                },
             });
         }
     }
+    await upsertProductWithVariants('HSS', 'Hulled Sesame Seeds', [
+        { code: 'TOASTED', name: 'Toasted', processingType: 'Toasted' },
+    ]);
+    await upsertProductWithVariants('NSS', 'Natural Sesame Seeds', [
+        { code: 'ROASTED', name: 'Roasted', processingType: 'Roasted' },
+        { code: 'TOASTED', name: 'Toasted', processingType: 'Toasted' },
+    ]);
+    await upsertProductWithVariants('BSS', 'Black Sesame Seeds', [
+        { code: 'ROASTED', name: 'Roasted', processingType: 'Roasted' },
+        { code: 'TOASTED', name: 'Toasted', processingType: 'Toasted' },
+    ]);
+    await upsertProductWithVariants('CUMIN', 'Cumin Seeds');
+    await upsertProductWithVariants('FLAX', 'Flax Seeds');
+    await upsertProductWithVariants('AMARANTH', 'Amaranth Seeds');
+    await upsertProductWithVariants('TURMERIC', 'Turmeric', [
+        { code: 'FINGER', name: 'Finger', processingType: 'Finger' },
+        { code: 'POWDER', name: 'Powder', processingType: 'Powder' },
+    ]);
+    await upsertProductWithVariants('CHIA', 'Chia Seeds');
+    await upsertProductWithVariants('QUINOA', 'Quinoa Seeds');
+    await upsertProductWithVariants('PSYLLIUM', 'Psyllium Husk');
+    await upsertProductWithVariants('NIGELLA', 'Nigella Seeds');
+    await upsertProductWithVariants('FENNEL', 'Fennel Seeds');
+    await upsertProductWithVariants('FENUGREEK', 'Fenugreek');
+    await prisma.product.updateMany({
+        where: { code: { in: ['THSS', 'TURMERIC-FINGER'] } },
+        data: { isActive: false },
+    });
     const paper = await prisma.packagingType.upsert({
         where: { code: 'PAPER' },
         update: {},
         create: { code: 'PAPER', name: 'Paper Bags', material: 'Paper' },
+    });
+    await prisma.packagingType.upsert({
+        where: { code: 'PP' },
+        update: {},
+        create: { code: 'PP', name: 'PP', material: 'PP' },
+    });
+    await prisma.packagingType.upsert({
+        where: { code: 'JUMBO' },
+        update: {},
+        create: { code: 'JUMBO', name: 'Jumbo', material: 'Jumbo' },
     });
     await prisma.packagingSize.upsert({
         where: { id: 'seed-paper-25' },

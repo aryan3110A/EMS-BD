@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@ne
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ContractsService } from './contracts.service';
 import { CreateContractDto, UpdateContractDto, ContractQueryDto } from './contracts.dto';
+import { SubmitContractDto } from './submit-contract.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -29,6 +30,12 @@ export class ContractsController {
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.contractsService.findOne(id, user);
+  }
+
+  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.CONTRACT_TEAM)
+  @Post('submit')
+  submit(@Body() dto: SubmitContractDto, @CurrentUser() user: JwtPayload) {
+    return this.contractsService.submit(dto, user);
   }
 
   @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.CONTRACT_TEAM)
