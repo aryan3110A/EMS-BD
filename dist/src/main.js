@@ -8,7 +8,7 @@ const app_module_1 = require("./app.module");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     const configService = app.get(config_1.ConfigService);
-    const port = configService.get('PORT', 3001);
+    const port = Number(process.env.PORT) || configService.get('PORT', 3001);
     const corsOrigin = configService.get('CORS_ORIGIN', 'http://localhost:3000');
     app.setGlobalPrefix('api/v1');
     app.enableCors({
