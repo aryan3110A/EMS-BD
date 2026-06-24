@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateCountryDto = exports.CreatePackagingSizeDto = exports.CreatePackagingTypeDto = exports.CreateProductVariantDto = exports.CreateProductDto = exports.CreateBuyerDto = exports.CreateOfficeDto = exports.CreateSalespersonDto = exports.UpdateBuyerDto = void 0;
+exports.CreatePortDto = exports.CreateCountryDto = exports.CreatePackagingSizeDto = exports.CreatePackagingTypeDto = exports.CreateProductVariantDto = exports.CreateProductDto = exports.CreateBuyerDto = exports.CreateOfficeDto = exports.CreateSalespersonDto = exports.UpdatePortDto = exports.UpdateBuyerDto = void 0;
 const class_validator_1 = require("class-validator");
 const enums_1 = require("../../common/constants/enums");
 const euTypes = Object.values(enums_1.EuClassification);
@@ -21,6 +21,7 @@ class UpdateBuyerDto {
     euClassification;
     code;
     countryId;
+    defaultPortId;
 }
 exports.UpdateBuyerDto = UpdateBuyerDto;
 __decorate([
@@ -58,6 +59,38 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateBuyerDto.prototype, "countryId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateBuyerDto.prototype, "defaultPortId", void 0);
+class UpdatePortDto {
+    name;
+    code;
+    countryId;
+    isActive;
+}
+exports.UpdatePortDto = UpdatePortDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdatePortDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdatePortDto.prototype, "code", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdatePortDto.prototype, "countryId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], UpdatePortDto.prototype, "isActive", void 0);
 class CreateSalespersonDto {
     name;
     phone;
@@ -234,4 +267,29 @@ __decorate([
     (0, class_validator_1.IsIn)(euTypes),
     __metadata("design:type", String)
 ], CreateCountryDto.prototype, "euClassification", void 0);
+class CreatePortDto {
+    name;
+    countryId;
+    code;
+    portType;
+}
+exports.CreatePortDto = CreatePortDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreatePortDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreatePortDto.prototype, "countryId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreatePortDto.prototype, "code", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['DESTINATION', 'LOADING']),
+    __metadata("design:type", String)
+], CreatePortDto.prototype, "portType", void 0);
 //# sourceMappingURL=masters.dto.js.map

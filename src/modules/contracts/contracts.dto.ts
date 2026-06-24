@@ -11,6 +11,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ContractStatus, PaymentType, Incoterm, EuClassification } from '../../common/constants/enums';
+import { PRODUCT_SPECIFICATIONS } from '../../common/constants/commercial.constants';
 
 const contractStatuses = Object.values(ContractStatus);
 const paymentTypes = Object.values(PaymentType);
@@ -19,6 +20,7 @@ const euTypes = Object.values(EuClassification);
 const fobUnits = ['PER_MT', 'PER_KG'];
 const freightUnits = ['PER_CONTAINER', 'PER_MT', 'TOTAL_CONTRACT'];
 const quantityUnits = ['MT', 'KG'];
+const productSpecs = [...PRODUCT_SPECIFICATIONS];
 
 export class CreateLotDto {
   @IsNumber()
@@ -59,7 +61,7 @@ export class CreateContainerProductDto {
   processingType?: string;
 
   @IsOptional()
-  @IsString()
+  @IsIn(productSpecs)
   specification?: string;
 
   @IsOptional()
@@ -68,6 +70,7 @@ export class CreateContainerProductDto {
 
   @IsOptional()
   @IsNumber()
+  @Min(0.001)
   quantityMt?: number;
 
   @IsOptional()
@@ -93,6 +96,66 @@ export class CreateContainerProductDto {
   @IsOptional()
   @IsIn(['FIRST_HALF', 'SECOND_HALF'])
   shipmentHalf?: string;
+
+  @IsOptional()
+  @IsString()
+  packagingTypeId?: string;
+
+  @IsOptional()
+  @IsString()
+  packagingSizeId?: string;
+
+  @IsOptional()
+  @IsString()
+  packingDescription?: string;
+
+  @IsOptional()
+  @IsNumber()
+  packingSizeValue?: number;
+
+  @IsOptional()
+  @IsString()
+  packingSizeUnit?: string;
+
+  @IsOptional()
+  @IsIn(incoterms)
+  incoterm?: Incoterm;
+
+  @IsOptional()
+  @IsNumber()
+  fobPrice?: number;
+
+  @IsOptional()
+  @IsString()
+  fobCurrency?: string;
+
+  @IsOptional()
+  @IsNumber()
+  exchangeRate?: number;
+
+  @IsOptional()
+  @IsDateString()
+  exchangeRateAt?: string;
+
+  @IsOptional()
+  @IsString()
+  exchangeRateSource?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  exchangeRateManual?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  totalFreight?: number;
+
+  @IsOptional()
+  @IsNumber()
+  insurance?: number;
+
+  @IsOptional()
+  @IsString()
+  commercialRemarks?: string;
 }
 
 export class CreateContractDto {

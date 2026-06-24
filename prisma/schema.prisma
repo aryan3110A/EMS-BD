@@ -38,6 +38,9 @@ model User {
   contractsCreated  Contract[]         @relation("ContractCreatedBy")
   auditLogs         AuditLog[]
   contractDocuments ContractDocument[]
+  contractAuditLogs ContractAuditLog[]
+  containerAmendments ContainerCommercialAmendment[]
+  notifications     Notification[]
 
   @@index([officeId])
   @@index([role])
@@ -139,8 +142,9 @@ model PackagingType {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sizes     PackagingSize[]
-  contracts Contract[]
+  sizes              PackagingSize[]
+  contracts          Contract[]
+  contractContainers ContractContainer[]
 }
 
 model PackagingSize {
@@ -155,6 +159,7 @@ model PackagingSize {
 
   packagingType PackagingType @relation(fields: [packagingTypeId], references: [id], onDelete: Cascade)
   contracts     Contract[]
+  contractContainers ContractContainer[]
 
   @@index([packagingTypeId])
 }
@@ -162,6 +167,7 @@ model PackagingSize {
 model Port {
   id               String   @id @default(cuid())
   name             String
+  code             String?
   countryId        String
   portType         String   @default("DESTINATION")
   euClassification String?
@@ -169,10 +175,10 @@ model Port {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  country          Country       @relation(fields: [countryId], references: [id])
+  country          Country             @relation(fields: [countryId], references: [id])
   buyers           Buyer[]
-  contractsLoading Contract[]    @relation("PortOfLoading")
-  contractsDest    Contract[]    @relation("DestinationPort")
+  contractsLoading Contract[]          @relation("PortOfLoading")
+  contractsDest    Contract[]          @relation("DestinationPort")
   lots             ShipmentLot[]
   contractContainers ContractContainer[]
 
@@ -288,6 +294,9 @@ model Contract {
   lots            ShipmentLot[]
   containers      ContractContainer[]
   amendments      ContractAmendment[]
+  containerAmendments ContainerCommercialAmendment[]
+  auditLogs       ContractAuditLog[]
+  notifications   Notification[]
   statusHistory   ContractStatusHistory[]
   documents       ContractDocument[]
 
@@ -339,6 +348,30 @@ model ContractContainer {
   shipmentMonth        String?
   shipmentYear         Int?
   shipmentHalf         String?
+  packagingTypeId      String?
+  packagingSizeId      String?
+  packingDescription   String?
+  packingSizeValue     Float?
+  packingSizeUnit      String?
+  incoterm             String    @default("FOB")
+  fobPrice             Float?
+  fobCurrency          String?   @default("USD")
+  exchangeRate         Float?
+  exchangeRateAt       DateTime?
+  exchangeRateSource   String?
+  exchangeRateManual   Boolean   @default(false)
+  fobInrPerKg          Float?
+  totalFreight         Float?
+  freightPerMt         Float?
+  insurance            Float?
+  cifPrice             Float?
+  cnfPrice             Float?
+  originalCifCnfPrice  Float?
+  currentCifCnfPrice   Float?
+  commercialRemarks    String?
+  containerStatus      String    @default("PLANNED")
+  actualShipmentDate     DateTime?
+  dispatchStatus       String    @default("PLANNED")
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
@@ -346,10 +379,15 @@ model ContractContainer {
   product         Product         @relation(fields: [productId], references: [id])
   productVariant  ProductVariant? @relation(fields: [productVariantId], references: [id])
   destinationPort Port?           @relation(fields: [destinationPortId], references: [id])
+  packagingType   PackagingType?  @relation(fields: [packagingTypeId], references: [id])
+  packagingSize   PackagingSize?  @relation(fields: [packagingSizeId], references: [id])
+  amendments      ContainerCommercialAmendment[]
 
   @@unique([contractId, containerIndex])
   @@index([contractId])
   @@index([destinationPortId])
+  @@index([expectedShipmentDate])
+  @@index([containerStatus])
 }
 
 model ContractAmendment {
@@ -426,4 +464,63 @@ model AppSetting {
   key       String   @unique
   value     String
   updatedAt DateTime @updatedAt
+}
+
+model ContainerCommercialAmendment {
+  id            String   @id @default(cuid())
+  contractId    String
+  containerId   String
+  incoterm      String
+  previousValue Float
+  amendedValue  Float
+  currency      String
+  reason        String
+  amendedById   String
+  amendmentDate DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  contract  Contract          @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  container ContractContainer @relation(fields: [containerId], references: [id], onDelete: Cascade)
+  amendedBy User              @relation(fields: [amendedById], references: [id])
+
+  @@index([contractId])
+  @@index([containerId])
+}
+
+model ContractAuditLog {
+  id              String   @id @default(cuid())
+  contractId      String
+  contractNumber  String?
+  containerId     String?
+  containerIndex  Int?
+  fieldName       String
+  previousValue   String?
+  newValue        String?
+  changedById     String
+  createdAt       DateTime @default(now())
+
+  contract  Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  changedBy User     @relation(fields: [changedById], references: [id])
+
+  @@index([contractId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  userId      String?
+  targetRole  String?
+  contractId  String?
+  containerId String?
+  type        String
+  message     String
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  user     User?     @relation(fields: [userId], references: [id])
+  contract Contract? @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([targetRole])
+  @@index([contractId])
 }

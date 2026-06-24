@@ -3,6 +3,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { MastersService } from './masters.service';
 import {
   UpdateBuyerDto,
+  UpdatePortDto,
   CreateSalespersonDto,
   CreateBuyerDto,
   CreateProductDto,
@@ -10,6 +11,7 @@ import {
   CreatePackagingTypeDto,
   CreatePackagingSizeDto,
   CreateCountryDto,
+  CreatePortDto,
 } from './masters.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -34,14 +36,19 @@ export class MastersController {
   }
 
   @Get('buyers')
-  getBuyers(@CurrentUser() user: JwtPayload, @Query('officeId') officeId?: string) {
+  getBuyers(
+    @CurrentUser() user: JwtPayload,
+    @Query('officeId') officeId?: string,
+    @Query('search') search?: string,
+    @Query('includeInactive') includeInactive?: string,
+  ) {
     const canSeeAllBuyers =
       user.role === UserRole.SUPER_ADMIN || user.role === UserRole.CONTRACT_TEAM;
+    const inactive = includeInactive === 'true' && canSeeAllBuyers;
     if (canSeeAllBuyers) {
-      // Contract team / admin: all active buyers (optional ?officeId= to narrow)
-      return this.mastersService.getBuyers(officeId || undefined);
+      return this.mastersService.getBuyers(officeId || undefined, search, inactive);
     }
-    return this.mastersService.getBuyers(user.officeId);
+    return this.mastersService.getBuyers(user.officeId, search, false);
   }
 
   @Post('buyers')
@@ -93,12 +100,27 @@ export class MastersController {
   }
 
   @Get('ports')
-  getPorts() {
-    return this.mastersService.getPorts();
+  getPorts(@Query('includeInactive') includeInactive?: string) {
+    return this.mastersService.getPorts(includeInactive === 'true');
+  }
+
+  @Post('ports')
+  createPort(@Body() dto: CreatePortDto) {
+    return this.mastersService.createPort(dto);
   }
 
   @Patch('buyers/:id')
   updateBuyer(@Param('id') id: string, @Body() dto: UpdateBuyerDto) {
     return this.mastersService.updateBuyer(id, dto);
+  }
+
+  @Patch('buyers/:id/deactivate')
+  deactivateBuyer(@Param('id') id: string) {
+    return this.mastersService.deactivateBuyer(id);
+  }
+
+  @Patch('ports/:id')
+  updatePort(@Param('id') id: string, @Body() dto: UpdatePortDto) {
+    return this.mastersService.updatePort(id, dto);
   }
 }

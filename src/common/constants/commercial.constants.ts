@@ -1,0 +1,26 @@
+export const PRODUCT_SPECIFICATIONS = ['99.98%', '99.95%', '99.90%', '99%'] as const;
+export type ProductSpecification = (typeof PRODUCT_SPECIFICATIONS)[number];
+
+export const FOB_DEDUCTION_SETTING_KEY = 'FOB_DEDUCTION_AMOUNT';
+export const DEFAULT_FOB_DEDUCTION = 70;
+
+export const EXCHANGE_RATE_SOURCES = {
+  API: 'API',
+  MANUAL: 'MANUAL',
+} as const;
+
+export const CONTAINER_STATUSES = {
+  PLANNED: 'PLANNED',
+  IN_PRODUCTION: 'IN_PRODUCTION',
+  READY: 'READY',
+  REACHED_PORT: 'REACHED_PORT',
+  SHIPPED: 'SHIPPED',
+  DISPATCHED: 'DISPATCHED',
+} as const;
+
+export const AMENDMENT_ELIGIBLE_STATUSES = [
+  'REACHED_PORT',
+  'READY_FOR_DISPATCH',
+  'PARTIALLY_DISPATCHED',
+  'FULLY_DISPATCHED',
+] as const;

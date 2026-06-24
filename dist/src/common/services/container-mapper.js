@@ -1,0 +1,65 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.mapContainerDtoToCreateData = mapContainerDtoToCreateData;
+const enums_1 = require("../../common/constants/enums");
+function mapContainerDtoToCreateData(c, calc, fobDeduction, contractFallback) {
+    const merged = { ...contractFallback, ...c };
+    const incoterm = (merged.incoterm ?? enums_1.Incoterm.FOB).toUpperCase();
+    const quantityMt = merged.quantityMt ?? 0;
+    let shipmentMonth = merged.shipmentMonth;
+    let shipmentYear = merged.shipmentYear;
+    let shipmentHalf = merged.shipmentHalf;
+    if (merged.expectedShipmentDate) {
+        const d = new Date(merged.expectedShipmentDate);
+        const derived = calc.deriveShipmentFromDate(d);
+        shipmentMonth = derived.shipmentMonth;
+        shipmentYear = derived.shipmentYear;
+        shipmentHalf = derived.shipmentHalf;
+    }
+    const commercial = calc.enrichContainerCommercial({
+        incoterm,
+        fobPrice: merged.fobPrice,
+        exchangeRate: merged.exchangeRate,
+        quantityMt,
+        totalFreight: incoterm === enums_1.Incoterm.FOB ? undefined : merged.totalFreight,
+        insurance: incoterm === enums_1.Incoterm.CIF ? merged.insurance : undefined,
+        fobDeduction,
+    }, fobDeduction);
+    return {
+        containerIndex: merged.containerIndex,
+        productId: merged.productId,
+        productVariantId: merged.productVariantId || null,
+        processingType: merged.processingType || null,
+        specification: merged.specification || null,
+        productRemarks: merged.productRemarks || null,
+        quantityMt,
+        containerNo: merged.containerNo || null,
+        destinationPortId: merged.destinationPortId || null,
+        expectedShipmentDate: merged.expectedShipmentDate ? new Date(merged.expectedShipmentDate) : null,
+        shipmentMonth: shipmentMonth ?? null,
+        shipmentYear: shipmentYear ?? null,
+        shipmentHalf: shipmentHalf ?? null,
+        packagingTypeId: merged.packagingTypeId || null,
+        packagingSizeId: merged.packagingSizeId || null,
+        packingDescription: merged.packingDescription || null,
+        packingSizeValue: merged.packingSizeValue ?? null,
+        packingSizeUnit: merged.packingSizeUnit || null,
+        incoterm,
+        fobPrice: merged.fobPrice ?? null,
+        fobCurrency: merged.fobCurrency ?? 'USD',
+        exchangeRate: merged.exchangeRate ?? null,
+        exchangeRateAt: merged.exchangeRateAt ? new Date(merged.exchangeRateAt) : null,
+        exchangeRateSource: merged.exchangeRateSource ?? null,
+        exchangeRateManual: merged.exchangeRateManual ?? false,
+        fobInrPerKg: commercial.fobInrPerKg ?? null,
+        totalFreight: incoterm === enums_1.Incoterm.FOB ? null : merged.totalFreight ?? null,
+        freightPerMt: commercial.freightPerMt ?? null,
+        insurance: incoterm === enums_1.Incoterm.CIF ? merged.insurance ?? null : null,
+        cifPrice: commercial.cifPrice ?? null,
+        cnfPrice: commercial.cnfPrice ?? null,
+        originalCifCnfPrice: commercial.originalCifCnfPrice ?? null,
+        currentCifCnfPrice: commercial.currentCifCnfPrice ?? null,
+        commercialRemarks: merged.commercialRemarks || null,
+    };
+}
+//# sourceMappingURL=container-mapper.js.map

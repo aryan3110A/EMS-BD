@@ -1,0 +1,25 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AMENDMENT_ELIGIBLE_STATUSES = exports.CONTAINER_STATUSES = exports.EXCHANGE_RATE_SOURCES = exports.DEFAULT_FOB_DEDUCTION = exports.FOB_DEDUCTION_SETTING_KEY = exports.PRODUCT_SPECIFICATIONS = void 0;
+exports.PRODUCT_SPECIFICATIONS = ['99.98%', '99.95%', '99.90%', '99%'];
+exports.FOB_DEDUCTION_SETTING_KEY = 'FOB_DEDUCTION_AMOUNT';
+exports.DEFAULT_FOB_DEDUCTION = 70;
+exports.EXCHANGE_RATE_SOURCES = {
+    API: 'API',
+    MANUAL: 'MANUAL',
+};
+exports.CONTAINER_STATUSES = {
+    PLANNED: 'PLANNED',
+    IN_PRODUCTION: 'IN_PRODUCTION',
+    READY: 'READY',
+    REACHED_PORT: 'REACHED_PORT',
+    SHIPPED: 'SHIPPED',
+    DISPATCHED: 'DISPATCHED',
+};
+exports.AMENDMENT_ELIGIBLE_STATUSES = [
+    'REACHED_PORT',
+    'READY_FOR_DISPATCH',
+    'PARTIALLY_DISPATCHED',
+    'FULLY_DISPATCHED',
+];
+//# sourceMappingURL=commercial.constants.js.map

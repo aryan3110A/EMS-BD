@@ -12,7 +12,7 @@ export declare class MastersService {
         updatedAt: Date;
         phone: string | null;
     }[]>;
-    getBuyers(officeId?: string): import(".prisma/client").Prisma.PrismaPromise<({
+    getBuyers(officeId?: string, search?: string, includeInactive?: boolean): import(".prisma/client").Prisma.PrismaPromise<({
         country: {
             id: string;
             code: string;
@@ -25,6 +25,7 @@ export declare class MastersService {
         };
         defaultPort: {
             id: string;
+            code: string | null;
             name: string;
             isActive: boolean;
             createdAt: Date;
@@ -116,7 +117,7 @@ export declare class MastersService {
         updatedAt: Date;
         material: string;
     })[]>;
-    getPorts(): import(".prisma/client").Prisma.PrismaPromise<({
+    getPorts(includeInactive?: boolean): import(".prisma/client").Prisma.PrismaPromise<({
         country: {
             id: string;
             code: string;
@@ -129,6 +130,7 @@ export declare class MastersService {
         };
     } & {
         id: string;
+        code: string | null;
         name: string;
         isActive: boolean;
         createdAt: Date;
@@ -137,6 +139,33 @@ export declare class MastersService {
         portType: string;
         countryId: string;
     })[]>;
+    createPort(dto: {
+        name: string;
+        countryId: string;
+        code?: string;
+        portType?: string;
+    }): Promise<{
+        country: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            region: string | null;
+            euClassification: string;
+        };
+    } & {
+        id: string;
+        code: string | null;
+        name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        euClassification: string | null;
+        portType: string;
+        countryId: string;
+    }>;
     updateBuyer(id: string, dto: {
         address?: string;
         contactPerson?: string;
@@ -145,6 +174,7 @@ export declare class MastersService {
         euClassification?: string;
         code?: string;
         countryId?: string;
+        defaultPortId?: string;
     }): Promise<{
         country: {
             id: string;
@@ -158,6 +188,7 @@ export declare class MastersService {
         };
         defaultPort: {
             id: string;
+            code: string | null;
             name: string;
             isActive: boolean;
             createdAt: Date;
@@ -183,6 +214,72 @@ export declare class MastersService {
         defaultPortId: string | null;
         remarks: string | null;
     }>;
+    deactivateBuyer(id: string): Promise<{
+        country: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            region: string | null;
+            euClassification: string;
+        };
+        defaultPort: {
+            id: string;
+            code: string | null;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            euClassification: string | null;
+            portType: string;
+            countryId: string;
+        } | null;
+    } & {
+        id: string;
+        code: string;
+        name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        email: string | null;
+        officeId: string | null;
+        phone: string | null;
+        euClassification: string | null;
+        countryId: string;
+        address: string | null;
+        contactPerson: string | null;
+        defaultPortId: string | null;
+        remarks: string | null;
+    }>;
+    updatePort(id: string, dto: {
+        name?: string;
+        code?: string;
+        countryId?: string;
+        isActive?: boolean;
+    }): Promise<{
+        country: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            region: string | null;
+            euClassification: string;
+        };
+    } & {
+        id: string;
+        code: string | null;
+        name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        euClassification: string | null;
+        portType: string;
+        countryId: string;
+    }>;
     createSalesperson(dto: CreateSalespersonDto): Promise<{
         id: string;
         code: string;
@@ -205,6 +302,7 @@ export declare class MastersService {
         };
         defaultPort: {
             id: string;
+            code: string | null;
             name: string;
             isActive: boolean;
             createdAt: Date;

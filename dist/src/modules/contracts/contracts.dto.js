@@ -13,6 +13,7 @@ exports.ContractQueryDto = exports.UpdateContractDto = exports.CreateContractDto
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 const enums_1 = require("../../common/constants/enums");
+const commercial_constants_1 = require("../../common/constants/commercial.constants");
 const contractStatuses = Object.values(enums_1.ContractStatus);
 const paymentTypes = Object.values(enums_1.PaymentType);
 const incoterms = Object.values(enums_1.Incoterm);
@@ -20,6 +21,7 @@ const euTypes = Object.values(enums_1.EuClassification);
 const fobUnits = ['PER_MT', 'PER_KG'];
 const freightUnits = ['PER_CONTAINER', 'PER_MT', 'TOTAL_CONTRACT'];
 const quantityUnits = ['MT', 'KG'];
+const productSpecs = [...commercial_constants_1.PRODUCT_SPECIFICATIONS];
 class CreateLotDto {
     quantityMt;
     numberOfContainers;
@@ -67,6 +69,21 @@ class CreateContainerProductDto {
     shipmentMonth;
     shipmentYear;
     shipmentHalf;
+    packagingTypeId;
+    packagingSizeId;
+    packingDescription;
+    packingSizeValue;
+    packingSizeUnit;
+    incoterm;
+    fobPrice;
+    fobCurrency;
+    exchangeRate;
+    exchangeRateAt;
+    exchangeRateSource;
+    exchangeRateManual;
+    totalFreight;
+    insurance;
+    commercialRemarks;
 }
 exports.CreateContainerProductDto = CreateContainerProductDto;
 __decorate([
@@ -90,7 +107,7 @@ __decorate([
 ], CreateContainerProductDto.prototype, "processingType", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsIn)(productSpecs),
     __metadata("design:type", String)
 ], CreateContainerProductDto.prototype, "specification", void 0);
 __decorate([
@@ -101,6 +118,7 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0.001),
     __metadata("design:type", Number)
 ], CreateContainerProductDto.prototype, "quantityMt", void 0);
 __decorate([
@@ -133,6 +151,81 @@ __decorate([
     (0, class_validator_1.IsIn)(['FIRST_HALF', 'SECOND_HALF']),
     __metadata("design:type", String)
 ], CreateContainerProductDto.prototype, "shipmentHalf", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateContainerProductDto.prototype, "packagingTypeId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateContainerProductDto.prototype, "packagingSizeId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateContainerProductDto.prototype, "packingDescription", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateContainerProductDto.prototype, "packingSizeValue", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateContainerProductDto.prototype, "packingSizeUnit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(incoterms),
+    __metadata("design:type", String)
+], CreateContainerProductDto.prototype, "incoterm", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateContainerProductDto.prototype, "fobPrice", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateContainerProductDto.prototype, "fobCurrency", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateContainerProductDto.prototype, "exchangeRate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], CreateContainerProductDto.prototype, "exchangeRateAt", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateContainerProductDto.prototype, "exchangeRateSource", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], CreateContainerProductDto.prototype, "exchangeRateManual", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateContainerProductDto.prototype, "totalFreight", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateContainerProductDto.prototype, "insurance", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateContainerProductDto.prototype, "commercialRemarks", void 0);
 class CreateContractDto {
     officeId;
     contractNumber;

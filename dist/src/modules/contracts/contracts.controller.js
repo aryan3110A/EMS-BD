@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const contracts_service_1 = require("./contracts.service");
 const contracts_dto_1 = require("./contracts.dto");
+const container_commercial_dto_1 = require("./container-commercial.dto");
 const submit_contract_dto_1 = require("./submit-contract.dto");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const roles_guard_1 = require("../../common/guards/roles.guard");
@@ -34,6 +35,12 @@ let ContractsController = class ContractsController {
     findAll(query, user) {
         return this.contractsService.findAll(query, user);
     }
+    getExchangeRate(currency) {
+        return this.contractsService.fetchExchangeRate(currency || 'USD');
+    }
+    getAudit(id, user) {
+        return this.contractsService.getContractAudit(id, user);
+    }
     findOne(id, user) {
         return this.contractsService.findOne(id, user);
     }
@@ -45,6 +52,9 @@ let ContractsController = class ContractsController {
     }
     update(id, dto, user) {
         return this.contractsService.update(id, dto, user);
+    }
+    amendCommercial(id, containerId, dto, user) {
+        return this.contractsService.amendContainerCommercial(id, containerId, dto, user);
     }
     updateStatus(id, status, remarks, user) {
         return this.contractsService.updateStatus(id, status, user, remarks);
@@ -66,6 +76,21 @@ __decorate([
     __metadata("design:paramtypes", [contracts_dto_1.ContractQueryDto, Object]),
     __metadata("design:returntype", void 0)
 ], ContractsController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('exchange-rate'),
+    __param(0, (0, common_1.Query)('currency')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ContractsController.prototype, "getExchangeRate", null);
+__decorate([
+    (0, common_1.Get)(':id/audit'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], ContractsController.prototype, "getAudit", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
@@ -102,6 +127,17 @@ __decorate([
     __metadata("design:paramtypes", [String, contracts_dto_1.UpdateContractDto, Object]),
     __metadata("design:returntype", void 0)
 ], ContractsController.prototype, "update", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM),
+    (0, common_1.Patch)(':id/containers/:containerId/amend-commercial'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('containerId')),
+    __param(2, (0, common_1.Body)()),
+    __param(3, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, container_commercial_dto_1.AmendContainerCommercialDto, Object]),
+    __metadata("design:returntype", void 0)
+], ContractsController.prototype, "amendCommercial", null);
 __decorate([
     (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM),
     (0, common_1.Patch)(':id/status'),

@@ -31,12 +31,13 @@ let MastersController = class MastersController {
     createSalesperson(dto) {
         return this.mastersService.createSalesperson(dto);
     }
-    getBuyers(user, officeId) {
+    getBuyers(user, officeId, search, includeInactive) {
         const canSeeAllBuyers = user.role === enums_1.UserRole.SUPER_ADMIN || user.role === enums_1.UserRole.CONTRACT_TEAM;
+        const inactive = includeInactive === 'true' && canSeeAllBuyers;
         if (canSeeAllBuyers) {
-            return this.mastersService.getBuyers(officeId || undefined);
+            return this.mastersService.getBuyers(officeId || undefined, search, inactive);
         }
-        return this.mastersService.getBuyers(user.officeId);
+        return this.mastersService.getBuyers(user.officeId, search, false);
     }
     createBuyer(user, dto) {
         return this.mastersService.createBuyer({
@@ -68,11 +69,20 @@ let MastersController = class MastersController {
     createPackagingSize(dto) {
         return this.mastersService.createPackagingSize(dto);
     }
-    getPorts() {
-        return this.mastersService.getPorts();
+    getPorts(includeInactive) {
+        return this.mastersService.getPorts(includeInactive === 'true');
+    }
+    createPort(dto) {
+        return this.mastersService.createPort(dto);
     }
     updateBuyer(id, dto) {
         return this.mastersService.updateBuyer(id, dto);
+    }
+    deactivateBuyer(id) {
+        return this.mastersService.deactivateBuyer(id);
+    }
+    updatePort(id, dto) {
+        return this.mastersService.updatePort(id, dto);
     }
 };
 exports.MastersController = MastersController;
@@ -93,8 +103,10 @@ __decorate([
     (0, common_1.Get)('buyers'),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Query)('officeId')),
+    __param(2, (0, common_1.Query)('search')),
+    __param(3, (0, common_1.Query)('includeInactive')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:paramtypes", [Object, String, String, String]),
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "getBuyers", null);
 __decorate([
@@ -160,10 +172,18 @@ __decorate([
 ], MastersController.prototype, "createPackagingSize", null);
 __decorate([
     (0, common_1.Get)('ports'),
+    __param(0, (0, common_1.Query)('includeInactive')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "getPorts", null);
+__decorate([
+    (0, common_1.Post)('ports'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [masters_dto_1.CreatePortDto]),
+    __metadata("design:returntype", void 0)
+], MastersController.prototype, "createPort", null);
 __decorate([
     (0, common_1.Patch)('buyers/:id'),
     __param(0, (0, common_1.Param)('id')),
@@ -172,6 +192,21 @@ __decorate([
     __metadata("design:paramtypes", [String, masters_dto_1.UpdateBuyerDto]),
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "updateBuyer", null);
+__decorate([
+    (0, common_1.Patch)('buyers/:id/deactivate'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], MastersController.prototype, "deactivateBuyer", null);
+__decorate([
+    (0, common_1.Patch)('ports/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, masters_dto_1.UpdatePortDto]),
+    __metadata("design:returntype", void 0)
+], MastersController.prototype, "updatePort", null);
 exports.MastersController = MastersController = __decorate([
     (0, swagger_1.ApiTags)('Masters'),
     (0, swagger_1.ApiBearerAuth)(),

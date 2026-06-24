@@ -20,6 +20,21 @@ export declare class CreateContainerProductDto {
     shipmentMonth?: string;
     shipmentYear?: number;
     shipmentHalf?: string;
+    packagingTypeId?: string;
+    packagingSizeId?: string;
+    packingDescription?: string;
+    packingSizeValue?: number;
+    packingSizeUnit?: string;
+    incoterm?: Incoterm;
+    fobPrice?: number;
+    fobCurrency?: string;
+    exchangeRate?: number;
+    exchangeRateAt?: string;
+    exchangeRateSource?: string;
+    exchangeRateManual?: boolean;
+    totalFreight?: number;
+    insurance?: number;
+    commercialRemarks?: string;
 }
 export declare class CreateContractDto {
     officeId: string;

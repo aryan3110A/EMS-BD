@@ -1,4 +1,4 @@
-import { IsIn, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsIn, IsNumber, IsOptional, IsString, Min, IsBoolean } from 'class-validator';
 import { EuClassification } from '../../common/constants/enums';
 
 const euTypes = Object.values(EuClassification);
@@ -31,6 +31,28 @@ export class UpdateBuyerDto {
   @IsOptional()
   @IsString()
   countryId?: string;
+
+  @IsOptional()
+  @IsString()
+  defaultPortId?: string;
+}
+
+export class UpdatePortDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  code?: string;
+
+  @IsOptional()
+  @IsString()
+  countryId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }
 
 export class CreateSalespersonDto {
@@ -145,4 +167,20 @@ export class CreateCountryDto {
   @IsOptional()
   @IsIn(euTypes)
   euClassification?: string;
+}
+
+export class CreatePortDto {
+  @IsString()
+  name: string;
+
+  @IsString()
+  countryId: string;
+
+  @IsOptional()
+  @IsString()
+  code?: string;
+
+  @IsOptional()
+  @IsIn(['DESTINATION', 'LOADING'])
+  portType?: string;
 }

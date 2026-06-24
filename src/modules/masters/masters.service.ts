@@ -30,11 +30,19 @@ export class MastersService {
     });
   }
 
-  getBuyers(officeId?: string) {
+  getBuyers(officeId?: string, search?: string, includeInactive = false) {
     return this.prisma.buyer.findMany({
       where: {
-        isActive: true,
+        ...(includeInactive ? {} : { isActive: true }),
         ...(officeId ? { OR: [{ officeId }, { officeId: null }] } : {}),
+        ...(search
+          ? {
+              OR: [
+                { name: { contains: search, mode: 'insensitive' as const } },
+                { code: { contains: search, mode: 'insensitive' as const } },
+              ],
+            }
+          : {}),
       },
       include: { country: true, defaultPort: true },
       orderBy: { name: 'asc' },
@@ -82,11 +90,27 @@ export class MastersService {
     });
   }
 
-  getPorts() {
+  getPorts(includeInactive = false) {
     return this.prisma.port.findMany({
-      where: { isActive: true },
+      where: includeInactive ? {} : { isActive: true },
       include: { country: true },
       orderBy: { name: 'asc' },
+    });
+  }
+
+  async createPort(dto: { name: string; countryId: string; code?: string; portType?: string }) {
+    const country = await this.prisma.country.findUnique({ where: { id: dto.countryId } });
+    if (!country) throw new NotFoundException('Country not found');
+
+    return this.prisma.port.create({
+      data: {
+        name: dto.name.trim(),
+        code: dto.code?.trim() || null,
+        countryId: dto.countryId,
+        portType: dto.portType ?? 'DESTINATION',
+        euClassification: country.euClassification,
+      },
+      include: { country: true },
     });
   }
 
@@ -98,6 +122,7 @@ export class MastersService {
     euClassification?: string;
     code?: string;
     countryId?: string;
+    defaultPortId?: string;
   }) {
     const existing = await this.prisma.buyer.findUnique({ where: { id } });
     if (!existing || !existing.isActive) {
@@ -116,6 +141,7 @@ export class MastersService {
       phone: dto.phone?.trim() || null,
       ...(dto.euClassification !== undefined ? { euClassification: dto.euClassification } : {}),
       ...(dto.countryId !== undefined ? { countryId: dto.countryId } : {}),
+      ...(dto.defaultPortId !== undefined ? { defaultPortId: dto.defaultPortId || null } : {}),
     };
 
     const requestedCode = dto.code?.trim();
@@ -142,6 +168,35 @@ export class MastersService {
     });
   }
 
+  async deactivateBuyer(id: string) {
+    const existing = await this.prisma.buyer.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Buyer not found');
+    return this.prisma.buyer.update({
+      where: { id },
+      data: { isActive: false },
+      include: { country: true, defaultPort: true },
+    });
+  }
+
+  async updatePort(id: string, dto: { name?: string; code?: string; countryId?: string; isActive?: boolean }) {
+    const existing = await this.prisma.port.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Port not found');
+    if (dto.countryId) {
+      const country = await this.prisma.country.findUnique({ where: { id: dto.countryId } });
+      if (!country) throw new NotFoundException('Country not found');
+    }
+    return this.prisma.port.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
+        ...(dto.code !== undefined ? { code: dto.code.trim() || null } : {}),
+        ...(dto.countryId !== undefined ? { countryId: dto.countryId } : {}),
+        ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+      },
+      include: { country: true },
+    });
+  }
+
   async createSalesperson(dto: CreateSalespersonDto) {
     const code = slugCode('SP', dto.name);
     return this.prisma.salesperson.create({
@@ -157,7 +212,17 @@ export class MastersService {
     const country = await this.prisma.country.findUnique({ where: { id: dto.countryId } });
     if (!country) throw new NotFoundException('Country not found');
 
-    const code = dto.code?.trim() || slugCode('BUY', dto.name);
+    const code = (dto.code?.trim() || slugCode('BUY', dto.name)).toUpperCase();
+    const taken = await this.prisma.buyer.findFirst({
+      where: { code: { equals: code, mode: 'insensitive' } },
+      select: { name: true, code: true },
+    });
+    if (taken) {
+      throw new ConflictException(
+        `Buyer code "${code}" is already used by "${taken.name}" (${taken.code}). Please choose a different code.`,
+      );
+    }
+
     return this.prisma.buyer.create({
       data: {
         code,

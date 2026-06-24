@@ -6,6 +6,13 @@ export declare class UpdateBuyerDto {
     euClassification?: string;
     code?: string;
     countryId?: string;
+    defaultPortId?: string;
+}
+export declare class UpdatePortDto {
+    name?: string;
+    code?: string;
+    countryId?: string;
+    isActive?: boolean;
 }
 export declare class CreateSalespersonDto {
     name: string;
@@ -49,4 +56,10 @@ export declare class CreateCountryDto {
     name: string;
     code?: string;
     euClassification?: string;
+}
+export declare class CreatePortDto {
+    name: string;
+    countryId: string;
+    code?: string;
+    portType?: string;
 }
