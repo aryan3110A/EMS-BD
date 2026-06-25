@@ -7,10 +7,10 @@ export declare class MastersService {
         id: string;
         code: string;
         name: string;
+        phone: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        phone: string | null;
     }[]>;
     getBuyers(officeId?: string, search?: string, includeInactive?: boolean): import(".prisma/client").Prisma.PrismaPromise<({
         country: {
@@ -20,8 +20,8 @@ export declare class MastersService {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            region: string | null;
             euClassification: string;
+            region: string | null;
         };
         defaultPort: {
             id: string;
@@ -30,24 +30,24 @@ export declare class MastersService {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            countryId: string;
             euClassification: string | null;
             portType: string;
-            countryId: string;
         } | null;
     } & {
         id: string;
         code: string;
         name: string;
+        phone: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        email: string | null;
-        officeId: string | null;
-        phone: string | null;
-        euClassification: string | null;
         countryId: string;
+        officeId: string | null;
         address: string | null;
         contactPerson: string | null;
+        email: string | null;
+        euClassification: string | null;
         defaultPortId: string | null;
         remarks: string | null;
     })[]>;
@@ -58,8 +58,8 @@ export declare class MastersService {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        region: string | null;
         euClassification: string;
+        region: string | null;
     }[]>;
     createCountry(dto: {
         name: string;
@@ -72,8 +72,8 @@ export declare class MastersService {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        region: string | null;
         euClassification: string;
+        region: string | null;
     }>;
     getProducts(): import(".prisma/client").Prisma.PrismaPromise<({
         variants: {
@@ -103,9 +103,9 @@ export declare class MastersService {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            weightKg: number;
             packagingTypeId: string;
             label: string;
-            weightKg: number;
             weightUnit: string;
         }[];
     } & {
@@ -125,8 +125,8 @@ export declare class MastersService {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            region: string | null;
             euClassification: string;
+            region: string | null;
         };
     } & {
         id: string;
@@ -135,16 +135,16 @@ export declare class MastersService {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        countryId: string;
         euClassification: string | null;
         portType: string;
-        countryId: string;
     })[]>;
     createPort(dto: {
         name: string;
         countryId: string;
         code?: string;
         portType?: string;
-    }): Promise<{
+    }, userId?: string): Promise<{
         country: {
             id: string;
             code: string;
@@ -152,8 +152,8 @@ export declare class MastersService {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            region: string | null;
             euClassification: string;
+            region: string | null;
         };
     } & {
         id: string;
@@ -162,9 +162,9 @@ export declare class MastersService {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        countryId: string;
         euClassification: string | null;
         portType: string;
-        countryId: string;
     }>;
     updateBuyer(id: string, dto: {
         address?: string;
@@ -175,7 +175,7 @@ export declare class MastersService {
         code?: string;
         countryId?: string;
         defaultPortId?: string;
-    }): Promise<{
+    }, userId?: string): Promise<{
         country: {
             id: string;
             code: string;
@@ -183,8 +183,8 @@ export declare class MastersService {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            region: string | null;
             euClassification: string;
+            region: string | null;
         };
         defaultPort: {
             id: string;
@@ -193,28 +193,28 @@ export declare class MastersService {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            countryId: string;
             euClassification: string | null;
             portType: string;
-            countryId: string;
         } | null;
     } & {
         id: string;
         code: string;
         name: string;
+        phone: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        email: string | null;
-        officeId: string | null;
-        phone: string | null;
-        euClassification: string | null;
         countryId: string;
+        officeId: string | null;
         address: string | null;
         contactPerson: string | null;
+        email: string | null;
+        euClassification: string | null;
         defaultPortId: string | null;
         remarks: string | null;
     }>;
-    deactivateBuyer(id: string): Promise<{
+    deactivateBuyer(id: string, userId?: string): Promise<{
         country: {
             id: string;
             code: string;
@@ -222,8 +222,8 @@ export declare class MastersService {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            region: string | null;
             euClassification: string;
+            region: string | null;
         };
         defaultPort: {
             id: string;
@@ -232,24 +232,24 @@ export declare class MastersService {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            countryId: string;
             euClassification: string | null;
             portType: string;
-            countryId: string;
         } | null;
     } & {
         id: string;
         code: string;
         name: string;
+        phone: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        email: string | null;
-        officeId: string | null;
-        phone: string | null;
-        euClassification: string | null;
         countryId: string;
+        officeId: string | null;
         address: string | null;
         contactPerson: string | null;
+        email: string | null;
+        euClassification: string | null;
         defaultPortId: string | null;
         remarks: string | null;
     }>;
@@ -258,7 +258,7 @@ export declare class MastersService {
         code?: string;
         countryId?: string;
         isActive?: boolean;
-    }): Promise<{
+    }, userId?: string): Promise<{
         country: {
             id: string;
             code: string;
@@ -266,8 +266,8 @@ export declare class MastersService {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            region: string | null;
             euClassification: string;
+            region: string | null;
         };
     } & {
         id: string;
@@ -276,20 +276,20 @@ export declare class MastersService {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        countryId: string;
         euClassification: string | null;
         portType: string;
-        countryId: string;
     }>;
     createSalesperson(dto: CreateSalespersonDto): Promise<{
         id: string;
         code: string;
         name: string;
+        phone: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        phone: string | null;
     }>;
-    createBuyer(dto: CreateBuyerDto): Promise<{
+    createBuyer(dto: CreateBuyerDto, userId?: string): Promise<{
         country: {
             id: string;
             code: string;
@@ -297,8 +297,8 @@ export declare class MastersService {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            region: string | null;
             euClassification: string;
+            region: string | null;
         };
         defaultPort: {
             id: string;
@@ -307,24 +307,24 @@ export declare class MastersService {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            countryId: string;
             euClassification: string | null;
             portType: string;
-            countryId: string;
         } | null;
     } & {
         id: string;
         code: string;
         name: string;
+        phone: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        email: string | null;
-        officeId: string | null;
-        phone: string | null;
-        euClassification: string | null;
         countryId: string;
+        officeId: string | null;
         address: string | null;
         contactPerson: string | null;
+        email: string | null;
+        euClassification: string | null;
         defaultPortId: string | null;
         remarks: string | null;
     }>;
@@ -378,9 +378,9 @@ export declare class MastersService {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            weightKg: number;
             packagingTypeId: string;
             label: string;
-            weightKg: number;
             weightUnit: string;
         }[];
     } & {
@@ -397,9 +397,9 @@ export declare class MastersService {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        weightKg: number;
         packagingTypeId: string;
         label: string;
-        weightKg: number;
         weightUnit: string;
     }>;
 }

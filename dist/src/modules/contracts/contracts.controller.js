@@ -29,14 +29,17 @@ let ContractsController = class ContractsController {
     constructor(contractsService) {
         this.contractsService = contractsService;
     }
-    getDashboard(user) {
-        return this.contractsService.getDashboardStats(user);
+    getDashboard(query, user) {
+        return this.contractsService.getDashboardStats(user, query);
     }
     findAll(query, user) {
         return this.contractsService.findAll(query, user);
     }
     getExchangeRate(currency) {
         return this.contractsService.fetchExchangeRate(currency || 'USD');
+    }
+    getAllAudits(user) {
+        return this.contractsService.getAllAudits(user);
     }
     getAudit(id, user) {
         return this.contractsService.getContractAudit(id, user);
@@ -63,9 +66,10 @@ let ContractsController = class ContractsController {
 exports.ContractsController = ContractsController;
 __decorate([
     (0, common_1.Get)('dashboard'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, common_1.Query)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [contracts_dto_1.DashboardQueryDto, Object]),
     __metadata("design:returntype", void 0)
 ], ContractsController.prototype, "getDashboard", null);
 __decorate([
@@ -83,6 +87,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], ContractsController.prototype, "getExchangeRate", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN),
+    (0, common_1.Get)('audit/all'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], ContractsController.prototype, "getAllAudits", null);
 __decorate([
     (0, common_1.Get)(':id/audit'),
     __param(0, (0, common_1.Param)('id')),
@@ -139,7 +151,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ContractsController.prototype, "amendCommercial", null);
 __decorate([
-    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM, enums_1.UserRole.PRODUCTION_TEAM),
     (0, common_1.Patch)(':id/status'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)('status')),

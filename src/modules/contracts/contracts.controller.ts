@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ContractsService } from './contracts.service';
-import { CreateContractDto, UpdateContractDto, ContractQueryDto } from './contracts.dto';
+import { CreateContractDto, UpdateContractDto, ContractQueryDto, DashboardQueryDto } from './contracts.dto';
 import { AmendContainerCommercialDto } from './container-commercial.dto';
 import { SubmitContractDto } from './submit-contract.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -19,8 +19,8 @@ export class ContractsController {
   constructor(private contractsService: ContractsService) {}
 
   @Get('dashboard')
-  getDashboard(@CurrentUser() user: JwtPayload) {
-    return this.contractsService.getDashboardStats(user);
+  getDashboard(@Query() query: DashboardQueryDto, @CurrentUser() user: JwtPayload) {
+    return this.contractsService.getDashboardStats(user, query);
   }
 
   @Get()
@@ -31,6 +31,12 @@ export class ContractsController {
   @Get('exchange-rate')
   getExchangeRate(@Query('currency') currency: string) {
     return this.contractsService.fetchExchangeRate(currency || 'USD');
+  }
+
+  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN)
+  @Get('audit/all')
+  getAllAudits(@CurrentUser() user: JwtPayload) {
+    return this.contractsService.getAllAudits(user);
   }
 
   @Get(':id/audit')
@@ -76,7 +82,7 @@ export class ContractsController {
     return this.contractsService.amendContainerCommercial(id, containerId, dto, user);
   }
 
-  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.CONTRACT_TEAM)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.CONTRACT_TEAM, UserRole.PRODUCTION_TEAM)
   @Patch(':id/status')
   updateStatus(
     @Param('id') id: string,

@@ -446,3 +446,42 @@ export class ContractQueryDto {
   @IsString()
   shipmentMonth?: string;
 }
+
+export class DashboardQueryDto {
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsString()
+  productId?: string;
+
+  @IsOptional()
+  @IsString()
+  buyerId?: string;
+
+  @IsOptional()
+  @IsString()
+  contractStatus?: string;
+
+  @IsOptional()
+  @IsString()
+  containerStatus?: string;
+
+  @IsOptional()
+  @IsString()
+  destinationPortId?: string;
+
+  @IsOptional()
+  @IsString()
+  shipmentPeriod?: string;
+
+  @IsOptional()
+  @IsString()
+  euClassification?: string;
+}
+

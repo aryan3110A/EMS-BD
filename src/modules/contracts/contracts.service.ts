@@ -10,7 +10,7 @@ import { mapContainerDtoToCreateData } from '../../common/services/container-map
 import { Incoterm } from '../../common/constants/enums';
 import { DEFAULT_FOB_DEDUCTION, FOB_DEDUCTION_SETTING_KEY } from '../../common/constants/commercial.constants';
 import { AmendContainerCommercialDto } from './container-commercial.dto';
-import { CreateContractDto, UpdateContractDto, ContractQueryDto, CreateContainerProductDto } from './contracts.dto';
+import { CreateContractDto, UpdateContractDto, ContractQueryDto, CreateContainerProductDto, DashboardQueryDto } from './contracts.dto';
 import { SubmitContractDto } from './submit-contract.dto';
 import {
   applyPendingIdsToContractDto,
@@ -18,6 +18,12 @@ import {
   updateBuyerInTx,
 } from './pending-masters.resolver';
 import type { JwtPayload } from '../../common/decorators/current-user.decorator';
+
+function cleanRelationId(val: string | undefined | null): string | null | undefined {
+  if (val === undefined) return undefined;
+  if (val === null || val.trim() === '') return null;
+  return val.trim();
+}
 
 @Injectable()
 export class ContractsService {
@@ -262,10 +268,10 @@ export class ContractsService {
             ? new Date(dto.signedContractReceivedDate)
             : null,
           contractOnBehalfOf: dto.contractOnBehalfOf,
-          salespersonId: dto.salespersonId,
+          salespersonId: cleanRelationId(dto.salespersonId),
           buyerId: dto.buyerId,
           productId: primary.productId,
-          productVariantId: primary.productVariantId,
+          productVariantId: cleanRelationId(primary.productVariantId),
           processingType: primary.processingType,
           buyerLotNo: dto.buyerLotNo,
           buyerRemarks: dto.buyerRemarks,
@@ -295,8 +301,8 @@ export class ContractsService {
           amendmentDate: dto.amendmentDate ? new Date(dto.amendmentDate) : null,
           amendmentReason: dto.amendmentReason,
           commercialRemarks: dto.commercialRemarks,
-          packagingTypeId: dto.packagingTypeId,
-          packagingSizeId: dto.packagingSizeId,
+          packagingTypeId: cleanRelationId(dto.packagingTypeId),
+          packagingSizeId: cleanRelationId(dto.packagingSizeId),
           packingDescription: dto.packingDescription,
           packingSizeValue: dto.packingSizeValue,
           packingSizeUnit: dto.packingSizeUnit,
@@ -307,8 +313,8 @@ export class ContractsService {
           balancePaymentMode: dto.balancePaymentMode,
           balancePaymentStage: dto.balancePaymentStage,
           paymentDescription: dto.paymentDescription,
-          portOfLoadingId: dto.portOfLoadingId,
-          destinationPortId: dto.destinationPortId,
+          portOfLoadingId: cleanRelationId(dto.portOfLoadingId),
+          destinationPortId: cleanRelationId(dto.destinationPortId),
           euClassification: dto.euClassification,
           shipmentPeriodStart: dto.shipmentPeriodStart ? new Date(dto.shipmentPeriodStart) : null,
           shipmentPeriodEnd: dto.shipmentPeriodEnd ? new Date(dto.shipmentPeriodEnd) : null,
@@ -343,7 +349,7 @@ export class ContractsService {
                     shipmentMonth: lotDate ? this.calc.formatShipmentMonth(lotDate) : enriched.shipmentMonth,
                     shipmentYear: lotDate?.getFullYear() ?? enriched.shipmentYear,
                     shipmentHalf: lotDate ? this.calc.getShipmentHalf(lotDate) : enriched.shipmentHalf,
-                    destinationPortId: lot.destinationPortId ?? dto.destinationPortId,
+                    destinationPortId: cleanRelationId(lot.destinationPortId ?? dto.destinationPortId),
                     remarks: lot.remarks,
                   };
                 }),
@@ -360,7 +366,7 @@ export class ContractsService {
                     shipmentMonth: enriched.shipmentMonth,
                     shipmentYear: enriched.shipmentYear,
                     shipmentHalf: enriched.shipmentHalf,
-                    destinationPortId: dto.destinationPortId,
+                    destinationPortId: cleanRelationId(dto.destinationPortId),
                   },
                 ],
               },
@@ -433,11 +439,6 @@ export class ContractsService {
       throw new BadRequestException('Product is still pending. Please save the product master first.');
     }
 
-    const primaryProduct = await tx.product.findUnique({ where: { id: primaryProductId } });
-    if (!primaryProduct) {
-      throw new BadRequestException('Selected product was not found. Please choose a valid product.');
-    }
-
     const isDraft = status === ContractStatus.DRAFT;
     const normalized = containerRows.map((row, index) => {
       const productId = row.productId?.trim();
@@ -464,13 +465,21 @@ export class ContractsService {
       };
     });
 
+    // Batch-validate all product IDs in a single query instead of N+1
+    const allProductIds = [...new Set(
+      normalized.map((r) => r.productId?.trim()).filter((id): id is string => !!id),
+    )];
+    const foundProducts = await tx.product.findMany({
+      where: { id: { in: allProductIds } },
+      select: { id: true },
+    });
+    const foundProductIds = new Set(foundProducts.map((p) => p.id));
     for (let i = 0; i < normalized.length; i++) {
       const pid = normalized[i].productId?.trim();
       if (!pid) {
         throw new BadRequestException(`Container ${i + 1}: product is required.`);
       }
-      const product = await tx.product.findUnique({ where: { id: pid } });
-      if (!product) {
+      if (!foundProductIds.has(pid)) {
         throw new BadRequestException(
           `Container ${i + 1}: selected product was not found. Please choose a valid product.`,
         );
@@ -493,7 +502,21 @@ export class ContractsService {
   }
 
   async update(id: string, dto: UpdateContractDto, user: JwtPayload) {
-    const existing = await this.findOne(id, user);
+    // Lightweight fetch for access check + audit diffing (avoids full detailInclude)
+    const existing = await this.prisma.contract.findUnique({
+      where: { id },
+      select: {
+        id: true, officeId: true, contractNumber: true, status: true,
+        receivedDate: true, contractDate: true, contractSentDate: true,
+        signedContractReceivedDate: true, totalMt: true, fobPrice: true,
+        exchangeRate: true, buyerId: true, incoterm: true, insurance: true,
+        freight: true,
+      },
+    });
+    if (!existing) throw new NotFoundException('Contract not found');
+    if (!this.canAccessAnyOffice(user) && user.officeId !== existing.officeId) {
+      throw new ForbiddenException('Access denied');
+    }
     this.assertContainerQuantities(dto);
     const enriched = this.enrichCommercialFields(dto);
     const fobDeduction = await this.getFobDeduction();
@@ -551,14 +574,90 @@ export class ContractsService {
     };
 
     await this.prisma.$transaction(async (tx) => {
+      // Lock the contract row for update to serialize concurrent writes
+      await tx.$executeRaw`SELECT 1 FROM "Contract" WHERE id = ${id} FOR UPDATE`;
+
       if (containerRows?.length) {
-        await tx.contractContainer.deleteMany({ where: { contractId: id } });
+        const existingContainers = await tx.contractContainer.findMany({
+          where: { contractId: id },
+          orderBy: { containerIndex: 'asc' },
+        });
+
+        // Track container additions, removals and edits
         for (const c of containerRows) {
-          const data = mapContainerDtoToCreateData(c, this.calc, fobDeduction, contractFallback);
-          await tx.contractContainer.create({
-            data: { contractId: id, ...data },
-          });
+          const existingC = existingContainers.find((ec) => ec.containerIndex === c.containerIndex);
+          if (!existingC) {
+            auditChanges.push({
+              contractId: id,
+              contractNumber: existing.contractNumber,
+              containerIndex: c.containerIndex,
+              fieldName: `Container ${c.containerIndex}`,
+              newValue: 'Added',
+              changedById: user.sub,
+            });
+          } else {
+            if (c.quantityMt !== undefined && c.quantityMt !== existingC.quantityMt) {
+              auditChanges.push({
+                contractId: id,
+                contractNumber: existing.contractNumber,
+                containerIndex: c.containerIndex,
+                fieldName: 'containerQuantityMt',
+                previousValue: existingC.quantityMt ? String(existingC.quantityMt) : null,
+                newValue: String(c.quantityMt),
+                changedById: user.sub,
+              });
+            }
+            if (c.expectedShipmentDate !== undefined) {
+              const prevDateStr = existingC.expectedShipmentDate ? new Date(existingC.expectedShipmentDate).toISOString().split('T')[0] : '';
+              const newDateStr = c.expectedShipmentDate ? new Date(c.expectedShipmentDate).toISOString().split('T')[0] : '';
+              if (prevDateStr !== newDateStr) {
+                auditChanges.push({
+                  contractId: id,
+                  contractNumber: existing.contractNumber,
+                  containerIndex: c.containerIndex,
+                  fieldName: 'containerExpectedShipmentDate',
+                  previousValue: existingC.expectedShipmentDate ? String(existingC.expectedShipmentDate) : null,
+                  newValue: String(c.expectedShipmentDate),
+                  changedById: user.sub,
+                });
+              }
+            }
+            if (c.exchangeRate !== undefined && c.exchangeRate !== existingC.exchangeRate) {
+              auditChanges.push({
+                contractId: id,
+                contractNumber: existing.contractNumber,
+                containerIndex: c.containerIndex,
+                fieldName: c.exchangeRateManual ? 'containerExchangeRateOverride' : 'containerExchangeRate',
+                previousValue: existingC.exchangeRate ? String(existingC.exchangeRate) : null,
+                newValue: String(c.exchangeRate),
+                changedById: user.sub,
+              });
+            }
+          }
         }
+
+        for (const ec of existingContainers) {
+          const incomingC = containerRows.find((c) => c.containerIndex === ec.containerIndex);
+          if (!incomingC) {
+            auditChanges.push({
+              contractId: id,
+              contractNumber: existing.contractNumber,
+              containerIndex: ec.containerIndex,
+              fieldName: `Container ${ec.containerIndex}`,
+              previousValue: 'Exists',
+              newValue: 'Removed',
+              changedById: user.sub,
+            });
+          }
+        }
+
+        await tx.contractContainer.deleteMany({ where: { contractId: id } });
+        // Bulk insert all containers in one query instead of N serial INSERTs
+        const allContainerData = containerRows.map((c) => ({
+          contractId: id,
+          ...mapContainerDtoToCreateData(c, this.calc, fobDeduction, contractFallback),
+        }));
+        await tx.contractContainer.createMany({ data: allContainerData });
       }
 
       await tx.contract.update({
@@ -571,11 +670,11 @@ export class ContractsService {
             ? new Date(dto.signedContractReceivedDate)
             : undefined,
           contractOnBehalfOf: dto.contractOnBehalfOf,
-          salespersonId: dto.salespersonId,
+          salespersonId: cleanRelationId(dto.salespersonId),
           buyerId: dto.buyerId,
           buyerRemarks: dto.buyerRemarks,
           productId: primary?.productId ?? dto.productId,
-          productVariantId: primary?.productVariantId ?? dto.productVariantId,
+          productVariantId: cleanRelationId(primary?.productVariantId ?? dto.productVariantId),
           processingType: primary?.processingType ?? dto.processingType,
           buyerLotNo: dto.buyerLotNo,
           invoiceNumber: dto.invoiceNumber,
@@ -603,8 +702,8 @@ export class ContractsService {
           amendmentReason: dto.amendmentReason,
           commercialRemarks: dto.commercialRemarks,
           euClassification: dto.euClassification,
-          packagingTypeId: dto.packagingTypeId,
-          packagingSizeId: dto.packagingSizeId,
+          packagingTypeId: cleanRelationId(dto.packagingTypeId),
+          packagingSizeId: cleanRelationId(dto.packagingSizeId),
           packingDescription: dto.packingDescription,
           packingSizeValue: dto.packingSizeValue,
           packingSizeUnit: dto.packingSizeUnit,
@@ -615,8 +714,8 @@ export class ContractsService {
           balancePaymentMode: dto.balancePaymentMode,
           balancePaymentStage: dto.balancePaymentStage,
           paymentDescription: dto.paymentDescription,
-          portOfLoadingId: dto.portOfLoadingId,
-          destinationPortId: primary?.destinationPortId ?? dto.destinationPortId,
+          portOfLoadingId: cleanRelationId(dto.portOfLoadingId),
+          destinationPortId: cleanRelationId(primary?.destinationPortId ?? dto.destinationPortId),
           expectedShipmentDate: dto.expectedShipmentDate ? new Date(dto.expectedShipmentDate) : undefined,
           shipmentMonth: enriched.shipmentMonth,
           shipmentYear: enriched.shipmentYear,
@@ -658,20 +757,102 @@ export class ContractsService {
           remarks,
         },
       });
+      await tx.contractAuditLog.create({
+        data: {
+          contractId: id,
+          contractNumber: contract.contractNumber,
+          fieldName: 'status',
+          previousValue: contract.status,
+          newValue: status,
+          changedById: user.sub,
+        },
+      });
       return u.id;
     }, this.txOptions);
     return this.findOne(updated, user);
   }
 
-  async getDashboardStats(user: JwtPayload) {
+  async getDashboardStats(user: JwtPayload, query: DashboardQueryDto = {}) {
     const officeId = this.scopeOffice(user);
-    const contractWhere = officeId ? { officeId } : {};
+    
+    const fromDate = query.startDate ? new Date(query.startDate) : new Date();
+    const toDate = query.endDate ? new Date(query.endDate) : (() => {
+      const d = new Date(fromDate);
+      d.setDate(d.getDate() + 30);
+      return d;
+    })();
 
-    const now = new Date();
-    const in30 = new Date(now);
-    in30.setDate(in30.getDate() + 30);
+    const contractWhere: Prisma.ContractWhereInput = {
+      ...(officeId ? { officeId } : {}),
+      ...(query.productId ? { productId: query.productId } : {}),
+      ...(query.buyerId ? { buyerId: query.buyerId } : {}),
+      ...(query.contractStatus ? { status: query.contractStatus as any } : {}),
+      ...(query.euClassification ? { euClassification: query.euClassification as any } : {}),
+      ...(query.destinationPortId ? { destinationPortId: query.destinationPortId } : {}),
+      ...(query.containerStatus || query.shipmentPeriod || query.startDate || query.endDate
+        ? {
+            containers: {
+              some: {
+                ...(query.containerStatus ? { containerStatus: query.containerStatus } : {}),
+                ...(query.shipmentPeriod ? { shipmentHalf: query.shipmentPeriod } : {}),
+                ...(query.startDate || query.endDate
+                  ? {
+                      expectedShipmentDate: {
+                        ...(query.startDate ? { gte: new Date(query.startDate) } : {}),
+                        ...(query.endDate ? { lte: new Date(query.endDate) } : {}),
+                      },
+                    }
+                  : {}),
+              },
+            },
+          }
+        : {}),
+    };
 
-    const [grouped, recent, upcomingContainers, allContainers] = await Promise.all([
+    const upcomingWhere: Prisma.ContractContainerWhereInput = {
+      expectedShipmentDate: { gte: fromDate, lte: toDate },
+      contract: {
+        ...(officeId ? { officeId } : {}),
+        ...(query.buyerId ? { buyerId: query.buyerId } : {}),
+        ...(query.contractStatus ? { status: query.contractStatus as any } : {}),
+        ...(query.euClassification ? { euClassification: query.euClassification as any } : {}),
+      },
+      ...(query.productId ? { productId: query.productId } : {}),
+      ...(query.destinationPortId ? { destinationPortId: query.destinationPortId } : {}),
+      ...(query.containerStatus ? { containerStatus: query.containerStatus } : {}),
+      ...(query.shipmentPeriod ? { shipmentHalf: query.shipmentPeriod } : {}),
+    };
+
+    const shippedWhere: Prisma.ContractContainerWhereInput = {
+      dispatchStatus: { in: ['SHIPPED', 'DISPATCHED'] },
+      contract: {
+        ...(officeId ? { officeId } : {}),
+        ...(query.buyerId ? { buyerId: query.buyerId } : {}),
+        ...(query.contractStatus ? { status: query.contractStatus as any } : {}),
+        ...(query.euClassification ? { euClassification: query.euClassification as any } : {}),
+      },
+      ...(query.productId ? { productId: query.productId } : {}),
+      ...(query.destinationPortId ? { destinationPortId: query.destinationPortId } : {}),
+      ...(query.shipmentPeriod ? { shipmentHalf: query.shipmentPeriod } : {}),
+      ...(query.startDate || query.endDate
+        ? {
+            actualShipmentDate: {
+              ...(query.startDate ? { gte: new Date(query.startDate) } : {}),
+              ...(query.endDate ? { lte: new Date(query.endDate) } : {}),
+            },
+          }
+        : {}),
+    };
+
+    const allContainersWhere: Prisma.ContractContainerWhereInput = {
+          contract: contractWhere,
+          ...(query.productId ? { productId: query.productId } : {}),
+          ...(query.destinationPortId ? { destinationPortId: query.destinationPortId } : {}),
+          ...(query.containerStatus ? { containerStatus: query.containerStatus } : {}),
+          ...(query.shipmentPeriod ? { shipmentHalf: query.shipmentPeriod } : {}),
+    };
+
+    const [grouped, recent, upcomingContainers, containerStatusCounts, dispatchStatusCounts, shippedContainers] = await Promise.all([
       this.prisma.contract.groupBy({
         by: ['status'],
         where: contractWhere,
@@ -693,10 +874,7 @@ export class ContractsService {
         },
       }),
       this.prisma.contractContainer.findMany({
-        where: {
-          expectedShipmentDate: { gte: now, lte: in30 },
-          contract: contractWhere,
-        },
+        where: upcomingWhere,
         include: {
           contract: {
             select: {
@@ -711,19 +889,31 @@ export class ContractsService {
         },
         orderBy: { expectedShipmentDate: 'asc' },
       }),
+      // Lightweight groupBy counts instead of loading all containers
+      this.prisma.contractContainer.groupBy({
+        by: ['containerStatus'],
+        where: allContainersWhere,
+        _count: { _all: true },
+      }),
+      this.prisma.contractContainer.groupBy({
+        by: ['dispatchStatus'],
+        where: allContainersWhere,
+        _count: { _all: true },
+      }),
       this.prisma.contractContainer.findMany({
-        where: { contract: contractWhere },
-        select: {
-          id: true,
-          quantityMt: true,
-          containerStatus: true,
-          dispatchStatus: true,
-          expectedShipmentDate: true,
-          productId: true,
+        where: shippedWhere,
+        include: {
+          contract: {
+            select: {
+              id: true,
+              contractNumber: true,
+              buyer: { select: { name: true } },
+            },
+          },
           product: { select: { code: true, name: true } },
-          contractId: true,
-          contract: { select: { contractNumber: true, status: true } },
         },
+        orderBy: { actualShipmentDate: 'desc' },
+        take: 200,
       }),
     ]);
 
@@ -758,6 +948,33 @@ export class ContractsService {
       else if (c.shipmentHalf === 'SECOND_HALF') byPeriod.SECOND_HALF += 1;
     }
 
+    const shippedByProduct = new Map<string, { code: string; name: string; quantity: number; containers: number; contracts: Set<string>; contractMap: Record<string, string> }>();
+    for (const c of shippedContainers) {
+      const key = c.productId;
+      const entry = shippedByProduct.get(key) ?? {
+        code: c.product.code,
+        name: c.product.name,
+        quantity: 0,
+        containers: 0,
+        contracts: new Set<string>(),
+        contractMap: {},
+      };
+      entry.containers += 1;
+      entry.quantity += c.quantityMt ?? 0;
+      entry.contracts.add(c.contract.contractNumber);
+      entry.contractMap[c.contract.contractNumber] = c.contract.id;
+      shippedByProduct.set(key, entry);
+    }
+
+    // Compute counts from groupBy results instead of scanning all rows
+    const containersShippedCount =
+      dispatchStatusCounts
+        .filter((g) => g.dispatchStatus === 'DISPATCHED' || g.dispatchStatus === 'SHIPPED')
+        .reduce((sum, g) => sum + g._count._all, 0);
+    const containersReachedPortCount =
+      containerStatusCounts
+        .find((g) => g.containerStatus === 'REACHED_PORT')?._count._all ?? 0;
+
     return {
       total,
       draft: countFor(ContractStatus.DRAFT),
@@ -768,8 +985,8 @@ export class ContractsService {
       underPreparation: countFor(ContractStatus.UNDER_PREPARATION),
       recent,
       upcoming: {
-        from: now.toISOString(),
-        to: in30.toISOString(),
+        from: fromDate.toISOString(),
+        to: toDate.toISOString(),
         totalContainers: upcomingContainers.length,
         totalMt: upcomingMt,
         contractCount: contractIds.size,
@@ -796,10 +1013,21 @@ export class ContractsService {
           status: c.contract.status,
         })),
       },
-      containersShipped: allContainers.filter(
-        (c) => c.dispatchStatus === 'DISPATCHED' || c.dispatchStatus === 'SHIPPED',
-      ).length,
-      containersReachedPort: allContainers.filter((c) => c.containerStatus === 'REACHED_PORT').length,
+      shipped: {
+        totalContainers: shippedContainers.length,
+        totalMt: shippedContainers.reduce((sum, c) => sum + (c.quantityMt ?? 0), 0),
+        byProduct: [...shippedByProduct.values()].map((p) => ({
+          code: p.code,
+          name: p.name,
+          quantity: p.quantity,
+          containers: p.containers,
+          contracts: [...p.contracts],
+          contractMap: p.contractMap,
+        })),
+      },
+      containersShipped: containersShippedCount,
+      containersReachedPort: containersReachedPortCount,
+      allContainers: [],
     };
   }
 
@@ -879,6 +1107,59 @@ export class ContractsService {
     });
 
     return this.findOne(contractId, user);
+  }
+
+  async getAllAudits(user: JwtPayload) {
+    if (!this.canAccessAnyOffice(user) && user.role !== UserRole.OFFICE_ADMIN) {
+      throw new ForbiddenException('Access denied');
+    }
+    const [contractAudits, genericAudits] = await Promise.all([
+      this.prisma.contractAuditLog.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        include: {
+          changedBy: { select: { id: true, name: true, email: true } },
+          contract: { select: { id: true, contractNumber: true } },
+        },
+      }),
+      this.prisma.auditLog.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+        },
+      }),
+    ]);
+
+    const formattedContract = contractAudits.map((a) => ({
+      id: a.id,
+      timestamp: a.createdAt,
+      type: 'CONTRACT',
+      user: a.changedBy?.name || a.changedBy?.email || 'System',
+      module: 'Contract',
+      action: `EDIT (${a.fieldName})`,
+      recordId: a.contractId,
+      contractNumber: a.contract?.contractNumber || a.contractNumber || 'Unknown',
+      previousValue: a.previousValue,
+      newValue: a.newValue,
+    }));
+
+    const formattedGeneric = genericAudits.map((a) => ({
+      id: a.id,
+      timestamp: a.createdAt,
+      type: 'MASTER',
+      user: a.user?.name || a.user?.email || 'System',
+      module: a.module,
+      action: a.action,
+      recordId: a.recordId,
+      contractNumber: undefined,
+      previousValue: a.previousValue,
+      newValue: a.newValue,
+    }));
+
+    return [...formattedContract, ...formattedGeneric].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
   }
 
   getContractAudit(contractId: string, user: JwtPayload) {

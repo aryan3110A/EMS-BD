@@ -98,11 +98,11 @@ export class MastersService {
     });
   }
 
-  async createPort(dto: { name: string; countryId: string; code?: string; portType?: string }) {
+  async createPort(dto: { name: string; countryId: string; code?: string; portType?: string }, userId?: string) {
     const country = await this.prisma.country.findUnique({ where: { id: dto.countryId } });
     if (!country) throw new NotFoundException('Country not found');
 
-    return this.prisma.port.create({
+    const port = await this.prisma.port.create({
       data: {
         name: dto.name.trim(),
         code: dto.code?.trim() || null,
@@ -112,6 +112,18 @@ export class MastersService {
       },
       include: { country: true },
     });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId,
+        module: 'Port',
+        action: 'CREATE',
+        recordId: port.id,
+        newValue: JSON.stringify({ name: port.name, code: port.code, countryId: port.countryId }),
+      },
+    });
+
+    return port;
   }
 
   async updateBuyer(id: string, dto: {
@@ -123,7 +135,7 @@ export class MastersService {
     code?: string;
     countryId?: string;
     defaultPortId?: string;
-  }) {
+  }, userId?: string) {
     const existing = await this.prisma.buyer.findUnique({ where: { id } });
     if (!existing || !existing.isActive) {
       throw new NotFoundException('Buyer not found');
@@ -161,31 +173,57 @@ export class MastersService {
       data.code = requestedCode.toUpperCase();
     }
 
-    return this.prisma.buyer.update({
+    const buyer = await this.prisma.buyer.update({
       where: { id },
       data,
       include: { country: true, defaultPort: true },
     });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId,
+        module: 'Buyer',
+        action: 'UPDATE',
+        recordId: buyer.id,
+        previousValue: JSON.stringify({ name: existing.name, code: existing.code, address: existing.address, contactPerson: existing.contactPerson, email: existing.email, phone: existing.phone }),
+        newValue: JSON.stringify({ name: buyer.name, code: buyer.code, address: buyer.address, contactPerson: buyer.contactPerson, email: buyer.email, phone: buyer.phone }),
+      },
+    });
+
+    return buyer;
   }
 
-  async deactivateBuyer(id: string) {
+  async deactivateBuyer(id: string, userId?: string) {
     const existing = await this.prisma.buyer.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Buyer not found');
-    return this.prisma.buyer.update({
+    const buyer = await this.prisma.buyer.update({
       where: { id },
       data: { isActive: false },
       include: { country: true, defaultPort: true },
     });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId,
+        module: 'Buyer',
+        action: 'DEACTIVATE',
+        recordId: buyer.id,
+        previousValue: 'ACTIVE',
+        newValue: 'INACTIVE',
+      },
+    });
+
+    return buyer;
   }
 
-  async updatePort(id: string, dto: { name?: string; code?: string; countryId?: string; isActive?: boolean }) {
+  async updatePort(id: string, dto: { name?: string; code?: string; countryId?: string; isActive?: boolean }, userId?: string) {
     const existing = await this.prisma.port.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Port not found');
     if (dto.countryId) {
       const country = await this.prisma.country.findUnique({ where: { id: dto.countryId } });
       if (!country) throw new NotFoundException('Country not found');
     }
-    return this.prisma.port.update({
+    const port = await this.prisma.port.update({
       where: { id },
       data: {
         ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
@@ -195,6 +233,19 @@ export class MastersService {
       },
       include: { country: true },
     });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId,
+        module: 'Port',
+        action: 'UPDATE',
+        recordId: port.id,
+        previousValue: JSON.stringify({ name: existing.name, code: existing.code, isActive: existing.isActive }),
+        newValue: JSON.stringify({ name: port.name, code: port.code, isActive: port.isActive }),
+      },
+    });
+
+    return port;
   }
 
   async createSalesperson(dto: CreateSalespersonDto) {
@@ -208,7 +259,7 @@ export class MastersService {
     });
   }
 
-  async createBuyer(dto: CreateBuyerDto) {
+  async createBuyer(dto: CreateBuyerDto, userId?: string) {
     const country = await this.prisma.country.findUnique({ where: { id: dto.countryId } });
     if (!country) throw new NotFoundException('Country not found');
 
@@ -223,7 +274,7 @@ export class MastersService {
       );
     }
 
-    return this.prisma.buyer.create({
+    const buyer = await this.prisma.buyer.create({
       data: {
         code,
         name: dto.name.trim(),
@@ -233,6 +284,18 @@ export class MastersService {
       },
       include: { country: true, defaultPort: true },
     });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId,
+        module: 'Buyer',
+        action: 'CREATE',
+        recordId: buyer.id,
+        newValue: JSON.stringify({ name: buyer.name, code: buyer.code, countryId: buyer.countryId }),
+      },
+    });
+
+    return buyer;
   }
 
   async createProduct(dto: CreateProductDto) {

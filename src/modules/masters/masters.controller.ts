@@ -56,7 +56,7 @@ export class MastersController {
     return this.mastersService.createBuyer({
       ...dto,
       officeId: dto.officeId ?? user.officeId,
-    });
+    }, user?.sub);
   }
 
   @Get('countries')
@@ -105,22 +105,22 @@ export class MastersController {
   }
 
   @Post('ports')
-  createPort(@Body() dto: CreatePortDto) {
-    return this.mastersService.createPort(dto);
+  createPort(@CurrentUser() user: JwtPayload, @Body() dto: CreatePortDto) {
+    return this.mastersService.createPort(dto, user?.sub);
   }
 
   @Patch('buyers/:id')
-  updateBuyer(@Param('id') id: string, @Body() dto: UpdateBuyerDto) {
-    return this.mastersService.updateBuyer(id, dto);
+  updateBuyer(@Param('id') id: string, @CurrentUser() user: JwtPayload, @Body() dto: UpdateBuyerDto) {
+    return this.mastersService.updateBuyer(id, dto, user?.sub);
   }
 
   @Patch('buyers/:id/deactivate')
-  deactivateBuyer(@Param('id') id: string) {
-    return this.mastersService.deactivateBuyer(id);
+  deactivateBuyer(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.mastersService.deactivateBuyer(id, user?.sub);
   }
 
   @Patch('ports/:id')
-  updatePort(@Param('id') id: string, @Body() dto: UpdatePortDto) {
-    return this.mastersService.updatePort(id, dto);
+  updatePort(@Param('id') id: string, @CurrentUser() user: JwtPayload, @Body() dto: UpdatePortDto) {
+    return this.mastersService.updatePort(id, dto, user?.sub);
   }
 }

@@ -111,3 +111,14 @@ export declare class ContractQueryDto {
     search?: string;
     shipmentMonth?: string;
 }
+export declare class DashboardQueryDto {
+    startDate?: string;
+    endDate?: string;
+    productId?: string;
+    buyerId?: string;
+    contractStatus?: string;
+    containerStatus?: string;
+    destinationPortId?: string;
+    shipmentPeriod?: string;
+    euClassification?: string;
+}

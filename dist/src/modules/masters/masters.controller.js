@@ -43,7 +43,7 @@ let MastersController = class MastersController {
         return this.mastersService.createBuyer({
             ...dto,
             officeId: dto.officeId ?? user.officeId,
-        });
+        }, user?.sub);
     }
     getCountries() {
         return this.mastersService.getCountries();
@@ -72,17 +72,17 @@ let MastersController = class MastersController {
     getPorts(includeInactive) {
         return this.mastersService.getPorts(includeInactive === 'true');
     }
-    createPort(dto) {
-        return this.mastersService.createPort(dto);
+    createPort(user, dto) {
+        return this.mastersService.createPort(dto, user?.sub);
     }
-    updateBuyer(id, dto) {
-        return this.mastersService.updateBuyer(id, dto);
+    updateBuyer(id, user, dto) {
+        return this.mastersService.updateBuyer(id, dto, user?.sub);
     }
-    deactivateBuyer(id) {
-        return this.mastersService.deactivateBuyer(id);
+    deactivateBuyer(id, user) {
+        return this.mastersService.deactivateBuyer(id, user?.sub);
     }
-    updatePort(id, dto) {
-        return this.mastersService.updatePort(id, dto);
+    updatePort(id, user, dto) {
+        return this.mastersService.updatePort(id, dto, user?.sub);
     }
 };
 exports.MastersController = MastersController;
@@ -179,32 +179,36 @@ __decorate([
 ], MastersController.prototype, "getPorts", null);
 __decorate([
     (0, common_1.Post)('ports'),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [masters_dto_1.CreatePortDto]),
+    __metadata("design:paramtypes", [Object, masters_dto_1.CreatePortDto]),
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "createPort", null);
 __decorate([
     (0, common_1.Patch)('buyers/:id'),
     __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, masters_dto_1.UpdateBuyerDto]),
+    __metadata("design:paramtypes", [String, Object, masters_dto_1.UpdateBuyerDto]),
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "updateBuyer", null);
 __decorate([
     (0, common_1.Patch)('buyers/:id/deactivate'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "deactivateBuyer", null);
 __decorate([
     (0, common_1.Patch)('ports/:id'),
     __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, masters_dto_1.UpdatePortDto]),
+    __metadata("design:paramtypes", [String, Object, masters_dto_1.UpdatePortDto]),
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "updatePort", null);
 exports.MastersController = MastersController = __decorate([

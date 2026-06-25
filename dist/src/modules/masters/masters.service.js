@@ -92,11 +92,11 @@ let MastersService = class MastersService {
             orderBy: { name: 'asc' },
         });
     }
-    async createPort(dto) {
+    async createPort(dto, userId) {
         const country = await this.prisma.country.findUnique({ where: { id: dto.countryId } });
         if (!country)
             throw new common_1.NotFoundException('Country not found');
-        return this.prisma.port.create({
+        const port = await this.prisma.port.create({
             data: {
                 name: dto.name.trim(),
                 code: dto.code?.trim() || null,
@@ -106,8 +106,18 @@ let MastersService = class MastersService {
             },
             include: { country: true },
         });
+        await this.prisma.auditLog.create({
+            data: {
+                userId,
+                module: 'Port',
+                action: 'CREATE',
+                recordId: port.id,
+                newValue: JSON.stringify({ name: port.name, code: port.code, countryId: port.countryId }),
+            },
+        });
+        return port;
     }
-    async updateBuyer(id, dto) {
+    async updateBuyer(id, dto, userId) {
         const existing = await this.prisma.buyer.findUnique({ where: { id } });
         if (!existing || !existing.isActive) {
             throw new common_1.NotFoundException('Buyer not found');
@@ -140,23 +150,45 @@ let MastersService = class MastersService {
             }
             data.code = requestedCode.toUpperCase();
         }
-        return this.prisma.buyer.update({
+        const buyer = await this.prisma.buyer.update({
             where: { id },
             data,
             include: { country: true, defaultPort: true },
         });
+        await this.prisma.auditLog.create({
+            data: {
+                userId,
+                module: 'Buyer',
+                action: 'UPDATE',
+                recordId: buyer.id,
+                previousValue: JSON.stringify({ name: existing.name, code: existing.code, address: existing.address, contactPerson: existing.contactPerson, email: existing.email, phone: existing.phone }),
+                newValue: JSON.stringify({ name: buyer.name, code: buyer.code, address: buyer.address, contactPerson: buyer.contactPerson, email: buyer.email, phone: buyer.phone }),
+            },
+        });
+        return buyer;
     }
-    async deactivateBuyer(id) {
+    async deactivateBuyer(id, userId) {
         const existing = await this.prisma.buyer.findUnique({ where: { id } });
         if (!existing)
             throw new common_1.NotFoundException('Buyer not found');
-        return this.prisma.buyer.update({
+        const buyer = await this.prisma.buyer.update({
             where: { id },
             data: { isActive: false },
             include: { country: true, defaultPort: true },
         });
+        await this.prisma.auditLog.create({
+            data: {
+                userId,
+                module: 'Buyer',
+                action: 'DEACTIVATE',
+                recordId: buyer.id,
+                previousValue: 'ACTIVE',
+                newValue: 'INACTIVE',
+            },
+        });
+        return buyer;
     }
-    async updatePort(id, dto) {
+    async updatePort(id, dto, userId) {
         const existing = await this.prisma.port.findUnique({ where: { id } });
         if (!existing)
             throw new common_1.NotFoundException('Port not found');
@@ -165,7 +197,7 @@ let MastersService = class MastersService {
             if (!country)
                 throw new common_1.NotFoundException('Country not found');
         }
-        return this.prisma.port.update({
+        const port = await this.prisma.port.update({
             where: { id },
             data: {
                 ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
@@ -175,6 +207,17 @@ let MastersService = class MastersService {
             },
             include: { country: true },
         });
+        await this.prisma.auditLog.create({
+            data: {
+                userId,
+                module: 'Port',
+                action: 'UPDATE',
+                recordId: port.id,
+                previousValue: JSON.stringify({ name: existing.name, code: existing.code, isActive: existing.isActive }),
+                newValue: JSON.stringify({ name: port.name, code: port.code, isActive: port.isActive }),
+            },
+        });
+        return port;
     }
     async createSalesperson(dto) {
         const code = slugCode('SP', dto.name);
@@ -186,7 +229,7 @@ let MastersService = class MastersService {
             },
         });
     }
-    async createBuyer(dto) {
+    async createBuyer(dto, userId) {
         const country = await this.prisma.country.findUnique({ where: { id: dto.countryId } });
         if (!country)
             throw new common_1.NotFoundException('Country not found');
@@ -198,7 +241,7 @@ let MastersService = class MastersService {
         if (taken) {
             throw new common_1.ConflictException(`Buyer code "${code}" is already used by "${taken.name}" (${taken.code}). Please choose a different code.`);
         }
-        return this.prisma.buyer.create({
+        const buyer = await this.prisma.buyer.create({
             data: {
                 code,
                 name: dto.name.trim(),
@@ -208,6 +251,16 @@ let MastersService = class MastersService {
             },
             include: { country: true, defaultPort: true },
         });
+        await this.prisma.auditLog.create({
+            data: {
+                userId,
+                module: 'Buyer',
+                action: 'CREATE',
+                recordId: buyer.id,
+                newValue: JSON.stringify({ name: buyer.name, code: buyer.code, countryId: buyer.countryId }),
+            },
+        });
+        return buyer;
     }
     async createProduct(dto) {
         const code = dto.code?.trim().toUpperCase() ||

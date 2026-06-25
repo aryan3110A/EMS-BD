@@ -8,19 +8,19 @@ export declare class MastersController {
         id: string;
         code: string;
         name: string;
+        phone: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        phone: string | null;
     }[]>;
     createSalesperson(dto: CreateSalespersonDto): Promise<{
         id: string;
         code: string;
         name: string;
+        phone: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        phone: string | null;
     }>;
     getBuyers(user: JwtPayload, officeId?: string, search?: string, includeInactive?: string): import(".prisma/client").Prisma.PrismaPromise<({
         country: {
@@ -30,8 +30,8 @@ export declare class MastersController {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            region: string | null;
             euClassification: string;
+            region: string | null;
         };
         defaultPort: {
             id: string;
@@ -40,24 +40,24 @@ export declare class MastersController {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            countryId: string;
             euClassification: string | null;
             portType: string;
-            countryId: string;
         } | null;
     } & {
         id: string;
         code: string;
         name: string;
+        phone: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        email: string | null;
-        officeId: string | null;
-        phone: string | null;
-        euClassification: string | null;
         countryId: string;
+        officeId: string | null;
         address: string | null;
         contactPerson: string | null;
+        email: string | null;
+        euClassification: string | null;
         defaultPortId: string | null;
         remarks: string | null;
     })[]>;
@@ -69,8 +69,8 @@ export declare class MastersController {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            region: string | null;
             euClassification: string;
+            region: string | null;
         };
         defaultPort: {
             id: string;
@@ -79,24 +79,24 @@ export declare class MastersController {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            countryId: string;
             euClassification: string | null;
             portType: string;
-            countryId: string;
         } | null;
     } & {
         id: string;
         code: string;
         name: string;
+        phone: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        email: string | null;
-        officeId: string | null;
-        phone: string | null;
-        euClassification: string | null;
         countryId: string;
+        officeId: string | null;
         address: string | null;
         contactPerson: string | null;
+        email: string | null;
+        euClassification: string | null;
         defaultPortId: string | null;
         remarks: string | null;
     }>;
@@ -107,8 +107,8 @@ export declare class MastersController {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        region: string | null;
         euClassification: string;
+        region: string | null;
     }[]>;
     createCountry(dto: CreateCountryDto): Promise<{
         id: string;
@@ -117,8 +117,8 @@ export declare class MastersController {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        region: string | null;
         euClassification: string;
+        region: string | null;
     }>;
     getProducts(): import(".prisma/client").Prisma.PrismaPromise<({
         variants: {
@@ -192,9 +192,9 @@ export declare class MastersController {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            weightKg: number;
             packagingTypeId: string;
             label: string;
-            weightKg: number;
             weightUnit: string;
         }[];
     } & {
@@ -212,9 +212,9 @@ export declare class MastersController {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            weightKg: number;
             packagingTypeId: string;
             label: string;
-            weightKg: number;
             weightUnit: string;
         }[];
     } & {
@@ -231,9 +231,9 @@ export declare class MastersController {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        weightKg: number;
         packagingTypeId: string;
         label: string;
-        weightKg: number;
         weightUnit: string;
     }>;
     getPorts(includeInactive?: string): import(".prisma/client").Prisma.PrismaPromise<({
@@ -244,8 +244,8 @@ export declare class MastersController {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            region: string | null;
             euClassification: string;
+            region: string | null;
         };
     } & {
         id: string;
@@ -254,11 +254,11 @@ export declare class MastersController {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        countryId: string;
         euClassification: string | null;
         portType: string;
-        countryId: string;
     })[]>;
-    createPort(dto: CreatePortDto): Promise<{
+    createPort(user: JwtPayload, dto: CreatePortDto): Promise<{
         country: {
             id: string;
             code: string;
@@ -266,8 +266,8 @@ export declare class MastersController {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            region: string | null;
             euClassification: string;
+            region: string | null;
         };
     } & {
         id: string;
@@ -276,11 +276,11 @@ export declare class MastersController {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        countryId: string;
         euClassification: string | null;
         portType: string;
-        countryId: string;
     }>;
-    updateBuyer(id: string, dto: UpdateBuyerDto): Promise<{
+    updateBuyer(id: string, user: JwtPayload, dto: UpdateBuyerDto): Promise<{
         country: {
             id: string;
             code: string;
@@ -288,8 +288,8 @@ export declare class MastersController {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            region: string | null;
             euClassification: string;
+            region: string | null;
         };
         defaultPort: {
             id: string;
@@ -298,28 +298,28 @@ export declare class MastersController {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            countryId: string;
             euClassification: string | null;
             portType: string;
-            countryId: string;
         } | null;
     } & {
         id: string;
         code: string;
         name: string;
+        phone: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        email: string | null;
-        officeId: string | null;
-        phone: string | null;
-        euClassification: string | null;
         countryId: string;
+        officeId: string | null;
         address: string | null;
         contactPerson: string | null;
+        email: string | null;
+        euClassification: string | null;
         defaultPortId: string | null;
         remarks: string | null;
     }>;
-    deactivateBuyer(id: string): Promise<{
+    deactivateBuyer(id: string, user: JwtPayload): Promise<{
         country: {
             id: string;
             code: string;
@@ -327,8 +327,8 @@ export declare class MastersController {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            region: string | null;
             euClassification: string;
+            region: string | null;
         };
         defaultPort: {
             id: string;
@@ -337,28 +337,28 @@ export declare class MastersController {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            countryId: string;
             euClassification: string | null;
             portType: string;
-            countryId: string;
         } | null;
     } & {
         id: string;
         code: string;
         name: string;
+        phone: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        email: string | null;
-        officeId: string | null;
-        phone: string | null;
-        euClassification: string | null;
         countryId: string;
+        officeId: string | null;
         address: string | null;
         contactPerson: string | null;
+        email: string | null;
+        euClassification: string | null;
         defaultPortId: string | null;
         remarks: string | null;
     }>;
-    updatePort(id: string, dto: UpdatePortDto): Promise<{
+    updatePort(id: string, user: JwtPayload, dto: UpdatePortDto): Promise<{
         country: {
             id: string;
             code: string;
@@ -366,8 +366,8 @@ export declare class MastersController {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            region: string | null;
             euClassification: string;
+            region: string | null;
         };
     } & {
         id: string;
@@ -376,8 +376,8 @@ export declare class MastersController {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        countryId: string;
         euClassification: string | null;
         portType: string;
-        countryId: string;
     }>;
 }

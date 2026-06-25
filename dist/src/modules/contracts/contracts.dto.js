@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ContractQueryDto = exports.UpdateContractDto = exports.CreateContractDto = exports.CreateContainerProductDto = exports.CreateLotDto = void 0;
+exports.DashboardQueryDto = exports.ContractQueryDto = exports.UpdateContractDto = exports.CreateContractDto = exports.CreateContainerProductDto = exports.CreateLotDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 const enums_1 = require("../../common/constants/enums");
@@ -651,4 +651,61 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], ContractQueryDto.prototype, "shipmentMonth", void 0);
+class DashboardQueryDto {
+    startDate;
+    endDate;
+    productId;
+    buyerId;
+    contractStatus;
+    containerStatus;
+    destinationPortId;
+    shipmentPeriod;
+    euClassification;
+}
+exports.DashboardQueryDto = DashboardQueryDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DashboardQueryDto.prototype, "startDate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DashboardQueryDto.prototype, "endDate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DashboardQueryDto.prototype, "productId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DashboardQueryDto.prototype, "buyerId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DashboardQueryDto.prototype, "contractStatus", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DashboardQueryDto.prototype, "containerStatus", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DashboardQueryDto.prototype, "destinationPortId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DashboardQueryDto.prototype, "shipmentPeriod", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DashboardQueryDto.prototype, "euClassification", void 0);
 //# sourceMappingURL=contracts.dto.js.map
