@@ -15,6 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationsController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
+const rxjs_1 = require("rxjs");
+const operators_1 = require("rxjs/operators");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 const notification_service_1 = require("../../common/services/notification.service");
@@ -25,6 +27,13 @@ let NotificationsController = class NotificationsController {
     }
     list(user) {
         return this.notifications.findForUser(user.sub, user.role);
+    }
+    sse(user) {
+        return (0, rxjs_1.fromEvent)(this.notifications.emitter, 'notification').pipe((0, operators_1.filter)((n) => {
+            return n.userId === user.sub || n.targetRole === user.role;
+        }), (0, operators_1.map)((n) => ({
+            data: n,
+        })));
     }
     markRead(id) {
         return this.notifications.markRead(id);
@@ -38,6 +47,13 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], NotificationsController.prototype, "list", null);
+__decorate([
+    (0, common_1.Sse)('sse'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", rxjs_1.Observable)
+], NotificationsController.prototype, "sse", null);
 __decorate([
     (0, common_1.Patch)(':id/read'),
     __param(0, (0, common_1.Param)('id')),

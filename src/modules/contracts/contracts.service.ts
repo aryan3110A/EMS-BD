@@ -574,9 +574,6 @@ export class ContractsService {
     };
 
     await this.prisma.$transaction(async (tx) => {
-      // Lock the contract row for update to serialize concurrent writes
-      await tx.$executeRaw`SELECT 1 FROM "Contract" WHERE id = ${id} FOR UPDATE`;
-
       if (containerRows?.length) {
         const existingContainers = await tx.contractContainer.findMany({
           where: { contractId: id },
@@ -584,7 +581,7 @@ export class ContractsService {
         });
 
         // Track container additions, removals and edits
-        for (const c of containerRows) {
+        for (const c of normalizedRows!) {
           const existingC = existingContainers.find((ec) => ec.containerIndex === c.containerIndex);
           if (!existingC) {
             auditChanges.push({
@@ -653,7 +650,7 @@ export class ContractsService {
 
         await tx.contractContainer.deleteMany({ where: { contractId: id } });
         // Bulk insert all containers in one query instead of N serial INSERTs
-        const allContainerData = containerRows.map((c) => ({
+        const allContainerData = normalizedRows!.map((c) => ({
           contractId: id,
           ...mapContainerDtoToCreateData(c, this.calc, fobDeduction, contractFallback),
         }));
@@ -728,7 +725,18 @@ export class ContractsService {
       });
 
       if (auditChanges.length) {
-        await this.audit.logChanges(auditChanges);
+        await tx.contractAuditLog.createMany({
+          data: auditChanges.map((c) => ({
+            contractId: c.contractId,
+            contractNumber: c.contractNumber,
+            containerId: c.containerId,
+            containerIndex: c.containerIndex,
+            fieldName: c.fieldName,
+            previousValue: c.previousValue ?? null,
+            newValue: c.newValue ?? null,
+            changedById: c.changedById,
+          })),
+        });
       }
     }, this.txOptions);
 

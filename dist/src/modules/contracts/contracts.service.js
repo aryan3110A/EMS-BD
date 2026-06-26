@@ -520,13 +520,12 @@ let ContractsService = class ContractsService {
             destinationPortId: dto.destinationPortId,
         };
         await this.prisma.$transaction(async (tx) => {
-            await tx.$executeRaw `SELECT 1 FROM "Contract" WHERE id = ${id} FOR UPDATE`;
             if (containerRows?.length) {
                 const existingContainers = await tx.contractContainer.findMany({
                     where: { contractId: id },
                     orderBy: { containerIndex: 'asc' },
                 });
-                for (const c of containerRows) {
+                for (const c of normalizedRows) {
                     const existingC = existingContainers.find((ec) => ec.containerIndex === c.containerIndex);
                     if (!existingC) {
                         auditChanges.push({
@@ -593,7 +592,7 @@ let ContractsService = class ContractsService {
                     }
                 }
                 await tx.contractContainer.deleteMany({ where: { contractId: id } });
-                const allContainerData = containerRows.map((c) => ({
+                const allContainerData = normalizedRows.map((c) => ({
                     contractId: id,
                     ...(0, container_mapper_1.mapContainerDtoToCreateData)(c, this.calc, fobDeduction, contractFallback),
                 }));
@@ -666,7 +665,18 @@ let ContractsService = class ContractsService {
                 },
             });
             if (auditChanges.length) {
-                await this.audit.logChanges(auditChanges);
+                await tx.contractAuditLog.createMany({
+                    data: auditChanges.map((c) => ({
+                        contractId: c.contractId,
+                        contractNumber: c.contractNumber,
+                        containerId: c.containerId,
+                        containerIndex: c.containerIndex,
+                        fieldName: c.fieldName,
+                        previousValue: c.previousValue ?? null,
+                        newValue: c.newValue ?? null,
+                        changedById: c.changedById,
+                    })),
+                });
             }
         }, this.txOptions);
         return this.findOne(id, user);

@@ -11,10 +11,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationService = void 0;
 const common_1 = require("@nestjs/common");
+const events_1 = require("events");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const enums_1 = require("../constants/enums");
 let NotificationService = class NotificationService {
     prisma;
+    emitter = new events_1.EventEmitter();
     constructor(prisma) {
         this.prisma = prisma;
     }
@@ -31,6 +33,20 @@ let NotificationService = class NotificationService {
                 message,
             })),
         });
+        const created = await this.prisma.notification.findMany({
+            where: {
+                contractId: params.contractId,
+                containerId: params.containerId,
+                type: 'COMMERCIAL_AMENDMENT',
+                message,
+                readAt: null,
+            },
+            orderBy: { createdAt: 'desc' },
+            take: roles.length,
+        });
+        for (const notification of created) {
+            this.emitter.emit('notification', notification);
+        }
     }
     findForUser(userId, role) {
         return this.prisma.notification.findMany({

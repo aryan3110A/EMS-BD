@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter } from 'events';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserRole } from '../constants/enums';
 
 @Injectable()
 export class NotificationService {
+  public readonly emitter = new EventEmitter();
+
   constructor(private prisma: PrismaService) {}
 
   async notifyCommercialAmendment(params: {
@@ -32,6 +35,23 @@ export class NotificationService {
         message,
       })),
     });
+
+    // Fetch the newly created notifications to emit them with database IDs and timestamps
+    const created = await this.prisma.notification.findMany({
+      where: {
+        contractId: params.contractId,
+        containerId: params.containerId,
+        type: 'COMMERCIAL_AMENDMENT',
+        message,
+        readAt: null,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: roles.length,
+    });
+
+    for (const notification of created) {
+      this.emitter.emit('notification', notification);
+    }
   }
 
   findForUser(userId: string, role: string) {
