@@ -17,8 +17,8 @@ export declare class ContractAuditService {
     findByContract(contractId: string): import(".prisma/client").Prisma.PrismaPromise<({
         changedBy: {
             id: string;
-            name: string;
             email: string;
+            name: string;
         };
     } & {
         id: string;

@@ -13,7 +13,10 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
   app.enableCors({
-    origin: corsOrigin.split(',').map((o) => o.trim()),
+    origin: corsOrigin.split(',').map((o) => {
+      const origin = o.trim();
+      return origin.endsWith('/') ? origin.slice(0, -1) : origin;
+    }),
     credentials: true,
   });
 

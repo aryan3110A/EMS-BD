@@ -12,7 +12,10 @@ async function bootstrap() {
     const corsOrigin = configService.get('CORS_ORIGIN', 'http://localhost:3000');
     app.setGlobalPrefix('api/v1');
     app.enableCors({
-        origin: corsOrigin.split(',').map((o) => o.trim()),
+        origin: corsOrigin.split(',').map((o) => {
+            const origin = o.trim();
+            return origin.endsWith('/') ? origin.slice(0, -1) : origin;
+        }),
         credentials: true,
     });
     app.useGlobalPipes(new common_1.ValidationPipe({
