@@ -6,53 +6,53 @@ export declare class MastersController {
     constructor(mastersService: MastersService);
     getSalespersons(): import(".prisma/client").Prisma.PrismaPromise<{
         id: string;
+        code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
         phone: string | null;
     }[]>;
     createSalesperson(dto: CreateSalespersonDto): Promise<{
         id: string;
+        code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
         phone: string | null;
     }>;
     getBuyers(user: JwtPayload, officeId?: string, search?: string, includeInactive?: string): import(".prisma/client").Prisma.PrismaPromise<({
         country: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             region: string | null;
             euClassification: string;
         };
         defaultPort: {
             id: string;
+            code: string | null;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string | null;
             euClassification: string | null;
             portType: string;
             countryId: string;
         } | null;
     } & {
         id: string;
-        email: string | null;
+        code: string;
         name: string;
-        officeId: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
+        email: string | null;
+        officeId: string | null;
         phone: string | null;
         euClassification: string | null;
         countryId: string;
@@ -64,34 +64,34 @@ export declare class MastersController {
     createBuyer(user: JwtPayload, dto: CreateBuyerDto): Promise<{
         country: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             region: string | null;
             euClassification: string;
         };
         defaultPort: {
             id: string;
+            code: string | null;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string | null;
             euClassification: string | null;
             portType: string;
             countryId: string;
         } | null;
     } & {
         id: string;
-        email: string | null;
+        code: string;
         name: string;
-        officeId: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
+        email: string | null;
+        officeId: string | null;
         phone: string | null;
         euClassification: string | null;
         countryId: string;
@@ -102,42 +102,42 @@ export declare class MastersController {
     }>;
     getCountries(): import(".prisma/client").Prisma.PrismaPromise<{
         id: string;
+        code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
         region: string | null;
         euClassification: string;
     }[]>;
     createCountry(dto: CreateCountryDto): Promise<{
         id: string;
+        code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
         region: string | null;
         euClassification: string;
     }>;
     getProducts(): import(".prisma/client").Prisma.PrismaPromise<({
         variants: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             productId: string;
             processingType: string | null;
         }[];
     } & {
         id: string;
+        code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
         category: string | null;
         defaultSpecification: string | null;
         standardContainerMt: number;
@@ -145,21 +145,21 @@ export declare class MastersController {
     createProduct(dto: CreateProductDto): Promise<({
         variants: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             productId: string;
             processingType: string | null;
         }[];
     } & {
         id: string;
+        code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
         category: string | null;
         defaultSpecification: string | null;
         standardContainerMt: number;
@@ -167,21 +167,21 @@ export declare class MastersController {
     createProductVariant(dto: CreateProductVariantDto): Promise<({
         variants: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             productId: string;
             processingType: string | null;
         }[];
     } & {
         id: string;
+        code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
         category: string | null;
         defaultSpecification: string | null;
         standardContainerMt: number;
@@ -192,6 +192,7 @@ export declare class MastersController {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            description: string | null;
             packagingTypeId: string;
             label: string;
             weightKg: number;
@@ -199,12 +200,13 @@ export declare class MastersController {
         }[];
     } & {
         id: string;
+        code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
         material: string;
+        description: string | null;
     })[]>;
     createPackagingType(dto: CreatePackagingTypeDto): Promise<{
         sizes: {
@@ -212,6 +214,7 @@ export declare class MastersController {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            description: string | null;
             packagingTypeId: string;
             label: string;
             weightKg: number;
@@ -219,41 +222,49 @@ export declare class MastersController {
         }[];
     } & {
         id: string;
+        code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
         material: string;
+        description: string | null;
     }>;
     createPackagingSize(dto: CreatePackagingSizeDto): Promise<{
         id: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
         packagingTypeId: string;
         label: string;
         weightKg: number;
         weightUnit: string;
     }>;
+    getUsers(role?: string): import(".prisma/client").Prisma.PrismaPromise<{
+        id: string;
+        name: string;
+        email: string;
+        role: string;
+    }[]>;
     getPorts(includeInactive?: string): import(".prisma/client").Prisma.PrismaPromise<({
         country: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             region: string | null;
             euClassification: string;
         };
     } & {
         id: string;
+        code: string | null;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string | null;
         euClassification: string | null;
         portType: string;
         countryId: string;
@@ -261,21 +272,21 @@ export declare class MastersController {
     createPort(user: JwtPayload, dto: CreatePortDto): Promise<{
         country: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             region: string | null;
             euClassification: string;
         };
     } & {
         id: string;
+        code: string | null;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string | null;
         euClassification: string | null;
         portType: string;
         countryId: string;
@@ -283,34 +294,34 @@ export declare class MastersController {
     updateBuyer(id: string, user: JwtPayload, dto: UpdateBuyerDto): Promise<{
         country: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             region: string | null;
             euClassification: string;
         };
         defaultPort: {
             id: string;
+            code: string | null;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string | null;
             euClassification: string | null;
             portType: string;
             countryId: string;
         } | null;
     } & {
         id: string;
-        email: string | null;
+        code: string;
         name: string;
-        officeId: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
+        email: string | null;
+        officeId: string | null;
         phone: string | null;
         euClassification: string | null;
         countryId: string;
@@ -322,34 +333,34 @@ export declare class MastersController {
     deactivateBuyer(id: string, user: JwtPayload): Promise<{
         country: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             region: string | null;
             euClassification: string;
         };
         defaultPort: {
             id: string;
+            code: string | null;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string | null;
             euClassification: string | null;
             portType: string;
             countryId: string;
         } | null;
     } & {
         id: string;
-        email: string | null;
+        code: string;
         name: string;
-        officeId: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
+        email: string | null;
+        officeId: string | null;
         phone: string | null;
         euClassification: string | null;
         countryId: string;
@@ -361,21 +372,21 @@ export declare class MastersController {
     updatePort(id: string, user: JwtPayload, dto: UpdatePortDto): Promise<{
         country: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             region: string | null;
             euClassification: string;
         };
     } & {
         id: string;
+        code: string | null;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string | null;
         euClassification: string | null;
         portType: string;
         countryId: string;

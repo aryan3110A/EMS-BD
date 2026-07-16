@@ -137,6 +137,10 @@ export class CreatePackagingTypeDto {
   @IsOptional()
   @IsString()
   material?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 }
 
 export class CreatePackagingSizeDto {
@@ -154,6 +158,10 @@ export class CreatePackagingSizeDto {
   @IsOptional()
   @IsString()
   label?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 }
 
 export class CreateCountryDto {

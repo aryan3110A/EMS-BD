@@ -1,6 +1,15 @@
 import type { CalculationService } from './calculation.service';
-import type { CreateContainerProductDto } from '../../modules/contracts/contracts.dto';
+import type { ContainerProductLineDto, CreateContainerProductDto } from '../../modules/contracts/contracts.dto';
 export type ContainerCreatePayload = ReturnType<typeof mapContainerDtoToCreateData>;
+export declare function resolveContainerProductLines(c: CreateContainerProductDto): ContainerProductLineDto[];
+export declare function computeRemainingAmount(invoiceAmount?: number | null, receivedAmount?: number | null): number | null;
+export declare function derivePaymentStatus(params: {
+    invoiceNumber?: string | null;
+    invoiceAmount?: number | null;
+    receivedAmount?: number | null;
+    paymentReceived?: boolean;
+    explicit?: string | null;
+}): string;
 export declare function mapContainerDtoToCreateData(c: CreateContainerProductDto, calc: CalculationService, fobDeduction: number, contractFallback?: Partial<CreateContainerProductDto>): {
     containerIndex: number;
     productId: string;
@@ -10,6 +19,8 @@ export declare function mapContainerDtoToCreateData(c: CreateContainerProductDto
     productRemarks: string | null;
     quantityMt: number;
     containerNo: string | null;
+    factorySealNo: string | null;
+    shippingLineSealNo: string | null;
     destinationPortId: string | null;
     expectedShipmentDate: Date | null;
     shipmentMonth: string | null;
@@ -36,4 +47,14 @@ export declare function mapContainerDtoToCreateData(c: CreateContainerProductDto
     originalCifCnfPrice: number | null;
     currentCifCnfPrice: number | null;
     commercialRemarks: string | null;
+    invoiceNumber: string | null;
+    invoiceAmount: number | null;
+    invoiceDate: Date | null;
+    paymentReceived: boolean;
+    paymentStatus: string;
+    receivedAmount: number | null;
+    remainingAmount: number | null;
+    paymentRemarks: string | null;
+    containerStatus: string;
+    productLines: ContainerProductLineDto[];
 };

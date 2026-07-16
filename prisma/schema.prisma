@@ -36,11 +36,14 @@ model User {
 
   office            Office?            @relation(fields: [officeId], references: [id])
   contractsCreated  Contract[]         @relation("ContractCreatedBy")
+  salesAttributionsAdded ContractSalesAttribution[] @relation("AttributionAddedBy")
   auditLogs         AuditLog[]
   contractDocuments ContractDocument[]
   contractAuditLogs ContractAuditLog[]
   containerAmendments ContainerCommercialAmendment[]
+  containerStatusUpdates ContainerStatusHistory[]
   notifications     Notification[]
+  notificationsChanged Notification[] @relation("NotificationChangedBy")
 
   @@index([officeId])
   @@index([role])
@@ -55,7 +58,8 @@ model Salesperson {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  contracts Contract[]
+  contracts     Contract[]
+  attributions  ContractSalesAttribution[]
 
   @@index([isActive])
 }
@@ -114,6 +118,7 @@ model Product {
   variants           ProductVariant[]
   contracts          Contract[]
   contractContainers ContractContainer[]
+  containerProducts  ContractContainerProduct[]
 }
 
 model ProductVariant {
@@ -129,22 +134,25 @@ model ProductVariant {
   product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
   contracts Contract[]
   contractContainers ContractContainer[]
+  containerProducts  ContractContainerProduct[]
 
   @@unique([productId, code])
 }
 
 model PackagingType {
-  id        String   @id @default(cuid())
-  code      String   @unique
-  name      String
-  material  String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  material    String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   sizes              PackagingSize[]
   contracts          Contract[]
   contractContainers ContractContainer[]
+  containerProducts  ContractContainerProduct[]
 }
 
 model PackagingSize {
@@ -153,6 +161,7 @@ model PackagingSize {
   label           String
   weightKg        Float
   weightUnit      String   @default("KG")
+  description     String?
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -160,6 +169,7 @@ model PackagingSize {
   packagingType PackagingType @relation(fields: [packagingTypeId], references: [id], onDelete: Cascade)
   contracts     Contract[]
   contractContainers ContractContainer[]
+  containerProducts  ContractContainerProduct[]
 
   @@index([packagingTypeId])
 }
@@ -250,6 +260,8 @@ model Contract {
   balancePercentage   Float?
   balancePaymentMode  String?
   balancePaymentStage String?
+  /// Free-text when payment method is Other
+  otherPaymentMethod  String?
   paymentDescription  String?
 
   portOfLoadingId      String?
@@ -293,6 +305,7 @@ model Contract {
   createdBy       User                    @relation("ContractCreatedBy", fields: [createdById], references: [id])
   lots            ShipmentLot[]
   containers      ContractContainer[]
+  salesAttributions ContractSalesAttribution[]
   amendments      ContractAmendment[]
   containerAmendments ContainerCommercialAmendment[]
   auditLogs       ContractAuditLog[]
@@ -306,6 +319,7 @@ model Contract {
   @@index([buyerId])
   @@index([contractDate])
   @@index([shipmentMonth, shipmentYear])
+  @@index([createdById])
 }
 
 model ShipmentLot {
@@ -336,6 +350,7 @@ model ContractContainer {
   id                   String    @id @default(cuid())
   contractId           String
   containerIndex       Int
+  /// Legacy primary product (kept for backward compat; prefer `products` relation)
   productId            String
   productVariantId     String?
   processingType       String?
@@ -343,6 +358,8 @@ model ContractContainer {
   productRemarks       String?
   quantityMt           Float?
   containerNo          String?
+  factorySealNo        String?
+  shippingLineSealNo   String?
   destinationPortId    String?
   expectedShipmentDate DateTime?
   shipmentMonth        String?
@@ -369,9 +386,21 @@ model ContractContainer {
   originalCifCnfPrice  Float?
   currentCifCnfPrice   Float?
   commercialRemarks    String?
-  containerStatus      String    @default("PLANNED")
+  /// Invoice / payment (container-wise)
+  invoiceNumber        String?
+  invoiceAmount        Float?
+  invoiceDate          DateTime?
+  paymentReceived      Boolean   @default(false)
+  paymentStatus        String    @default("NOT_RAISED")
+  receivedAmount       Float?
+  remainingAmount      Float?
+  paymentRemarks       String?
+  containerStatus      String    @default("DRAFT")
   actualShipmentDate     DateTime?
   dispatchStatus       String    @default("PLANNED")
+  /// Future production hooks (not finalized — do not expose in UI yet)
+  productionUnitId     String?
+  productionRemarks    String?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
@@ -381,13 +410,83 @@ model ContractContainer {
   destinationPort Port?           @relation(fields: [destinationPortId], references: [id])
   packagingType   PackagingType?  @relation(fields: [packagingTypeId], references: [id])
   packagingSize   PackagingSize?  @relation(fields: [packagingSizeId], references: [id])
+  products        ContractContainerProduct[]
   amendments      ContainerCommercialAmendment[]
+  statusHistory   ContainerStatusHistory[]
 
   @@unique([contractId, containerIndex])
   @@index([contractId])
   @@index([destinationPortId])
   @@index([expectedShipmentDate])
   @@index([containerStatus])
+  @@index([paymentStatus])
+}
+
+/// Multiple products inside one container (PDF §5 / §15.4)
+model ContractContainerProduct {
+  id                 String   @id @default(cuid())
+  contractId         String
+  containerId        String
+  productIndex       Int      @default(1)
+  productId          String
+  productVariantId   String?
+  processingType     String?
+  specification      String?
+  quantityMt         Float
+  packagingTypeId    String?
+  packagingSizeId    String?
+  packingDescription String?
+  packingSizeValue   Float?
+  packingSizeUnit    String?
+  productRemarks     String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  container      ContractContainer @relation(fields: [containerId], references: [id], onDelete: Cascade)
+  product        Product           @relation(fields: [productId], references: [id])
+  productVariant ProductVariant?   @relation(fields: [productVariantId], references: [id])
+  packagingType  PackagingType?    @relation(fields: [packagingTypeId], references: [id])
+  packagingSize  PackagingSize?    @relation(fields: [packagingSizeId], references: [id])
+
+  @@unique([containerId, productIndex])
+  @@index([contractId])
+  @@index([containerId])
+  @@index([productId])
+}
+
+/// Multi-salesperson attribution (PDF §9 / §15.2) — equal credit in Phase 1
+model ContractSalesAttribution {
+  id               String   @id @default(cuid())
+  contractId       String
+  salespersonId    String
+  contributionPct  Float?
+  addedById        String?
+  createdAt        DateTime @default(now())
+
+  contract    Contract    @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  salesperson Salesperson @relation(fields: [salespersonId], references: [id])
+  addedBy     User?       @relation("AttributionAddedBy", fields: [addedById], references: [id])
+
+  @@unique([contractId, salespersonId])
+  @@index([contractId])
+  @@index([salespersonId])
+}
+
+model ContainerStatusHistory {
+  id           String   @id @default(cuid())
+  containerId  String
+  contractId   String
+  fromStatus   String?
+  toStatus     String
+  updatedById  String?
+  remarks      String?
+  createdAt    DateTime @default(now())
+
+  container ContractContainer @relation(fields: [containerId], references: [id], onDelete: Cascade)
+  updatedBy User?             @relation(fields: [updatedById], references: [id])
+
+  @@index([containerId])
+  @@index([contractId])
 }
 
 model ContractAmendment {
@@ -471,6 +570,8 @@ model ContainerCommercialAmendment {
   contractId    String
   containerId   String
   incoterm      String
+  priceType     String   @default("CIF_CNF")
+  invoiceNumber String?
   previousValue Float
   amendedValue  Float
   currency      String
@@ -507,18 +608,22 @@ model ContractAuditLog {
 }
 
 model Notification {
-  id          String    @id @default(cuid())
-  userId      String?
-  targetRole  String?
-  contractId  String?
-  containerId String?
-  type        String
-  message     String
-  readAt      DateTime?
-  createdAt   DateTime  @default(now())
+  id           String    @id @default(cuid())
+  userId       String?
+  targetRole   String?
+  contractId   String?
+  containerId  String?
+  type         String
+  message      String
+  oldValue     String?
+  newValue     String?
+  changedById  String?
+  readAt       DateTime?
+  createdAt    DateTime  @default(now())
 
-  user     User?     @relation(fields: [userId], references: [id])
-  contract Contract? @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id])
+  changedBy User?     @relation("NotificationChangedBy", fields: [changedById], references: [id])
+  contract  Contract? @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([targetRole])

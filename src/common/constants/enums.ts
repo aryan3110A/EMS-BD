@@ -2,6 +2,7 @@ export const UserRole = {
   SUPER_ADMIN: 'SUPER_ADMIN',
   OFFICE_ADMIN: 'OFFICE_ADMIN',
   CONTRACT_TEAM: 'CONTRACT_TEAM',
+  SUPER_SALES: 'SUPER_SALES',
   PRODUCTION_TEAM: 'PRODUCTION_TEAM',
   INVENTORY_TEAM: 'INVENTORY_TEAM',
   ACCOUNTS_TEAM: 'ACCOUNTS_TEAM',
@@ -26,6 +27,35 @@ export const ContractStatus = {
   CANCELLED: 'CANCELLED',
 } as const;
 export type ContractStatus = (typeof ContractStatus)[keyof typeof ContractStatus];
+
+/** Container-wise status (PDF §10.4). Strings kept flexible for future production workflow. */
+export const ContainerStatus = {
+  DRAFT: 'DRAFT',
+  UNDER_PREPARATION: 'UNDER_PREPARATION',
+  PRODUCTION_ASSIGNED: 'PRODUCTION_ASSIGNED',
+  UNDER_PROCESSING: 'UNDER_PROCESSING',
+  PROCESSING_COMPLETED: 'PROCESSING_COMPLETED',
+  READY_FOR_DISPATCH: 'READY_FOR_DISPATCH',
+  DISPATCHED_FROM_FACTORY: 'DISPATCHED_FROM_FACTORY',
+  REACHED_PORT: 'REACHED_PORT',
+  SHIPPED: 'SHIPPED',
+  COMPLETED: 'COMPLETED',
+  ON_HOLD: 'ON_HOLD',
+  CANCELLED: 'CANCELLED',
+  /** Legacy aliases still accepted */
+  PLANNED: 'PLANNED',
+} as const;
+export type ContainerStatus = (typeof ContainerStatus)[keyof typeof ContainerStatus];
+
+export const InvoicePaymentStatus = {
+  NOT_RAISED: 'NOT_RAISED',
+  INVOICE_RAISED: 'INVOICE_RAISED',
+  PENDING: 'PENDING',
+  PARTIAL: 'PARTIAL',
+  RECEIVED: 'RECEIVED',
+  OVERDUE: 'OVERDUE',
+} as const;
+export type InvoicePaymentStatus = (typeof InvoicePaymentStatus)[keyof typeof InvoicePaymentStatus];
 
 export const PaymentType = {
   ADVANCE: 'ADVANCE',

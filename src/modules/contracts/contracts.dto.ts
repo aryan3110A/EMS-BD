@@ -10,13 +10,22 @@ import {
   IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ContractStatus, PaymentType, Incoterm, EuClassification } from '../../common/constants/enums';
+import {
+  ContractStatus,
+  PaymentType,
+  Incoterm,
+  EuClassification,
+  ContainerStatus,
+  InvoicePaymentStatus,
+} from '../../common/constants/enums';
 import { PRODUCT_SPECIFICATIONS } from '../../common/constants/commercial.constants';
 
 const contractStatuses = Object.values(ContractStatus);
 const paymentTypes = Object.values(PaymentType);
 const incoterms = Object.values(Incoterm);
 const euTypes = Object.values(EuClassification);
+const containerStatuses = Object.values(ContainerStatus);
+const invoicePaymentStatuses = Object.values(InvoicePaymentStatus);
 const fobUnits = ['PER_MT', 'PER_KG'];
 const freightUnits = ['PER_CONTAINER', 'PER_MT', 'TOTAL_CONTRACT'];
 const quantityUnits = ['MT', 'KG'];
@@ -44,13 +53,66 @@ export class CreateLotDto {
   remarks?: string;
 }
 
+/** One product line inside a container (PDF §5.2) */
+export class ContainerProductLineDto {
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  productIndex?: number;
+
+  @IsString()
+  productId: string;
+
+  @IsOptional()
+  @IsString()
+  productVariantId?: string;
+
+  @IsOptional()
+  @IsString()
+  processingType?: string;
+
+  @IsOptional()
+  @IsIn(productSpecs)
+  specification?: string;
+
+  @IsNumber()
+  @Min(0.001)
+  quantityMt: number;
+
+  @IsOptional()
+  @IsString()
+  packagingTypeId?: string;
+
+  @IsOptional()
+  @IsString()
+  packagingSizeId?: string;
+
+  @IsOptional()
+  @IsString()
+  packingDescription?: string;
+
+  @IsOptional()
+  @IsNumber()
+  packingSizeValue?: number;
+
+  @IsOptional()
+  @IsString()
+  packingSizeUnit?: string;
+
+  @IsOptional()
+  @IsString()
+  productRemarks?: string;
+}
+
 export class CreateContainerProductDto {
   @IsNumber()
   @Min(1)
   containerIndex: number;
 
+  /** Legacy single-product — prefer `products[]` */
+  @IsOptional()
   @IsString()
-  productId: string;
+  productId?: string;
 
   @IsOptional()
   @IsString()
@@ -74,8 +136,22 @@ export class CreateContainerProductDto {
   quantityMt?: number;
 
   @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ContainerProductLineDto)
+  products?: ContainerProductLineDto[];
+
+  @IsOptional()
   @IsString()
   containerNo?: string;
+
+  @IsOptional()
+  @IsString()
+  factorySealNo?: string;
+
+  @IsOptional()
+  @IsString()
+  shippingLineSealNo?: string;
 
   @IsOptional()
   @IsString()
@@ -156,6 +232,38 @@ export class CreateContainerProductDto {
   @IsOptional()
   @IsString()
   commercialRemarks?: string;
+
+  @IsOptional()
+  @IsString()
+  invoiceNumber?: string;
+
+  @IsOptional()
+  @IsNumber()
+  invoiceAmount?: number;
+
+  @IsOptional()
+  @IsDateString()
+  invoiceDate?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  paymentReceived?: boolean;
+
+  @IsOptional()
+  @IsIn(invoicePaymentStatuses)
+  paymentStatus?: string;
+
+  @IsOptional()
+  @IsNumber()
+  receivedAmount?: number;
+
+  @IsOptional()
+  @IsString()
+  paymentRemarks?: string;
+
+  @IsOptional()
+  @IsIn(containerStatuses)
+  containerStatus?: string;
 }
 
 export class CreateContractDto {
@@ -186,6 +294,12 @@ export class CreateContractDto {
   @IsOptional()
   @IsString()
   salespersonId?: string;
+
+  /** Multi-select salesperson attribution (PDF §9) */
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  salespersonIds?: string[];
 
   @IsOptional()
   @IsString()
@@ -219,9 +333,10 @@ export class CreateContractDto {
   @IsString()
   buyerLotNo?: string;
 
-  // Section C — Product
+  // Section C — Product (header summary; containers may have multiple products)
+  @IsOptional()
   @IsString()
-  productId: string;
+  productId?: string;
 
   @IsOptional()
   @IsString()
@@ -359,6 +474,10 @@ export class CreateContractDto {
 
   @IsOptional()
   @IsString()
+  otherPaymentMethod?: string;
+
+  @IsOptional()
+  @IsString()
   paymentDescription?: string;
 
   @IsOptional()
@@ -483,5 +602,26 @@ export class DashboardQueryDto {
   @IsOptional()
   @IsString()
   euClassification?: string;
+
+  @IsOptional()
+  @IsString()
+  salespersonId?: string;
+
+  @IsOptional()
+  @IsString()
+  superSalesUserId?: string;
+
+  @IsOptional()
+  @IsString()
+  paymentStatus?: string;
+}
+
+export class UpdateContainerStatusDto {
+  @IsIn(containerStatuses)
+  status: string;
+
+  @IsOptional()
+  @IsString()
+  remarks?: string;
 }
 

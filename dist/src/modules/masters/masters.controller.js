@@ -69,6 +69,9 @@ let MastersController = class MastersController {
     createPackagingSize(dto) {
         return this.mastersService.createPackagingSize(dto);
     }
+    getUsers(role) {
+        return this.mastersService.getUsers(role);
+    }
     getPorts(includeInactive) {
         return this.mastersService.getPorts(includeInactive === 'true');
     }
@@ -170,6 +173,13 @@ __decorate([
     __metadata("design:paramtypes", [masters_dto_1.CreatePackagingSizeDto]),
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "createPackagingSize", null);
+__decorate([
+    (0, common_1.Get)('users'),
+    __param(0, (0, common_1.Query)('role')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], MastersController.prototype, "getUsers", null);
 __decorate([
     (0, common_1.Get)('ports'),
     __param(0, (0, common_1.Query)('includeInactive')),

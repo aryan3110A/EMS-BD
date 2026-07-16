@@ -80,6 +80,28 @@ async function main() {
             officeId: ahmedabad.id,
         },
     });
+    await prisma.user.upsert({
+        where: { email: 'supersales@ems.com' },
+        update: { name: 'Super Sales User', role: enums_1.UserRole.SUPER_SALES },
+        create: {
+            email: 'supersales@ems.com',
+            passwordHash,
+            name: 'Super Sales User',
+            role: enums_1.UserRole.SUPER_SALES,
+            officeId: ahmedabad.id,
+        },
+    });
+    await prisma.user.upsert({
+        where: { email: 'accounts@ems.com' },
+        update: { role: enums_1.UserRole.ACCOUNTS_TEAM },
+        create: {
+            email: 'accounts@ems.com',
+            passwordHash,
+            name: 'Accounts Team',
+            role: enums_1.UserRole.ACCOUNTS_TEAM,
+            officeId: ahmedabad.id,
+        },
+    });
     const jyoti = await prisma.salesperson.upsert({
         where: { code: 'SP-JYOTI' },
         update: {},

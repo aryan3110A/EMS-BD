@@ -1,11 +1,67 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.resolveContainerProductLines = resolveContainerProductLines;
+exports.computeRemainingAmount = computeRemainingAmount;
+exports.derivePaymentStatus = derivePaymentStatus;
 exports.mapContainerDtoToCreateData = mapContainerDtoToCreateData;
 const enums_1 = require("../../common/constants/enums");
+function resolveContainerProductLines(c) {
+    if (c.products?.length) {
+        return c.products.map((p, i) => ({
+            ...p,
+            productIndex: p.productIndex ?? i + 1,
+        }));
+    }
+    if (c.productId) {
+        return [
+            {
+                productIndex: 1,
+                productId: c.productId,
+                productVariantId: c.productVariantId,
+                processingType: c.processingType,
+                specification: c.specification,
+                quantityMt: c.quantityMt ?? 0,
+                packagingTypeId: c.packagingTypeId,
+                packagingSizeId: c.packagingSizeId,
+                packingDescription: c.packingDescription,
+                packingSizeValue: c.packingSizeValue,
+                packingSizeUnit: c.packingSizeUnit,
+                productRemarks: c.productRemarks,
+            },
+        ];
+    }
+    return [];
+}
+function computeRemainingAmount(invoiceAmount, receivedAmount) {
+    if (invoiceAmount == null)
+        return null;
+    return Math.round((invoiceAmount - (receivedAmount ?? 0)) * 1000) / 1000;
+}
+function derivePaymentStatus(params) {
+    if (params.explicit && params.explicit !== enums_1.InvoicePaymentStatus.NOT_RAISED) {
+        return params.explicit;
+    }
+    const amount = params.invoiceAmount ?? 0;
+    const received = params.receivedAmount ?? 0;
+    if (!params.invoiceNumber && !amount)
+        return enums_1.InvoicePaymentStatus.NOT_RAISED;
+    if (params.paymentReceived || (amount > 0 && received >= amount - 0.001)) {
+        return enums_1.InvoicePaymentStatus.RECEIVED;
+    }
+    if (received > 0 && received < amount)
+        return enums_1.InvoicePaymentStatus.PARTIAL;
+    if (params.invoiceNumber || amount > 0)
+        return enums_1.InvoicePaymentStatus.PENDING;
+    return enums_1.InvoicePaymentStatus.NOT_RAISED;
+}
 function mapContainerDtoToCreateData(c, calc, fobDeduction, contractFallback) {
     const merged = { ...contractFallback, ...c };
+    const lines = resolveContainerProductLines(merged);
+    const primary = lines[0];
+    const quantityMt = merged.quantityMt ??
+        lines.reduce((s, p) => s + (p.quantityMt ?? 0), 0) ??
+        0;
     const incoterm = (merged.incoterm ?? enums_1.Incoterm.FOB).toUpperCase();
-    const quantityMt = merged.quantityMt ?? 0;
     let shipmentMonth = merged.shipmentMonth;
     let shipmentYear = merged.shipmentYear;
     let shipmentHalf = merged.shipmentHalf;
@@ -25,25 +81,37 @@ function mapContainerDtoToCreateData(c, calc, fobDeduction, contractFallback) {
         insurance: incoterm === enums_1.Incoterm.CIF ? merged.insurance : undefined,
         fobDeduction,
     }, fobDeduction);
+    const invoiceAmount = merged.invoiceAmount ?? null;
+    const receivedAmount = merged.receivedAmount ?? null;
+    const remainingAmount = computeRemainingAmount(invoiceAmount, receivedAmount);
+    const paymentStatus = derivePaymentStatus({
+        invoiceNumber: merged.invoiceNumber,
+        invoiceAmount,
+        receivedAmount,
+        paymentReceived: merged.paymentReceived,
+        explicit: merged.paymentStatus,
+    });
     return {
         containerIndex: merged.containerIndex,
-        productId: merged.productId,
-        productVariantId: merged.productVariantId || null,
-        processingType: merged.processingType || null,
-        specification: merged.specification || null,
-        productRemarks: merged.productRemarks || null,
+        productId: primary?.productId ?? merged.productId,
+        productVariantId: primary?.productVariantId || merged.productVariantId || null,
+        processingType: primary?.processingType || merged.processingType || null,
+        specification: primary?.specification || merged.specification || null,
+        productRemarks: primary?.productRemarks || merged.productRemarks || null,
         quantityMt,
         containerNo: merged.containerNo || null,
+        factorySealNo: merged.factorySealNo || null,
+        shippingLineSealNo: merged.shippingLineSealNo || null,
         destinationPortId: merged.destinationPortId || null,
         expectedShipmentDate: merged.expectedShipmentDate ? new Date(merged.expectedShipmentDate) : null,
         shipmentMonth: shipmentMonth ?? null,
         shipmentYear: shipmentYear ?? null,
         shipmentHalf: shipmentHalf ?? null,
-        packagingTypeId: merged.packagingTypeId || null,
-        packagingSizeId: merged.packagingSizeId || null,
-        packingDescription: merged.packingDescription || null,
-        packingSizeValue: merged.packingSizeValue ?? null,
-        packingSizeUnit: merged.packingSizeUnit || null,
+        packagingTypeId: primary?.packagingTypeId || merged.packagingTypeId || null,
+        packagingSizeId: primary?.packagingSizeId || merged.packagingSizeId || null,
+        packingDescription: primary?.packingDescription || merged.packingDescription || null,
+        packingSizeValue: primary?.packingSizeValue ?? merged.packingSizeValue ?? null,
+        packingSizeUnit: primary?.packingSizeUnit || merged.packingSizeUnit || null,
         incoterm,
         fobPrice: merged.fobPrice ?? null,
         fobCurrency: merged.fobCurrency ?? 'USD',
@@ -60,6 +128,16 @@ function mapContainerDtoToCreateData(c, calc, fobDeduction, contractFallback) {
         originalCifCnfPrice: commercial.originalCifCnfPrice ?? null,
         currentCifCnfPrice: commercial.currentCifCnfPrice ?? null,
         commercialRemarks: merged.commercialRemarks || null,
+        invoiceNumber: merged.invoiceNumber || null,
+        invoiceAmount,
+        invoiceDate: merged.invoiceDate ? new Date(merged.invoiceDate) : null,
+        paymentReceived: merged.paymentReceived ?? false,
+        paymentStatus,
+        receivedAmount,
+        remainingAmount,
+        paymentRemarks: merged.paymentRemarks || null,
+        containerStatus: merged.containerStatus || 'DRAFT',
+        productLines: lines,
     };
 }
 //# sourceMappingURL=container-mapper.js.map

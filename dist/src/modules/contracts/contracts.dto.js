@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DashboardQueryDto = exports.ContractQueryDto = exports.UpdateContractDto = exports.CreateContractDto = exports.CreateContainerProductDto = exports.CreateLotDto = void 0;
+exports.UpdateContainerStatusDto = exports.DashboardQueryDto = exports.ContractQueryDto = exports.UpdateContractDto = exports.CreateContractDto = exports.CreateContainerProductDto = exports.ContainerProductLineDto = exports.CreateLotDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 const enums_1 = require("../../common/constants/enums");
@@ -18,6 +18,8 @@ const contractStatuses = Object.values(enums_1.ContractStatus);
 const paymentTypes = Object.values(enums_1.PaymentType);
 const incoterms = Object.values(enums_1.Incoterm);
 const euTypes = Object.values(enums_1.EuClassification);
+const containerStatuses = Object.values(enums_1.ContainerStatus);
+const invoicePaymentStatuses = Object.values(enums_1.InvoicePaymentStatus);
 const fobUnits = ['PER_MT', 'PER_KG'];
 const freightUnits = ['PER_CONTAINER', 'PER_MT', 'TOTAL_CONTRACT'];
 const quantityUnits = ['MT', 'KG'];
@@ -55,6 +57,81 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateLotDto.prototype, "remarks", void 0);
+class ContainerProductLineDto {
+    productIndex;
+    productId;
+    productVariantId;
+    processingType;
+    specification;
+    quantityMt;
+    packagingTypeId;
+    packagingSizeId;
+    packingDescription;
+    packingSizeValue;
+    packingSizeUnit;
+    productRemarks;
+}
+exports.ContainerProductLineDto = ContainerProductLineDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(1),
+    __metadata("design:type", Number)
+], ContainerProductLineDto.prototype, "productIndex", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ContainerProductLineDto.prototype, "productId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ContainerProductLineDto.prototype, "productVariantId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ContainerProductLineDto.prototype, "processingType", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(productSpecs),
+    __metadata("design:type", String)
+], ContainerProductLineDto.prototype, "specification", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0.001),
+    __metadata("design:type", Number)
+], ContainerProductLineDto.prototype, "quantityMt", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ContainerProductLineDto.prototype, "packagingTypeId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ContainerProductLineDto.prototype, "packagingSizeId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ContainerProductLineDto.prototype, "packingDescription", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], ContainerProductLineDto.prototype, "packingSizeValue", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ContainerProductLineDto.prototype, "packingSizeUnit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ContainerProductLineDto.prototype, "productRemarks", void 0);
 class CreateContainerProductDto {
     containerIndex;
     productId;
@@ -63,7 +140,10 @@ class CreateContainerProductDto {
     specification;
     productRemarks;
     quantityMt;
+    products;
     containerNo;
+    factorySealNo;
+    shippingLineSealNo;
     destinationPortId;
     expectedShipmentDate;
     shipmentMonth;
@@ -84,6 +164,14 @@ class CreateContainerProductDto {
     totalFreight;
     insurance;
     commercialRemarks;
+    invoiceNumber;
+    invoiceAmount;
+    invoiceDate;
+    paymentReceived;
+    paymentStatus;
+    receivedAmount;
+    paymentRemarks;
+    containerStatus;
 }
 exports.CreateContainerProductDto = CreateContainerProductDto;
 __decorate([
@@ -92,6 +180,7 @@ __decorate([
     __metadata("design:type", Number)
 ], CreateContainerProductDto.prototype, "containerIndex", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateContainerProductDto.prototype, "productId", void 0);
@@ -123,9 +212,26 @@ __decorate([
 ], CreateContainerProductDto.prototype, "quantityMt", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => ContainerProductLineDto),
+    __metadata("design:type", Array)
+], CreateContainerProductDto.prototype, "products", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateContainerProductDto.prototype, "containerNo", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateContainerProductDto.prototype, "factorySealNo", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateContainerProductDto.prototype, "shippingLineSealNo", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
@@ -226,6 +332,46 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateContainerProductDto.prototype, "commercialRemarks", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateContainerProductDto.prototype, "invoiceNumber", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateContainerProductDto.prototype, "invoiceAmount", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], CreateContainerProductDto.prototype, "invoiceDate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], CreateContainerProductDto.prototype, "paymentReceived", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(invoicePaymentStatuses),
+    __metadata("design:type", String)
+], CreateContainerProductDto.prototype, "paymentStatus", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateContainerProductDto.prototype, "receivedAmount", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateContainerProductDto.prototype, "paymentRemarks", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(containerStatuses),
+    __metadata("design:type", String)
+], CreateContainerProductDto.prototype, "containerStatus", void 0);
 class CreateContractDto {
     officeId;
     contractNumber;
@@ -234,6 +380,7 @@ class CreateContractDto {
     contractDate;
     signedContractReceivedDate;
     salespersonId;
+    salespersonIds;
     contractOnBehalfOf;
     invoiceNumber;
     remarks;
@@ -276,6 +423,7 @@ class CreateContractDto {
     advancePercentage;
     balancePaymentMode;
     balancePaymentStage;
+    otherPaymentMethod;
     paymentDescription;
     portOfLoadingId;
     destinationPortId;
@@ -328,6 +476,12 @@ __decorate([
 ], CreateContractDto.prototype, "salespersonId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsString)({ each: true }),
+    __metadata("design:type", Array)
+], CreateContractDto.prototype, "salespersonIds", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateContractDto.prototype, "contractOnBehalfOf", void 0);
@@ -366,6 +520,7 @@ __decorate([
     __metadata("design:type", String)
 ], CreateContractDto.prototype, "buyerLotNo", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateContractDto.prototype, "productId", void 0);
@@ -538,6 +693,11 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
+], CreateContractDto.prototype, "otherPaymentMethod", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
 ], CreateContractDto.prototype, "paymentDescription", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
@@ -661,6 +821,9 @@ class DashboardQueryDto {
     destinationPortId;
     shipmentPeriod;
     euClassification;
+    salespersonId;
+    superSalesUserId;
+    paymentStatus;
 }
 exports.DashboardQueryDto = DashboardQueryDto;
 __decorate([
@@ -708,4 +871,33 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], DashboardQueryDto.prototype, "euClassification", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DashboardQueryDto.prototype, "salespersonId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DashboardQueryDto.prototype, "superSalesUserId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DashboardQueryDto.prototype, "paymentStatus", void 0);
+class UpdateContainerStatusDto {
+    status;
+    remarks;
+}
+exports.UpdateContainerStatusDto = UpdateContainerStatusDto;
+__decorate([
+    (0, class_validator_1.IsIn)(containerStatuses),
+    __metadata("design:type", String)
+], UpdateContainerStatusDto.prototype, "status", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateContainerStatusDto.prototype, "remarks", void 0);
 //# sourceMappingURL=contracts.dto.js.map

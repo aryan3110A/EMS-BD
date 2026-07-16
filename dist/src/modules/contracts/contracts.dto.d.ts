@@ -6,15 +6,32 @@ export declare class CreateLotDto {
     destinationPortId?: string;
     remarks?: string;
 }
+export declare class ContainerProductLineDto {
+    productIndex?: number;
+    productId: string;
+    productVariantId?: string;
+    processingType?: string;
+    specification?: string;
+    quantityMt: number;
+    packagingTypeId?: string;
+    packagingSizeId?: string;
+    packingDescription?: string;
+    packingSizeValue?: number;
+    packingSizeUnit?: string;
+    productRemarks?: string;
+}
 export declare class CreateContainerProductDto {
     containerIndex: number;
-    productId: string;
+    productId?: string;
     productVariantId?: string;
     processingType?: string;
     specification?: string;
     productRemarks?: string;
     quantityMt?: number;
+    products?: ContainerProductLineDto[];
     containerNo?: string;
+    factorySealNo?: string;
+    shippingLineSealNo?: string;
     destinationPortId?: string;
     expectedShipmentDate?: string;
     shipmentMonth?: string;
@@ -35,6 +52,14 @@ export declare class CreateContainerProductDto {
     totalFreight?: number;
     insurance?: number;
     commercialRemarks?: string;
+    invoiceNumber?: string;
+    invoiceAmount?: number;
+    invoiceDate?: string;
+    paymentReceived?: boolean;
+    paymentStatus?: string;
+    receivedAmount?: number;
+    paymentRemarks?: string;
+    containerStatus?: string;
 }
 export declare class CreateContractDto {
     officeId: string;
@@ -44,6 +69,7 @@ export declare class CreateContractDto {
     contractDate?: string;
     signedContractReceivedDate?: string;
     salespersonId?: string;
+    salespersonIds?: string[];
     contractOnBehalfOf?: string;
     invoiceNumber?: string;
     remarks?: string;
@@ -52,7 +78,7 @@ export declare class CreateContractDto {
     euClassification?: EuClassification;
     buyerRemarks?: string;
     buyerLotNo?: string;
-    productId: string;
+    productId?: string;
     productVariantId?: string;
     processingType?: string;
     totalMt: number;
@@ -86,6 +112,7 @@ export declare class CreateContractDto {
     advancePercentage?: number;
     balancePaymentMode?: string;
     balancePaymentStage?: string;
+    otherPaymentMethod?: string;
     paymentDescription?: string;
     portOfLoadingId?: string;
     destinationPortId?: string;
@@ -121,4 +148,11 @@ export declare class DashboardQueryDto {
     destinationPortId?: string;
     shipmentPeriod?: string;
     euClassification?: string;
+    salespersonId?: string;
+    superSalesUserId?: string;
+    paymentStatus?: string;
+}
+export declare class UpdateContainerStatusDto {
+    status: string;
+    remarks?: string;
 }

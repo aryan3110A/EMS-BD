@@ -45,12 +45,14 @@ export declare class CreatePackagingTypeDto {
     name: string;
     code?: string;
     material?: string;
+    description?: string;
 }
 export declare class CreatePackagingSizeDto {
     packagingTypeId: string;
     weightValue: number;
     weightUnit?: string;
     label?: string;
+    description?: string;
 }
 export declare class CreateCountryDto {
     name: string;

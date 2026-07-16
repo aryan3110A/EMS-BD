@@ -20,33 +20,64 @@ let NotificationService = class NotificationService {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async notifyCommercialAmendment(params) {
-        const label = params.incoterm === 'CNF' ? 'CNF' : 'CIF';
-        const message = `${label} price for Contract ${params.contractNumber}, Container ${params.containerIndex} was changed from ${params.currency} ${params.previousValue} to ${params.currency} ${params.amendedValue} by ${params.amendedByName}. Reason: ${params.reason}.`;
-        const roles = [enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.ACCOUNTS_TEAM];
-        await this.prisma.notification.createMany({
-            data: roles.map((role) => ({
+    async notifyChange(params) {
+        const roles = params.targetRoles ?? [enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.ACCOUNTS_TEAM];
+        const rows = [
+            ...roles.map((role) => ({
                 targetRole: role,
-                contractId: params.contractId,
-                containerId: params.containerId,
-                type: 'COMMERCIAL_AMENDMENT',
-                message,
+                userId: null,
+                contractId: params.contractId ?? null,
+                containerId: params.containerId ?? null,
+                type: params.type,
+                message: params.message,
+                oldValue: params.oldValue ?? null,
+                newValue: params.newValue ?? null,
+                changedById: params.changedById ?? null,
             })),
-        });
+            ...(params.userIds ?? []).map((userId) => ({
+                targetRole: null,
+                userId,
+                contractId: params.contractId ?? null,
+                containerId: params.containerId ?? null,
+                type: params.type,
+                message: params.message,
+                oldValue: params.oldValue ?? null,
+                newValue: params.newValue ?? null,
+                changedById: params.changedById ?? null,
+            })),
+        ];
+        if (!rows.length)
+            return;
+        await this.prisma.notification.createMany({ data: rows });
         const created = await this.prisma.notification.findMany({
             where: {
-                contractId: params.contractId,
-                containerId: params.containerId,
-                type: 'COMMERCIAL_AMENDMENT',
-                message,
+                contractId: params.contractId ?? undefined,
+                type: params.type,
+                message: params.message,
                 readAt: null,
             },
             orderBy: { createdAt: 'desc' },
-            take: roles.length,
+            take: rows.length,
         });
         for (const notification of created) {
             this.emitter.emit('notification', notification);
         }
+    }
+    async notifyCommercialAmendment(params) {
+        const label = params.incoterm === 'CNF' ? 'CNF' : 'CIF';
+        const message = `${label} price changed for Contract ${params.contractNumber}, Container ${params.containerIndex}. ` +
+            `Old Price: ${params.currency} ${params.previousValue}. New Price: ${params.currency} ${params.amendedValue}. ` +
+            `Changed By: ${params.amendedByName}. Reason: ${params.reason}.`;
+        await this.notifyChange({
+            type: 'COMMERCIAL_AMENDMENT',
+            message,
+            contractId: params.contractId,
+            containerId: params.containerId,
+            oldValue: String(params.previousValue),
+            newValue: String(params.amendedValue),
+            changedById: params.amendedById,
+            targetRoles: [enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.ACCOUNTS_TEAM, enums_1.UserRole.SUPER_SALES, enums_1.UserRole.OFFICE_ADMIN],
+        });
     }
     findForUser(userId, role) {
         return this.prisma.notification.findMany({

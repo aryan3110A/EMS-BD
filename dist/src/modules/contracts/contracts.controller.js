@@ -59,6 +59,9 @@ let ContractsController = class ContractsController {
     amendCommercial(id, containerId, dto, user) {
         return this.contractsService.amendContainerCommercial(id, containerId, dto, user);
     }
+    updateContainerStatus(id, containerId, status, remarks, user) {
+        return this.contractsService.updateContainerStatus(id, containerId, status, user, remarks);
+    }
     updateStatus(id, status, remarks, user) {
         return this.contractsService.updateStatus(id, status, user, remarks);
     }
@@ -112,7 +115,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ContractsController.prototype, "findOne", null);
 __decorate([
-    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM, enums_1.UserRole.SUPER_SALES),
     (0, common_1.Post)('submit'),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
@@ -121,7 +124,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ContractsController.prototype, "submit", null);
 __decorate([
-    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM, enums_1.UserRole.SUPER_SALES),
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
@@ -130,7 +133,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ContractsController.prototype, "create", null);
 __decorate([
-    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM, enums_1.UserRole.SUPER_SALES),
     (0, common_1.Patch)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
@@ -140,7 +143,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ContractsController.prototype, "update", null);
 __decorate([
-    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM, enums_1.UserRole.SUPER_SALES),
     (0, common_1.Patch)(':id/containers/:containerId/amend-commercial'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Param)('containerId')),
@@ -151,7 +154,19 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ContractsController.prototype, "amendCommercial", null);
 __decorate([
-    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM, enums_1.UserRole.PRODUCTION_TEAM),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM, enums_1.UserRole.PRODUCTION_TEAM, enums_1.UserRole.SUPER_SALES),
+    (0, common_1.Patch)(':id/containers/:containerId/status'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('containerId')),
+    __param(2, (0, common_1.Body)('status')),
+    __param(3, (0, common_1.Body)('remarks')),
+    __param(4, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, String, Object]),
+    __metadata("design:returntype", void 0)
+], ContractsController.prototype, "updateContainerStatus", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM, enums_1.UserRole.PRODUCTION_TEAM, enums_1.UserRole.SUPER_SALES),
     (0, common_1.Patch)(':id/status'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)('status')),

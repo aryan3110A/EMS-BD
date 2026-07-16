@@ -5,44 +5,44 @@ export declare class MastersService {
     constructor(prisma: PrismaService);
     getSalespersons(): import(".prisma/client").Prisma.PrismaPromise<{
         id: string;
+        code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
         phone: string | null;
     }[]>;
     getBuyers(officeId?: string, search?: string, includeInactive?: boolean): import(".prisma/client").Prisma.PrismaPromise<({
         country: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             region: string | null;
             euClassification: string;
         };
         defaultPort: {
             id: string;
+            code: string | null;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string | null;
             euClassification: string | null;
             portType: string;
             countryId: string;
         } | null;
     } & {
         id: string;
-        email: string | null;
+        code: string;
         name: string;
-        officeId: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
+        email: string | null;
+        officeId: string | null;
         phone: string | null;
         euClassification: string | null;
         countryId: string;
@@ -53,11 +53,11 @@ export declare class MastersService {
     })[]>;
     getCountries(): import(".prisma/client").Prisma.PrismaPromise<{
         id: string;
+        code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
         region: string | null;
         euClassification: string;
     }[]>;
@@ -67,32 +67,32 @@ export declare class MastersService {
         euClassification?: string;
     }): Promise<{
         id: string;
+        code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
         region: string | null;
         euClassification: string;
     }>;
     getProducts(): import(".prisma/client").Prisma.PrismaPromise<({
         variants: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             productId: string;
             processingType: string | null;
         }[];
     } & {
         id: string;
+        code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
         category: string | null;
         defaultSpecification: string | null;
         standardContainerMt: number;
@@ -103,6 +103,7 @@ export declare class MastersService {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            description: string | null;
             packagingTypeId: string;
             label: string;
             weightKg: number;
@@ -110,31 +111,32 @@ export declare class MastersService {
         }[];
     } & {
         id: string;
+        code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
         material: string;
+        description: string | null;
     })[]>;
     getPorts(includeInactive?: boolean): import(".prisma/client").Prisma.PrismaPromise<({
         country: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             region: string | null;
             euClassification: string;
         };
     } & {
         id: string;
+        code: string | null;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string | null;
         euClassification: string | null;
         portType: string;
         countryId: string;
@@ -147,21 +149,21 @@ export declare class MastersService {
     }, userId?: string): Promise<{
         country: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             region: string | null;
             euClassification: string;
         };
     } & {
         id: string;
+        code: string | null;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string | null;
         euClassification: string | null;
         portType: string;
         countryId: string;
@@ -178,34 +180,34 @@ export declare class MastersService {
     }, userId?: string): Promise<{
         country: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             region: string | null;
             euClassification: string;
         };
         defaultPort: {
             id: string;
+            code: string | null;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string | null;
             euClassification: string | null;
             portType: string;
             countryId: string;
         } | null;
     } & {
         id: string;
-        email: string | null;
+        code: string;
         name: string;
-        officeId: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
+        email: string | null;
+        officeId: string | null;
         phone: string | null;
         euClassification: string | null;
         countryId: string;
@@ -217,34 +219,34 @@ export declare class MastersService {
     deactivateBuyer(id: string, userId?: string): Promise<{
         country: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             region: string | null;
             euClassification: string;
         };
         defaultPort: {
             id: string;
+            code: string | null;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string | null;
             euClassification: string | null;
             portType: string;
             countryId: string;
         } | null;
     } & {
         id: string;
-        email: string | null;
+        code: string;
         name: string;
-        officeId: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
+        email: string | null;
+        officeId: string | null;
         phone: string | null;
         euClassification: string | null;
         countryId: string;
@@ -261,65 +263,65 @@ export declare class MastersService {
     }, userId?: string): Promise<{
         country: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             region: string | null;
             euClassification: string;
         };
     } & {
         id: string;
+        code: string | null;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string | null;
         euClassification: string | null;
         portType: string;
         countryId: string;
     }>;
     createSalesperson(dto: CreateSalespersonDto): Promise<{
         id: string;
+        code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
         phone: string | null;
     }>;
     createBuyer(dto: CreateBuyerDto, userId?: string): Promise<{
         country: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             region: string | null;
             euClassification: string;
         };
         defaultPort: {
             id: string;
+            code: string | null;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string | null;
             euClassification: string | null;
             portType: string;
             countryId: string;
         } | null;
     } & {
         id: string;
-        email: string | null;
+        code: string;
         name: string;
-        officeId: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
+        email: string | null;
+        officeId: string | null;
         phone: string | null;
         euClassification: string | null;
         countryId: string;
@@ -331,21 +333,21 @@ export declare class MastersService {
     createProduct(dto: CreateProductDto): Promise<({
         variants: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             productId: string;
             processingType: string | null;
         }[];
     } & {
         id: string;
+        code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
         category: string | null;
         defaultSpecification: string | null;
         standardContainerMt: number;
@@ -353,21 +355,21 @@ export declare class MastersService {
     createProductVariant(dto: CreateProductVariantDto): Promise<({
         variants: {
             id: string;
+            code: string;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            code: string;
             productId: string;
             processingType: string | null;
         }[];
     } & {
         id: string;
+        code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
         category: string | null;
         defaultSpecification: string | null;
         standardContainerMt: number;
@@ -378,6 +380,7 @@ export declare class MastersService {
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            description: string | null;
             packagingTypeId: string;
             label: string;
             weightKg: number;
@@ -385,21 +388,29 @@ export declare class MastersService {
         }[];
     } & {
         id: string;
+        code: string;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
         material: string;
+        description: string | null;
     }>;
     createPackagingSize(dto: CreatePackagingSizeDto): Promise<{
         id: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
         packagingTypeId: string;
         label: string;
         weightKg: number;
         weightUnit: string;
     }>;
+    getUsers(role?: string): import(".prisma/client").Prisma.PrismaPromise<{
+        id: string;
+        name: string;
+        email: string;
+        role: string;
+    }[]>;
 }

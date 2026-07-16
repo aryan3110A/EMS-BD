@@ -9,21 +9,21 @@ export declare class OfficesController {
     constructor(prisma: PrismaService);
     findAll(): import(".prisma/client").Prisma.PrismaPromise<{
         id: string;
+        code: string;
         name: string;
+        city: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
-        city: string;
     }[]>;
     create(dto: CreateOfficeDto): import(".prisma/client").Prisma.Prisma__OfficeClient<{
         id: string;
+        code: string;
         name: string;
+        city: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        code: string;
-        city: string;
     }, never, import("@prisma/client/runtime/library").DefaultArgs>;
 }
 export declare class OfficesModule {

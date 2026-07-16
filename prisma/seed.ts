@@ -60,6 +60,30 @@ async function main() {
     },
   });
 
+  await prisma.user.upsert({
+    where: { email: 'supersales@ems.com' },
+    update: { name: 'Super Sales User', role: UserRole.SUPER_SALES },
+    create: {
+      email: 'supersales@ems.com',
+      passwordHash,
+      name: 'Super Sales User',
+      role: UserRole.SUPER_SALES,
+      officeId: ahmedabad.id,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: 'accounts@ems.com' },
+    update: { role: UserRole.ACCOUNTS_TEAM },
+    create: {
+      email: 'accounts@ems.com',
+      passwordHash,
+      name: 'Accounts Team',
+      role: UserRole.ACCOUNTS_TEAM,
+      officeId: ahmedabad.id,
+    },
+  });
+
   const jyoti = await prisma.salesperson.upsert({
     where: { code: 'SP-JYOTI' },
     update: {},

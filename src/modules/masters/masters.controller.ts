@@ -99,6 +99,11 @@ export class MastersController {
     return this.mastersService.createPackagingSize(dto);
   }
 
+  @Get('users')
+  getUsers(@Query('role') role?: string) {
+    return this.mastersService.getUsers(role);
+  }
+
   @Get('ports')
   getPorts(@Query('includeInactive') includeInactive?: string) {
     return this.mastersService.getPorts(includeInactive === 'true');

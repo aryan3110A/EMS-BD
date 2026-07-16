@@ -317,6 +317,7 @@ let MastersService = class MastersService {
                 code,
                 name: dto.name.trim(),
                 material: dto.material?.trim() || dto.name.trim(),
+                description: dto.description?.trim() || null,
             },
             include: { sizes: { where: { isActive: true } } },
         });
@@ -333,7 +334,18 @@ let MastersService = class MastersService {
                 label,
                 weightKg: unit === 'G' ? dto.weightValue / 1000 : dto.weightValue,
                 weightUnit: unit,
+                description: dto.description?.trim() || null,
             },
+        });
+    }
+    getUsers(role) {
+        return this.prisma.user.findMany({
+            where: {
+                isActive: true,
+                ...(role ? { role } : {}),
+            },
+            select: { id: true, name: true, email: true, role: true },
+            orderBy: { name: 'asc' },
         });
     }
 };

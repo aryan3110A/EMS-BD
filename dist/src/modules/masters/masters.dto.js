@@ -205,6 +205,7 @@ class CreatePackagingTypeDto {
     name;
     code;
     material;
+    description;
 }
 exports.CreatePackagingTypeDto = CreatePackagingTypeDto;
 __decorate([
@@ -221,11 +222,17 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreatePackagingTypeDto.prototype, "material", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreatePackagingTypeDto.prototype, "description", void 0);
 class CreatePackagingSizeDto {
     packagingTypeId;
     weightValue;
     weightUnit;
     label;
+    description;
 }
 exports.CreatePackagingSizeDto = CreatePackagingSizeDto;
 __decorate([
@@ -247,6 +254,11 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreatePackagingSizeDto.prototype, "label", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreatePackagingSizeDto.prototype, "description", void 0);
 class CreateCountryDto {
     name;
     code;

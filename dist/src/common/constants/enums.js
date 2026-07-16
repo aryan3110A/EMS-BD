@@ -1,10 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EuClassification = exports.Incoterm = exports.PaymentType = exports.ContractStatus = exports.UserRole = void 0;
+exports.EuClassification = exports.Incoterm = exports.PaymentType = exports.InvoicePaymentStatus = exports.ContainerStatus = exports.ContractStatus = exports.UserRole = void 0;
 exports.UserRole = {
     SUPER_ADMIN: 'SUPER_ADMIN',
     OFFICE_ADMIN: 'OFFICE_ADMIN',
     CONTRACT_TEAM: 'CONTRACT_TEAM',
+    SUPER_SALES: 'SUPER_SALES',
     PRODUCTION_TEAM: 'PRODUCTION_TEAM',
     INVENTORY_TEAM: 'INVENTORY_TEAM',
     ACCOUNTS_TEAM: 'ACCOUNTS_TEAM',
@@ -25,6 +26,29 @@ exports.ContractStatus = {
     COMPLETED: 'COMPLETED',
     ON_HOLD: 'ON_HOLD',
     CANCELLED: 'CANCELLED',
+};
+exports.ContainerStatus = {
+    DRAFT: 'DRAFT',
+    UNDER_PREPARATION: 'UNDER_PREPARATION',
+    PRODUCTION_ASSIGNED: 'PRODUCTION_ASSIGNED',
+    UNDER_PROCESSING: 'UNDER_PROCESSING',
+    PROCESSING_COMPLETED: 'PROCESSING_COMPLETED',
+    READY_FOR_DISPATCH: 'READY_FOR_DISPATCH',
+    DISPATCHED_FROM_FACTORY: 'DISPATCHED_FROM_FACTORY',
+    REACHED_PORT: 'REACHED_PORT',
+    SHIPPED: 'SHIPPED',
+    COMPLETED: 'COMPLETED',
+    ON_HOLD: 'ON_HOLD',
+    CANCELLED: 'CANCELLED',
+    PLANNED: 'PLANNED',
+};
+exports.InvoicePaymentStatus = {
+    NOT_RAISED: 'NOT_RAISED',
+    INVOICE_RAISED: 'INVOICE_RAISED',
+    PENDING: 'PENDING',
+    PARTIAL: 'PARTIAL',
+    RECEIVED: 'RECEIVED',
+    OVERDUE: 'OVERDUE',
 };
 exports.PaymentType = {
     ADVANCE: 'ADVANCE',

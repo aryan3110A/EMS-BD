@@ -49,19 +49,19 @@ export class ContractsController {
     return this.contractsService.findOne(id, user);
   }
 
-  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.CONTRACT_TEAM)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.CONTRACT_TEAM, UserRole.SUPER_SALES)
   @Post('submit')
   submit(@Body() dto: SubmitContractDto, @CurrentUser() user: JwtPayload) {
     return this.contractsService.submit(dto, user);
   }
 
-  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.CONTRACT_TEAM)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.CONTRACT_TEAM, UserRole.SUPER_SALES)
   @Post()
   create(@Body() dto: CreateContractDto, @CurrentUser() user: JwtPayload) {
     return this.contractsService.create(dto, user);
   }
 
-  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.CONTRACT_TEAM)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.CONTRACT_TEAM, UserRole.SUPER_SALES)
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -71,7 +71,7 @@ export class ContractsController {
     return this.contractsService.update(id, dto, user);
   }
 
-  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.CONTRACT_TEAM)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.CONTRACT_TEAM, UserRole.SUPER_SALES)
   @Patch(':id/containers/:containerId/amend-commercial')
   amendCommercial(
     @Param('id') id: string,
@@ -82,7 +82,19 @@ export class ContractsController {
     return this.contractsService.amendContainerCommercial(id, containerId, dto, user);
   }
 
-  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.CONTRACT_TEAM, UserRole.PRODUCTION_TEAM)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.CONTRACT_TEAM, UserRole.PRODUCTION_TEAM, UserRole.SUPER_SALES)
+  @Patch(':id/containers/:containerId/status')
+  updateContainerStatus(
+    @Param('id') id: string,
+    @Param('containerId') containerId: string,
+    @Body('status') status: string,
+    @Body('remarks') remarks: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.contractsService.updateContainerStatus(id, containerId, status, user, remarks);
+  }
+
+  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.CONTRACT_TEAM, UserRole.PRODUCTION_TEAM, UserRole.SUPER_SALES)
   @Patch(':id/status')
   updateStatus(
     @Param('id') id: string,
