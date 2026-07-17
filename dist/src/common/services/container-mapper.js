@@ -35,7 +35,7 @@ function resolveContainerProductLines(c) {
 function computeRemainingAmount(invoiceAmount, receivedAmount) {
     if (invoiceAmount == null)
         return null;
-    return Math.round((invoiceAmount - (receivedAmount ?? 0)) * 1000) / 1000;
+    return Math.round((invoiceAmount - (receivedAmount ?? 0)) * 100) / 100;
 }
 function derivePaymentStatus(params) {
     if (params.explicit && params.explicit !== enums_1.InvoicePaymentStatus.NOT_RAISED) {
@@ -58,9 +58,11 @@ function mapContainerDtoToCreateData(c, calc, fobDeduction, contractFallback) {
     const merged = { ...contractFallback, ...c };
     const lines = resolveContainerProductLines(merged);
     const primary = lines[0];
-    const quantityMt = merged.quantityMt ??
+    const quantityMt = Math.round((merged.quantityMt ??
         lines.reduce((s, p) => s + (p.quantityMt ?? 0), 0) ??
-        0;
+        0) * 1000) / 1000;
+    const invoiceAmount = merged.invoiceAmount == null ? null : Math.round(merged.invoiceAmount * 100) / 100;
+    const receivedAmount = merged.receivedAmount == null ? null : Math.round(merged.receivedAmount * 100) / 100;
     const incoterm = (merged.incoterm ?? enums_1.Incoterm.FOB).toUpperCase();
     let shipmentMonth = merged.shipmentMonth;
     let shipmentYear = merged.shipmentYear;
@@ -81,8 +83,6 @@ function mapContainerDtoToCreateData(c, calc, fobDeduction, contractFallback) {
         insurance: incoterm === enums_1.Incoterm.CIF ? merged.insurance : undefined,
         fobDeduction,
     }, fobDeduction);
-    const invoiceAmount = merged.invoiceAmount ?? null;
-    const receivedAmount = merged.receivedAmount ?? null;
     const remainingAmount = computeRemainingAmount(invoiceAmount, receivedAmount);
     const paymentStatus = derivePaymentStatus({
         invoiceNumber: merged.invoiceNumber,
@@ -137,7 +137,10 @@ function mapContainerDtoToCreateData(c, calc, fobDeduction, contractFallback) {
         remainingAmount,
         paymentRemarks: merged.paymentRemarks || null,
         containerStatus: merged.containerStatus || 'DRAFT',
-        productLines: lines,
+        productLines: lines.map((l) => ({
+            ...l,
+            quantityMt: Math.round((l.quantityMt ?? 0) * 1000) / 1000,
+        })),
     };
 }
 //# sourceMappingURL=container-mapper.js.map

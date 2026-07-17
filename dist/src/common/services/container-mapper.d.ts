@@ -56,5 +56,18 @@ export declare function mapContainerDtoToCreateData(c: CreateContainerProductDto
     remainingAmount: number | null;
     paymentRemarks: string | null;
     containerStatus: string;
-    productLines: ContainerProductLineDto[];
+    productLines: {
+        quantityMt: number;
+        productIndex?: number;
+        productId: string;
+        productVariantId?: string;
+        processingType?: string;
+        specification?: string;
+        packagingTypeId?: string;
+        packagingSizeId?: string;
+        packingDescription?: string;
+        packingSizeValue?: number;
+        packingSizeUnit?: string;
+        productRemarks?: string;
+    }[];
 };

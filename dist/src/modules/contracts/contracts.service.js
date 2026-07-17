@@ -493,8 +493,8 @@ let ContractsService = class ContractsService {
             }
             const productSum = lines.reduce((s, p) => s + (p.quantityMt ?? 0), 0);
             const containerMt = row.quantityMt ?? productSum;
-            if (!isDraft && containerMt > 0 && Math.abs(productSum - containerMt) > 0.001) {
-                throw new common_1.BadRequestException(`Container ${index + 1}: total product quantity (${productSum.toFixed(3)} MT) must match the container quantity (${containerMt} MT).`);
+            if (!isDraft && containerMt > 0 && Math.round(productSum * 1000) !== Math.round(containerMt * 1000)) {
+                throw new common_1.BadRequestException(`Container ${index + 1}: total product quantity (${(Math.round(productSum * 1000) / 1000).toFixed(3)} MT) must match the container quantity (${Math.round(containerMt * 1000) / 1000} MT).`);
             }
             const primary = lines[0];
             return {

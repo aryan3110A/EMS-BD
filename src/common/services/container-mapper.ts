@@ -42,7 +42,7 @@ export function computeRemainingAmount(
   receivedAmount?: number | null,
 ): number | null {
   if (invoiceAmount == null) return null;
-  return Math.round((invoiceAmount - (receivedAmount ?? 0)) * 1000) / 1000;
+  return Math.round((invoiceAmount - (receivedAmount ?? 0)) * 100) / 100;
 }
 
 export function derivePaymentStatus(params: {
@@ -75,10 +75,16 @@ export function mapContainerDtoToCreateData(
   const merged = { ...contractFallback, ...c };
   const lines = resolveContainerProductLines(merged as CreateContainerProductDto);
   const primary = lines[0];
-  const quantityMt =
-    merged.quantityMt ??
-    lines.reduce((s, p) => s + (p.quantityMt ?? 0), 0) ??
-    0;
+  const quantityMt = Math.round(
+    (merged.quantityMt ??
+      lines.reduce((s, p) => s + (p.quantityMt ?? 0), 0) ??
+      0) * 1000,
+  ) / 1000;
+
+  const invoiceAmount =
+    merged.invoiceAmount == null ? null : Math.round(merged.invoiceAmount * 100) / 100;
+  const receivedAmount =
+    merged.receivedAmount == null ? null : Math.round(merged.receivedAmount * 100) / 100;
 
   const incoterm = (merged.incoterm ?? Incoterm.FOB).toUpperCase();
 
@@ -107,8 +113,6 @@ export function mapContainerDtoToCreateData(
     fobDeduction,
   );
 
-  const invoiceAmount = merged.invoiceAmount ?? null;
-  const receivedAmount = merged.receivedAmount ?? null;
   const remainingAmount = computeRemainingAmount(invoiceAmount, receivedAmount);
   const paymentStatus = derivePaymentStatus({
     invoiceNumber: merged.invoiceNumber,
@@ -164,6 +168,9 @@ export function mapContainerDtoToCreateData(
     remainingAmount,
     paymentRemarks: merged.paymentRemarks || null,
     containerStatus: merged.containerStatus || 'DRAFT',
-    productLines: lines,
+    productLines: lines.map((l) => ({
+      ...l,
+      quantityMt: Math.round((l.quantityMt ?? 0) * 1000) / 1000,
+    })),
   };
 }
