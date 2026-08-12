@@ -44,6 +44,16 @@ model User {
   containerStatusUpdates ContainerStatusHistory[]
   notifications     Notification[]
   notificationsChanged Notification[] @relation("NotificationChangedBy")
+  rawMaterialInwardsCreated RawMaterialInward[] @relation("InwardCreatedBy")
+  rawMaterialInwardsUpdated RawMaterialInward[] @relation("InwardUpdatedBy")
+  productionRunsCreated ProductionRun[] @relation("ProductionRunCreatedBy")
+  productionInputsAdded ProductionInput[] @relation("ProductionInputAddedBy")
+  containerAllocations ContainerAllocation[] @relation("AllocationAllocatedBy")
+  sampleRecordsUpdated SampleRecord[] @relation("SampleUpdatedBy")
+  plantTransfersCreated PlantTransfer[] @relation("TransferCreatedBy")
+  plantTransfersReceived PlantTransfer[] @relation("TransferReceivedBy")
+  productionAuditLogs ProductionAuditLog[] @relation("ProductionAuditChangedBy")
+  inventoryLedgerEntries InventoryLedgerEntry[] @relation("LedgerCreatedBy")
 
   @@index([officeId])
   @@index([role])
@@ -105,20 +115,32 @@ model Buyer {
 }
 
 model Product {
-  id                   String   @id @default(cuid())
-  code                 String   @unique
-  name                 String
-  category             String?
-  defaultSpecification String?
-  standardContainerMt  Float    @default(28)
-  isActive             Boolean  @default(true)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                         String   @id @default(cuid())
+  code                       String   @unique
+  name                       String
+  category                   String?
+  defaultSpecification       String?
+  standardContainerMt        Float    @default(28)
+  defaultUnit                String   @default("MT")
+  allowsFullProcess          Boolean  @default(true)
+  allowsSortex               Boolean  @default(true)
+  samplingNormallyApplicable Boolean  @default(false)
+  isActive                   Boolean  @default(true)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
 
   variants           ProductVariant[]
   contracts          Contract[]
   contractContainers ContractContainer[]
   containerProducts  ContractContainerProduct[]
+  rawMaterialInwards RawMaterialInward[]
+  productionRuns     ProductionRun[]
+  inventoryBalances  InventoryBalance[]
+  ledgerEntries      InventoryLedgerEntry[]
+  processedLots      ProcessedOutputLot[]
+  sampleRecords      SampleRecord[]
+  rejectedLots       SampleRejectedLot[]
+  plantTransfers     PlantTransfer[]
 }
 
 model ProductVariant {
@@ -629,3 +651,434 @@ model Notification {
   @@index([targetRole])
   @@index([contractId])
 }
+
+// ─── Production / Inventory / QC ─────────────────────────────────────────────
+
+model Supplier {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  inwards          RawMaterialInward[]
+  productionInputs ProductionInput[]
+
+  @@index([isActive])
+}
+
+model InventoryLocation {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  inwards            RawMaterialInward[]
+  productionRuns     ProductionRun[]
+  balances           InventoryBalance[]
+  ledgerAsSource     InventoryLedgerEntry[] @relation("LedgerSourceLocation")
+  ledgerAsDest       InventoryLedgerEntry[] @relation("LedgerDestLocation")
+  processedLots      ProcessedOutputLot[]
+  rejectedLots       SampleRejectedLot[]
+  transfersFrom      PlantTransfer[]        @relation("TransferFrom")
+  transfersTo        PlantTransfer[]        @relation("TransferTo")
+
+  @@index([isActive])
+}
+
+model InwardType {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  requiresDesc Boolean @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  inwards RawMaterialInward[]
+}
+
+model WastageType {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  stage       String
+  nameEn      String
+  nameLocal   String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cleaningEntries CleaningWastageEntry[]
+  hullingEntries  HullingWastageEntry[]
+
+  @@index([stage, isActive])
+}
+
+model RawMaterialInward {
+  id               String   @id @default(cuid())
+  inwardNumber     String   @unique
+  supplierId       String
+  inwardDate       DateTime
+  truckNumber      String
+  productId        String
+  numberOfBags     Int      @default(0)
+  weightKg         Float
+  inputUnit        String   @default("MT")
+  price            Float?
+  inwardTypeId     String
+  otherTypeDesc    String?
+  locationId       String
+  remarks          String?
+  status           String   @default("SUBMITTED")
+  createdById      String
+  updatedById      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  supplier    Supplier          @relation(fields: [supplierId], references: [id])
+  product     Product           @relation(fields: [productId], references: [id])
+  inwardType  InwardType        @relation(fields: [inwardTypeId], references: [id])
+  location    InventoryLocation @relation(fields: [locationId], references: [id])
+  createdBy   User              @relation("InwardCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User?             @relation("InwardUpdatedBy", fields: [updatedById], references: [id])
+  inputs      ProductionInput[]
+
+  @@index([inwardDate])
+  @@index([supplierId])
+  @@index([productId])
+  @@index([locationId])
+  @@index([truckNumber])
+}
+
+model InventoryBalance {
+  id            String   @id @default(cuid())
+  productId     String
+  locationId    String
+  stockCategory String
+  quantityKg    Float    @default(0)
+  updatedAt     DateTime @updatedAt
+
+  product  Product           @relation(fields: [productId], references: [id])
+  location InventoryLocation @relation(fields: [locationId], references: [id])
+
+  @@unique([productId, locationId, stockCategory])
+  @@index([stockCategory])
+}
+
+model InventoryLedgerEntry {
+  id              String   @id @default(cuid())
+  txnNumber       String   @unique
+  txnType         String
+  productId       String
+  stockCategory   String
+  sourceLocationId String?
+  destLocationId  String?
+  quantityInKg    Float    @default(0)
+  quantityOutKg   Float    @default(0)
+  balanceKg       Float?
+  referenceType   String?
+  referenceId     String?
+  remarks         String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+
+  product        Product            @relation(fields: [productId], references: [id])
+  sourceLocation InventoryLocation? @relation("LedgerSourceLocation", fields: [sourceLocationId], references: [id])
+  destLocation   InventoryLocation? @relation("LedgerDestLocation", fields: [destLocationId], references: [id])
+  createdBy      User?              @relation("LedgerCreatedBy", fields: [createdById], references: [id])
+
+  @@index([productId, stockCategory])
+  @@index([txnType])
+  @@index([createdAt])
+  @@index([referenceId])
+}
+
+model ProductionRun {
+  id                   String    @id @default(cuid())
+  productionNumber     String    @unique
+  plantId              String
+  processType          String
+  productId            String
+  status               String    @default("DRAFT")
+  startDate            DateTime
+  completionDate       DateTime?
+  daysSpanned          Int?
+  totalInputKg         Float     @default(0)
+  cleaningWastageKg    Float     @default(0)
+  hullingInputKg       Float     @default(0)
+  hullingWastageKg     Float     @default(0)
+  hullingWastagePct    Float?
+  netOutputKg          Float     @default(0)
+  allocatedKg          Float     @default(0)
+  storedProcessedKg    Float     @default(0)
+  wastageAlert         Boolean   @default(false)
+  cleaningFinalizedAt  DateTime?
+  hullingFinalizedAt   DateTime?
+  remarks              String?
+  createdById          String
+  cancelledAt          DateTime?
+  cancelReason         String?
+  cancelledById        String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  plant      InventoryLocation   @relation(fields: [plantId], references: [id])
+  product    Product             @relation(fields: [productId], references: [id])
+  createdBy  User                @relation("ProductionRunCreatedBy", fields: [createdById], references: [id])
+  inputs     ProductionInput[]
+  cleaning   CleaningWastageEntry[]
+  hulling    HullingWastageEntry[]
+  outputLots ProcessedOutputLot[]
+  allocations ContainerAllocation[]
+  sampleRecords SampleRecord[]
+  rejectedLots SampleRejectedLot[]
+  transfers  PlantTransfer[]
+
+  @@index([status])
+  @@index([plantId])
+  @@index([productId])
+  @@index([startDate])
+  @@index([wastageAlert])
+}
+
+model ProductionInput {
+  id              String   @id @default(cuid())
+  productionRunId String
+  inputDate       DateTime
+  productId       String
+  supplierId      String?
+  inwardId        String?
+  stockCategory   String   @default("NORMAL_RAW_MATERIAL")
+  rejectedLotId   String?
+  processedLotId  String?
+  quantityKg      Float
+  inputUnit       String   @default("MT")
+  isAdditional    Boolean  @default(false)
+  remarks         String?
+  addedById       String
+  createdAt       DateTime @default(now())
+
+  productionRun ProductionRun      @relation(fields: [productionRunId], references: [id], onDelete: Cascade)
+  supplier      Supplier?          @relation(fields: [supplierId], references: [id])
+  inward        RawMaterialInward? @relation(fields: [inwardId], references: [id])
+  rejectedLot   SampleRejectedLot? @relation(fields: [rejectedLotId], references: [id])
+  processedLot  ProcessedOutputLot? @relation(fields: [processedLotId], references: [id])
+  addedBy       User               @relation("ProductionInputAddedBy", fields: [addedById], references: [id])
+
+  @@index([productionRunId])
+}
+
+model CleaningWastageEntry {
+  id              String   @id @default(cuid())
+  productionRunId String
+  wastageTypeId   String
+  quantityKg      Float
+  inputUnit       String   @default("KG")
+  remarks         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  productionRun ProductionRun @relation(fields: [productionRunId], references: [id], onDelete: Cascade)
+  wastageType   WastageType   @relation(fields: [wastageTypeId], references: [id])
+
+  @@unique([productionRunId, wastageTypeId])
+}
+
+model HullingWastageEntry {
+  id              String   @id @default(cuid())
+  productionRunId String
+  wastageTypeId   String
+  numberOfBags    Float?
+  weightPerBagKg Float?
+  directQtyKg     Float?
+  quantityKg      Float
+  inputUnit       String   @default("KG")
+  remarks         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  productionRun ProductionRun @relation(fields: [productionRunId], references: [id], onDelete: Cascade)
+  wastageType   WastageType   @relation(fields: [wastageTypeId], references: [id])
+
+  @@unique([productionRunId, wastageTypeId])
+}
+
+model ProcessedOutputLot {
+  id                String   @id @default(cuid())
+  lotNumber         String   @unique
+  productionRunId   String
+  productId         String
+  plantId           String
+  processType       String
+  quantityKg        Float
+  availableKg       Float
+  reservedKg        Float    @default(0)
+  status            String   @default("AVAILABLE")
+  completionDate    DateTime
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  productionRun ProductionRun        @relation(fields: [productionRunId], references: [id], onDelete: Cascade)
+  product       Product              @relation(fields: [productId], references: [id])
+  plant         InventoryLocation    @relation(fields: [plantId], references: [id])
+  allocations   ContainerAllocation[]
+  sampleRecords SampleRecord[]
+  inputsReuse   ProductionInput[]
+  transfers     PlantTransfer[]
+
+  @@index([productId, plantId, status])
+  @@index([productionRunId])
+}
+
+model ContainerAllocation {
+  id                   String   @id @default(cuid())
+  productionRunId      String?
+  processedLotId       String?
+  contractId           String
+  containerId          String
+  containerProductId   String?
+  productId            String
+  quantityKg           Float
+  allocationDate       DateTime @default(now())
+  allocatedById        String
+  status               String   @default("ACTIVE")
+  remarks              String?
+  createdAt            DateTime @default(now())
+
+  productionRun    ProductionRun?      @relation(fields: [productionRunId], references: [id])
+  processedLot     ProcessedOutputLot? @relation(fields: [processedLotId], references: [id])
+  allocatedBy      User                @relation("AllocationAllocatedBy", fields: [allocatedById], references: [id])
+  sampleRecords    SampleRecord[]
+
+  @@index([contractId, containerId])
+  @@index([productionRunId])
+  @@index([productId])
+}
+
+model SampleRecord {
+  id              String    @id @default(cuid())
+  contractId      String
+  containerId     String
+  productId       String
+  allocationId    String?
+  productionRunId String?
+  processedLotId  String?
+  status          String    @default("READY_FOR_SAMPLING")
+  collectionDate  DateTime?
+  testingAgency   String?
+  resultDate      DateTime?
+  result          String?
+  reportReference String?
+  reportPath      String?
+  remarks         String?
+  updatedById     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  product       Product             @relation(fields: [productId], references: [id])
+  allocation    ContainerAllocation? @relation(fields: [allocationId], references: [id])
+  productionRun ProductionRun?      @relation(fields: [productionRunId], references: [id])
+  processedLot  ProcessedOutputLot? @relation(fields: [processedLotId], references: [id])
+  updatedBy     User?               @relation("SampleUpdatedBy", fields: [updatedById], references: [id])
+  rejectedLots  SampleRejectedLot[]
+
+  @@index([containerId])
+  @@index([status])
+  @@index([contractId])
+}
+
+model SampleRejectedLot {
+  id                String   @id @default(cuid())
+  lotNumber         String   @unique
+  productId         String
+  quantityKg        Float
+  availableKg       Float
+  reprocessedKg     Float    @default(0)
+  transferredKg     Float    @default(0)
+  plantId           String
+  productionRunId   String?
+  contractId        String?
+  containerId       String?
+  sampleRecordId    String?
+  failureDate       DateTime
+  failureRemarks    String?
+  status            String   @default("AVAILABLE_FOR_SORTEX")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  product       Product            @relation(fields: [productId], references: [id])
+  plant         InventoryLocation  @relation(fields: [plantId], references: [id])
+  productionRun ProductionRun?     @relation(fields: [productionRunId], references: [id])
+  sampleRecord  SampleRecord?      @relation(fields: [sampleRecordId], references: [id])
+  inputsReuse   ProductionInput[]
+  transfers     PlantTransfer[]
+
+  @@index([status])
+  @@index([productId, plantId])
+}
+
+model PlantTransfer {
+  id                String    @id @default(cuid())
+  transferNumber    String    @unique
+  transferDate      DateTime
+  sourceLocationId  String
+  destLocationId    String
+  stockCategory     String
+  productId         String
+  processedLotId    String?
+  rejectedLotId     String?
+  productionRunId   String?
+  quantityKg        Float
+  inputUnit         String    @default("MT")
+  remarks           String?
+  status            String    @default("DRAFT")
+  createdById       String
+  dispatchDate      DateTime?
+  receivedDate      DateTime?
+  receivedById      String?
+  linkedInwardId    String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  sourceLocation InventoryLocation  @relation("TransferFrom", fields: [sourceLocationId], references: [id])
+  destLocation   InventoryLocation  @relation("TransferTo", fields: [destLocationId], references: [id])
+  product        Product            @relation(fields: [productId], references: [id])
+  processedLot   ProcessedOutputLot? @relation(fields: [processedLotId], references: [id])
+  rejectedLot    SampleRejectedLot? @relation(fields: [rejectedLotId], references: [id])
+  productionRun  ProductionRun?     @relation(fields: [productionRunId], references: [id])
+  createdBy      User               @relation("TransferCreatedBy", fields: [createdById], references: [id])
+  receivedBy     User?              @relation("TransferReceivedBy", fields: [receivedById], references: [id])
+
+  @@index([status])
+  @@index([sourceLocationId])
+  @@index([destLocationId])
+}
+
+model ProductionAuditLog {
+  id           String   @id @default(cuid())
+  module       String
+  recordType   String
+  recordNumber String?
+  action       String
+  fieldName    String?
+  oldValue     String?
+  newValue     String?
+  changedById  String?
+  reason       String?
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+
+  changedBy User? @relation("ProductionAuditChangedBy", fields: [changedById], references: [id])
+
+  @@index([module])
+  @@index([recordNumber])
+  @@index([createdAt])
+}
+

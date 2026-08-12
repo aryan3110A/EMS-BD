@@ -315,6 +315,9 @@ export class MastersService {
         name: dto.name.trim(),
         category: dto.category || 'Seeds & Spices',
         defaultSpecification: dto.defaultSpecification || null,
+        allowsFullProcess: dto.allowsFullProcess ?? true,
+        allowsSortex: dto.allowsSortex ?? true,
+        samplingNormallyApplicable: dto.samplingNormallyApplicable ?? false,
       },
     });
 

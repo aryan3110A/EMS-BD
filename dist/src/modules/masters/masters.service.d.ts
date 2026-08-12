@@ -96,6 +96,10 @@ export declare class MastersService {
         category: string | null;
         defaultSpecification: string | null;
         standardContainerMt: number;
+        defaultUnit: string;
+        allowsFullProcess: boolean;
+        allowsSortex: boolean;
+        samplingNormallyApplicable: boolean;
     })[]>;
     getPackaging(): import(".prisma/client").Prisma.PrismaPromise<({
         sizes: {
@@ -351,6 +355,10 @@ export declare class MastersService {
         category: string | null;
         defaultSpecification: string | null;
         standardContainerMt: number;
+        defaultUnit: string;
+        allowsFullProcess: boolean;
+        allowsSortex: boolean;
+        samplingNormallyApplicable: boolean;
     }) | null>;
     createProductVariant(dto: CreateProductVariantDto): Promise<({
         variants: {
@@ -373,6 +381,10 @@ export declare class MastersService {
         category: string | null;
         defaultSpecification: string | null;
         standardContainerMt: number;
+        defaultUnit: string;
+        allowsFullProcess: boolean;
+        allowsSortex: boolean;
+        samplingNormallyApplicable: boolean;
     }) | null>;
     createPackagingType(dto: CreatePackagingTypeDto): Promise<{
         sizes: {

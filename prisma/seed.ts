@@ -7,6 +7,12 @@ import {
   PaymentType,
   ContractStatus,
 } from '../src/common/constants/enums';
+import {
+  DEFAULT_WASTAGE_ALERT_PCT,
+  FULL_PROCESS_DEFAULT_PRODUCT_KEY,
+  WASTAGE_ALERT_THRESHOLD_KEY,
+  WastageStage,
+} from '../src/common/constants/production.constants';
 
 const prisma = new PrismaClient();
 
@@ -80,6 +86,30 @@ async function main() {
       passwordHash,
       name: 'Accounts Team',
       role: UserRole.ACCOUNTS_TEAM,
+      officeId: ahmedabad.id,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: 'production@ems.com' },
+    update: { name: 'Production Team', role: UserRole.PRODUCTION_TEAM },
+    create: {
+      email: 'production@ems.com',
+      passwordHash,
+      name: 'Production Team',
+      role: UserRole.PRODUCTION_TEAM,
+      officeId: ahmedabad.id,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: 'inventory@ems.com' },
+    update: { name: 'Inventory Team', role: UserRole.INVENTORY_TEAM },
+    create: {
+      email: 'inventory@ems.com',
+      passwordHash,
+      name: 'Inventory Team',
+      role: UserRole.INVENTORY_TEAM,
       officeId: ahmedabad.id,
     },
   });
@@ -270,6 +300,85 @@ async function main() {
     data: { isActive: false },
   });
 
+  // Production module masters
+  for (const code of ['HSS', 'NSS', 'BSS']) {
+    await prisma.product.updateMany({
+      where: { code },
+      data: {
+        allowsFullProcess: true,
+        allowsSortex: true,
+        samplingNormallyApplicable: code === 'HSS',
+        category: 'SESAME',
+        defaultUnit: 'MT',
+      },
+    });
+  }
+  const nssProduct = await prisma.product.findUnique({ where: { code: 'NSS' } });
+  if (nssProduct) {
+    await prisma.appSetting.upsert({
+      where: { key: FULL_PROCESS_DEFAULT_PRODUCT_KEY },
+      update: { value: nssProduct.id },
+      create: { key: FULL_PROCESS_DEFAULT_PRODUCT_KEY, value: nssProduct.id },
+    });
+  }
+  await prisma.appSetting.upsert({
+    where: { key: WASTAGE_ALERT_THRESHOLD_KEY },
+    update: { value: String(DEFAULT_WASTAGE_ALERT_PCT) },
+    create: { key: WASTAGE_ALERT_THRESHOLD_KEY, value: String(DEFAULT_WASTAGE_ALERT_PCT) },
+  });
+  for (const loc of [
+    { code: 'INHOUSE', name: 'In-House Store/Godown' },
+    { code: 'BHRAMANWADA', name: 'Bhramanwada Plant' },
+    { code: 'NEDRA', name: 'Nedra Plant' },
+  ]) {
+    await prisma.inventoryLocation.upsert({
+      where: { code: loc.code },
+      update: { name: loc.name, isActive: true },
+      create: loc,
+    });
+  }
+  for (const t of [
+    { code: 'DOMESTIC', name: 'Domestic', requiresDesc: false },
+    { code: 'INTERNATIONAL', name: 'International', requiresDesc: false },
+    { code: 'OTHER', name: 'Other', requiresDesc: true },
+  ]) {
+    await prisma.inwardType.upsert({
+      where: { code: t.code },
+      update: { name: t.name, requiresDesc: t.requiresDesc },
+      create: t,
+    });
+  }
+  for (const [i, name] of ['Type 2 Wastage', 'Type 3 Wastage', 'Type 4 Wastage'].entries()) {
+    const code = `CLN-T${i + 2}`;
+    await prisma.wastageType.upsert({
+      where: { code },
+      update: { nameEn: name, stage: WastageStage.CLEANING, sortOrder: i + 1 },
+      create: { code, stage: WastageStage.CLEANING, nameEn: name, sortOrder: i + 1 },
+    });
+  }
+  const hullingTypes = [
+    { code: 'HUL-REJ1', nameEn: 'Rejection 1' },
+    { code: 'HUL-REJ2', nameEn: 'Rejection 2' },
+    { code: 'HUL-UDTU', nameEn: 'Udtu' },
+    { code: 'HUL-MATI', nameEn: 'Mati' },
+    { code: 'HUL-POWDER', nameEn: 'Powder' },
+    { code: 'HUL-PATHTHAR', nameEn: 'Paththar Maal' },
+    { code: 'HUL-KODI', nameEn: 'Kodi' },
+    { code: 'HUL-NADI', nameEn: 'Nadi Maal' },
+  ];
+  for (const [i, t] of hullingTypes.entries()) {
+    await prisma.wastageType.upsert({
+      where: { code: t.code },
+      update: { nameEn: t.nameEn, stage: WastageStage.HULLING, sortOrder: i + 1 },
+      create: { code: t.code, stage: WastageStage.HULLING, nameEn: t.nameEn, sortOrder: i + 1 },
+    });
+  }
+  await prisma.supplier.upsert({
+    where: { code: 'SUP-UNJHA' },
+    update: { name: 'Unjha Local Market' },
+    create: { code: 'SUP-UNJHA', name: 'Unjha Local Market' },
+  });
+
   const paper = await prisma.packagingType.upsert({
     where: { code: 'PAPER' },
     update: {},
@@ -382,7 +491,7 @@ async function main() {
     });
   }
 
-  console.log('Seed completed. Login: sales@ems.com / admin123 or admin@ems.com / admin123');
+  console.log('Seed completed. Login: admin@ems.com / admin123 | sales@ems.com / admin123 | production@ems.com / admin123');
 }
 
 main()

@@ -16,6 +16,7 @@ const offices_module_1 = require("./modules/offices/offices.module");
 const masters_module_1 = require("./modules/masters/masters.module");
 const contracts_module_1 = require("./modules/contracts/contracts.module");
 const notifications_module_1 = require("./modules/notifications/notifications.module");
+const production_module_1 = require("./modules/production/production.module");
 const jwt_auth_guard_1 = require("./common/guards/jwt-auth.guard");
 const roles_guard_1 = require("./common/guards/roles.guard");
 let AppModule = class AppModule {
@@ -31,6 +32,7 @@ exports.AppModule = AppModule = __decorate([
             masters_module_1.MastersModule,
             contracts_module_1.ContractsModule,
             notifications_module_1.NotificationsModule,
+            production_module_1.ProductionModule,
         ],
         providers: [
             { provide: core_1.APP_GUARD, useClass: jwt_auth_guard_1.JwtAuthGuard },

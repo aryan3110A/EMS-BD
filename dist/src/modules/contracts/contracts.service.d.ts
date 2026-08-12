@@ -24,201 +24,263 @@ export declare class ContractsService {
     private getFobDeduction;
     private enrichCommercialFields;
     create(dto: CreateContractDto, user: JwtPayload): Promise<{
-        office: {
+        productionAllocations: {
+            product: {
+                id: string;
+                code: string;
+                name: string;
+            } | null;
+            productionRun: {
+                id: string;
+                productionNumber: string;
+            } | null;
+            processedLot: {
+                id: string;
+                lotNumber: string;
+            } | null;
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            containerProductId: string | null;
+            quantityKg: number;
+            allocationDate: Date;
+            allocatedById: string;
+        }[];
+        sampleRecords: ({
+            product: {
+                id: string;
+                code: string;
+                name: string;
+            };
+        } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
-            isActive: boolean;
+            result: string | null;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            allocationId: string | null;
+            collectionDate: Date | null;
+            testingAgency: string | null;
+            resultDate: Date | null;
+            reportReference: string | null;
+            reportPath: string | null;
+            updatedById: string | null;
+        })[];
+        office: {
+            id: string;
             code: string;
+            name: string;
             city: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
         };
         salesperson: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
+            code: string;
             name: string;
             isActive: boolean;
-            code: string;
+            createdAt: Date;
+            updatedAt: Date;
             phone: string | null;
         } | null;
-        buyer: {
-            country: {
-                id: string;
-                euClassification: string;
-                createdAt: Date;
-                updatedAt: Date;
-                name: string;
-                isActive: boolean;
-                code: string;
-                region: string | null;
-            };
-        } & {
-            id: string;
-            officeId: string | null;
-            euClassification: string | null;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            email: string | null;
-            name: string;
-            isActive: boolean;
-            code: string;
-            phone: string | null;
-            countryId: string;
-            address: string | null;
-            contactPerson: string | null;
-            defaultPortId: string | null;
-        };
-        product: {
-            id: string;
-            standardContainerMt: number;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-            category: string | null;
-            defaultSpecification: string | null;
-        };
-        productVariant: {
-            id: string;
-            productId: string;
-            processingType: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-        } | null;
-        packagingType: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-            material: string;
-            description: string | null;
-        } | null;
-        packagingSize: {
-            id: string;
-            packagingTypeId: string;
-            createdAt: Date;
-            updatedAt: Date;
-            isActive: boolean;
-            description: string | null;
-            label: string;
-            weightKg: number;
-            weightUnit: string;
-        } | null;
-        portOfLoading: {
-            id: string;
-            euClassification: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string | null;
-            countryId: string;
-            portType: string;
-        } | null;
-        destinationPort: ({
-            country: {
-                id: string;
-                euClassification: string;
-                createdAt: Date;
-                updatedAt: Date;
-                name: string;
-                isActive: boolean;
-                code: string;
-                region: string | null;
-            };
-        } & {
-            id: string;
-            euClassification: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string | null;
-            countryId: string;
-            portType: string;
-        }) | null;
-        createdBy: {
-            id: string;
-            email: string;
-            name: string;
-            role: string;
-        };
         lots: ({
             destinationPort: {
                 id: string;
-                euClassification: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string | null;
                 name: string;
                 isActive: boolean;
-                code: string | null;
-                countryId: string;
+                createdAt: Date;
+                updatedAt: Date;
+                euClassification: string | null;
                 portType: string;
+                countryId: string;
             } | null;
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
             numberOfContainers: number;
             destinationPortId: string | null;
             expectedShipmentDate: Date | null;
             shipmentMonth: string | null;
             shipmentYear: number | null;
             shipmentHalf: string | null;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
             lotNumber: string;
             quantityMt: number;
             productionStatus: string;
             dispatchStatus: string;
+            contractId: string;
         })[];
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        productVariant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            processingType: string | null;
+        } | null;
+        packagingType: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            material: string;
+            description: string | null;
+        } | null;
+        packagingSize: {
+            id: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            description: string | null;
+            packagingTypeId: string;
+            label: string;
+            weightKg: number;
+            weightUnit: string;
+        } | null;
+        buyer: {
+            country: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                region: string | null;
+                euClassification: string;
+            };
+        } & {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            officeId: string | null;
+            phone: string | null;
+            euClassification: string | null;
+            countryId: string;
+            address: string | null;
+            contactPerson: string | null;
+            defaultPortId: string | null;
+            remarks: string | null;
+        };
+        portOfLoading: {
+            id: string;
+            code: string | null;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            euClassification: string | null;
+            portType: string;
+            countryId: string;
+        } | null;
+        destinationPort: ({
+            country: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                region: string | null;
+                euClassification: string;
+            };
+        } & {
+            id: string;
+            code: string | null;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            euClassification: string | null;
+            portType: string;
+            countryId: string;
+        }) | null;
+        createdBy: {
+            id: string;
+            name: string;
+            email: string;
+            role: string;
+        };
         containers: ({
             product: {
                 id: string;
-                standardContainerMt: number;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
                 category: string | null;
                 defaultSpecification: string | null;
+                standardContainerMt: number;
+                defaultUnit: string;
+                allowsFullProcess: boolean;
+                allowsSortex: boolean;
+                samplingNormallyApplicable: boolean;
             };
             productVariant: {
                 id: string;
-                productId: string;
-                processingType: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                processingType: string | null;
             } | null;
             packagingType: {
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
                 material: string;
                 description: string | null;
             } | null;
             packagingSize: {
                 id: string;
-                packagingTypeId: string;
+                isActive: boolean;
                 createdAt: Date;
                 updatedAt: Date;
-                isActive: boolean;
                 description: string | null;
+                packagingTypeId: string;
                 label: string;
                 weightKg: number;
                 weightUnit: string;
@@ -226,24 +288,24 @@ export declare class ContractsService {
             destinationPort: ({
                 country: {
                     id: string;
-                    euClassification: string;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     region: string | null;
+                    euClassification: string;
                 };
             } & {
                 id: string;
-                euClassification: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string | null;
                 name: string;
                 isActive: boolean;
-                code: string | null;
-                countryId: string;
+                createdAt: Date;
+                updatedAt: Date;
+                euClassification: string | null;
                 portType: string;
+                countryId: string;
             }) | null;
             amendments: ({
                 amendedBy: {
@@ -252,17 +314,17 @@ export declare class ContractsService {
                 };
             } & {
                 id: string;
+                createdAt: Date;
                 invoiceNumber: string | null;
                 incoterm: string;
                 amendmentDate: Date;
-                createdAt: Date;
+                previousValue: number;
+                reason: string;
                 contractId: string;
                 containerId: string;
-                priceType: string;
-                previousValue: number;
-                amendedValue: number;
                 currency: string;
-                reason: string;
+                amendedValue: number;
+                priceType: string;
                 amendedById: string;
             })[];
             statusHistory: ({
@@ -272,86 +334,93 @@ export declare class ContractsService {
                 } | null;
             } & {
                 id: string;
-                remarks: string | null;
                 createdAt: Date;
-                contractId: string;
-                containerId: string;
+                remarks: string | null;
                 fromStatus: string | null;
                 toStatus: string;
+                contractId: string;
+                containerId: string;
                 updatedById: string | null;
             })[];
             products: ({
                 product: {
                     id: string;
-                    standardContainerMt: number;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     category: string | null;
                     defaultSpecification: string | null;
+                    standardContainerMt: number;
+                    defaultUnit: string;
+                    allowsFullProcess: boolean;
+                    allowsSortex: boolean;
+                    samplingNormallyApplicable: boolean;
                 };
                 productVariant: {
                     id: string;
-                    productId: string;
-                    processingType: string | null;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    productId: string;
+                    processingType: string | null;
                 } | null;
                 packagingType: {
                     id: string;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     material: string;
                     description: string | null;
                 } | null;
                 packagingSize: {
                     id: string;
-                    packagingTypeId: string;
+                    isActive: boolean;
                     createdAt: Date;
                     updatedAt: Date;
-                    isActive: boolean;
                     description: string | null;
+                    packagingTypeId: string;
                     label: string;
                     weightKg: number;
                     weightUnit: string;
                 } | null;
             } & {
                 id: string;
+                createdAt: Date;
+                updatedAt: Date;
                 productId: string;
+                processingType: string | null;
+                packagingTypeId: string | null;
                 productVariantId: string | null;
                 specification: string | null;
                 productRemarks: string | null;
-                processingType: string | null;
-                packagingTypeId: string | null;
                 packagingSizeId: string | null;
                 packingDescription: string | null;
                 packingSizeValue: number | null;
                 packingSizeUnit: string | null;
-                createdAt: Date;
-                updatedAt: Date;
-                contractId: string;
                 quantityMt: number;
+                contractId: string;
                 containerId: string;
                 productIndex: number;
             })[];
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             productId: string;
+            processingType: string | null;
+            packagingTypeId: string | null;
             productVariantId: string | null;
             invoiceNumber: string | null;
             invoiceDate: Date | null;
             containerNo: string | null;
             specification: string | null;
             productRemarks: string | null;
-            processingType: string | null;
             incoterm: string;
             fobPrice: number | null;
             fobCurrency: string | null;
@@ -359,7 +428,6 @@ export declare class ContractsService {
             cifPrice: number | null;
             exchangeRate: number | null;
             fobInrPerKg: number | null;
-            packagingTypeId: string | null;
             packagingSizeId: string | null;
             packingDescription: string | null;
             packingSizeValue: number | null;
@@ -370,11 +438,9 @@ export declare class ContractsService {
             shipmentYear: number | null;
             shipmentHalf: string | null;
             commercialRemarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
             quantityMt: number | null;
             dispatchStatus: string;
+            contractId: string;
             containerIndex: number;
             factorySealNo: string | null;
             shippingLineSealNo: string | null;
@@ -382,17 +448,17 @@ export declare class ContractsService {
             exchangeRateSource: string | null;
             exchangeRateManual: boolean;
             totalFreight: number | null;
-            freightPerMt: number | null;
-            cnfPrice: number | null;
-            originalCifCnfPrice: number | null;
-            currentCifCnfPrice: number | null;
             invoiceAmount: number | null;
             paymentReceived: boolean;
             paymentStatus: string;
             receivedAmount: number | null;
-            remainingAmount: number | null;
             paymentRemarks: string | null;
             containerStatus: string;
+            freightPerMt: number | null;
+            cnfPrice: number | null;
+            originalCifCnfPrice: number | null;
+            currentCifCnfPrice: number | null;
+            remainingAmount: number | null;
             actualShipmentDate: Date | null;
             productionUnitId: string | null;
             productionRemarks: string | null;
@@ -400,47 +466,54 @@ export declare class ContractsService {
         salesAttributions: ({
             salesperson: {
                 id: string;
-                name: string;
                 code: string;
+                name: string;
             };
         } & {
             id: string;
-            salespersonId: string;
             createdAt: Date;
+            salespersonId: string;
             contractId: string;
             contributionPct: number | null;
             addedById: string | null;
         })[];
         amendments: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
             amendmentPrice: number | null;
             amendmentDate: Date;
             status: string;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
-            amendedValue: string | null;
-            currency: string | null;
             reason: string;
+            contractId: string;
+            currency: string | null;
             amendmentNumber: string;
             amendmentType: string;
             originalValue: string | null;
+            amendedValue: string | null;
             originalPrice: number | null;
         }[];
         statusHistory: {
             id: string;
-            remarks: string | null;
             createdAt: Date;
-            contractId: string;
+            remarks: string | null;
             fromStatus: string | null;
             toStatus: string;
             changedBy: string | null;
+            contractId: string;
         }[];
-    } & {
         id: string;
-        contractNumber: string;
+        createdAt: Date;
+        updatedAt: Date;
         officeId: string;
+        euClassification: string | null;
+        standardContainerMt: number;
+        productId: string;
+        processingType: string | null;
+        packagingTypeId: string | null;
+        remarks: string | null;
+        contractNumber: string;
         receivedDate: Date | null;
         contractDate: Date | null;
         signedContractReceivedDate: Date | null;
@@ -448,7 +521,6 @@ export declare class ContractsService {
         contractOnBehalfOf: string | null;
         salespersonId: string | null;
         buyerId: string;
-        productId: string;
         productVariantId: string | null;
         buyerLotNo: string | null;
         invoiceNumber: string | null;
@@ -460,12 +532,10 @@ export declare class ContractsService {
         qualityRequirement: string | null;
         productRemarks: string | null;
         buyerRemarks: string | null;
-        processingType: string | null;
         quantityUnit: string;
         totalMt: number;
         numberOfContainers: number;
         numberOfLots: number;
-        standardContainerMt: number;
         incoterm: string;
         fobPrice: number | null;
         fobCurrency: string;
@@ -482,7 +552,6 @@ export declare class ContractsService {
         amendmentDate: Date | null;
         amendmentReason: string | null;
         cifManualOverride: boolean;
-        packagingTypeId: string | null;
         packagingSizeId: string | null;
         packingDescription: string | null;
         packingSizeValue: number | null;
@@ -503,7 +572,6 @@ export declare class ContractsService {
         portOfLoadingId: string | null;
         destinationPortId: string | null;
         destinationCountry: string | null;
-        euClassification: string | null;
         shipmentPeriodStart: Date | null;
         shipmentPeriodEnd: Date | null;
         expectedShipmentDate: Date | null;
@@ -519,209 +587,268 @@ export declare class ContractsService {
         status: string;
         productionInformed: boolean;
         productionInformedDate: Date | null;
-        remarks: string | null;
         internalRemarks: string | null;
         commercialRemarks: string | null;
         createdById: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     submit(dto: SubmitContractDto, user: JwtPayload): Promise<{
-        office: {
+        productionAllocations: {
+            product: {
+                id: string;
+                code: string;
+                name: string;
+            } | null;
+            productionRun: {
+                id: string;
+                productionNumber: string;
+            } | null;
+            processedLot: {
+                id: string;
+                lotNumber: string;
+            } | null;
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            containerProductId: string | null;
+            quantityKg: number;
+            allocationDate: Date;
+            allocatedById: string;
+        }[];
+        sampleRecords: ({
+            product: {
+                id: string;
+                code: string;
+                name: string;
+            };
+        } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
-            isActive: boolean;
+            result: string | null;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            allocationId: string | null;
+            collectionDate: Date | null;
+            testingAgency: string | null;
+            resultDate: Date | null;
+            reportReference: string | null;
+            reportPath: string | null;
+            updatedById: string | null;
+        })[];
+        office: {
+            id: string;
             code: string;
+            name: string;
             city: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
         };
         salesperson: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
+            code: string;
             name: string;
             isActive: boolean;
-            code: string;
+            createdAt: Date;
+            updatedAt: Date;
             phone: string | null;
         } | null;
-        buyer: {
-            country: {
-                id: string;
-                euClassification: string;
-                createdAt: Date;
-                updatedAt: Date;
-                name: string;
-                isActive: boolean;
-                code: string;
-                region: string | null;
-            };
-        } & {
-            id: string;
-            officeId: string | null;
-            euClassification: string | null;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            email: string | null;
-            name: string;
-            isActive: boolean;
-            code: string;
-            phone: string | null;
-            countryId: string;
-            address: string | null;
-            contactPerson: string | null;
-            defaultPortId: string | null;
-        };
-        product: {
-            id: string;
-            standardContainerMt: number;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-            category: string | null;
-            defaultSpecification: string | null;
-        };
-        productVariant: {
-            id: string;
-            productId: string;
-            processingType: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-        } | null;
-        packagingType: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-            material: string;
-            description: string | null;
-        } | null;
-        packagingSize: {
-            id: string;
-            packagingTypeId: string;
-            createdAt: Date;
-            updatedAt: Date;
-            isActive: boolean;
-            description: string | null;
-            label: string;
-            weightKg: number;
-            weightUnit: string;
-        } | null;
-        portOfLoading: {
-            id: string;
-            euClassification: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string | null;
-            countryId: string;
-            portType: string;
-        } | null;
-        destinationPort: ({
-            country: {
-                id: string;
-                euClassification: string;
-                createdAt: Date;
-                updatedAt: Date;
-                name: string;
-                isActive: boolean;
-                code: string;
-                region: string | null;
-            };
-        } & {
-            id: string;
-            euClassification: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string | null;
-            countryId: string;
-            portType: string;
-        }) | null;
-        createdBy: {
-            id: string;
-            email: string;
-            name: string;
-            role: string;
-        };
         lots: ({
             destinationPort: {
                 id: string;
-                euClassification: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string | null;
                 name: string;
                 isActive: boolean;
-                code: string | null;
-                countryId: string;
+                createdAt: Date;
+                updatedAt: Date;
+                euClassification: string | null;
                 portType: string;
+                countryId: string;
             } | null;
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
             numberOfContainers: number;
             destinationPortId: string | null;
             expectedShipmentDate: Date | null;
             shipmentMonth: string | null;
             shipmentYear: number | null;
             shipmentHalf: string | null;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
             lotNumber: string;
             quantityMt: number;
             productionStatus: string;
             dispatchStatus: string;
+            contractId: string;
         })[];
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        productVariant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            processingType: string | null;
+        } | null;
+        packagingType: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            material: string;
+            description: string | null;
+        } | null;
+        packagingSize: {
+            id: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            description: string | null;
+            packagingTypeId: string;
+            label: string;
+            weightKg: number;
+            weightUnit: string;
+        } | null;
+        buyer: {
+            country: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                region: string | null;
+                euClassification: string;
+            };
+        } & {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            officeId: string | null;
+            phone: string | null;
+            euClassification: string | null;
+            countryId: string;
+            address: string | null;
+            contactPerson: string | null;
+            defaultPortId: string | null;
+            remarks: string | null;
+        };
+        portOfLoading: {
+            id: string;
+            code: string | null;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            euClassification: string | null;
+            portType: string;
+            countryId: string;
+        } | null;
+        destinationPort: ({
+            country: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                region: string | null;
+                euClassification: string;
+            };
+        } & {
+            id: string;
+            code: string | null;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            euClassification: string | null;
+            portType: string;
+            countryId: string;
+        }) | null;
+        createdBy: {
+            id: string;
+            name: string;
+            email: string;
+            role: string;
+        };
         containers: ({
             product: {
                 id: string;
-                standardContainerMt: number;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
                 category: string | null;
                 defaultSpecification: string | null;
+                standardContainerMt: number;
+                defaultUnit: string;
+                allowsFullProcess: boolean;
+                allowsSortex: boolean;
+                samplingNormallyApplicable: boolean;
             };
             productVariant: {
                 id: string;
-                productId: string;
-                processingType: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                processingType: string | null;
             } | null;
             packagingType: {
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
                 material: string;
                 description: string | null;
             } | null;
             packagingSize: {
                 id: string;
-                packagingTypeId: string;
+                isActive: boolean;
                 createdAt: Date;
                 updatedAt: Date;
-                isActive: boolean;
                 description: string | null;
+                packagingTypeId: string;
                 label: string;
                 weightKg: number;
                 weightUnit: string;
@@ -729,24 +856,24 @@ export declare class ContractsService {
             destinationPort: ({
                 country: {
                     id: string;
-                    euClassification: string;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     region: string | null;
+                    euClassification: string;
                 };
             } & {
                 id: string;
-                euClassification: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string | null;
                 name: string;
                 isActive: boolean;
-                code: string | null;
-                countryId: string;
+                createdAt: Date;
+                updatedAt: Date;
+                euClassification: string | null;
                 portType: string;
+                countryId: string;
             }) | null;
             amendments: ({
                 amendedBy: {
@@ -755,17 +882,17 @@ export declare class ContractsService {
                 };
             } & {
                 id: string;
+                createdAt: Date;
                 invoiceNumber: string | null;
                 incoterm: string;
                 amendmentDate: Date;
-                createdAt: Date;
+                previousValue: number;
+                reason: string;
                 contractId: string;
                 containerId: string;
-                priceType: string;
-                previousValue: number;
-                amendedValue: number;
                 currency: string;
-                reason: string;
+                amendedValue: number;
+                priceType: string;
                 amendedById: string;
             })[];
             statusHistory: ({
@@ -775,86 +902,93 @@ export declare class ContractsService {
                 } | null;
             } & {
                 id: string;
-                remarks: string | null;
                 createdAt: Date;
-                contractId: string;
-                containerId: string;
+                remarks: string | null;
                 fromStatus: string | null;
                 toStatus: string;
+                contractId: string;
+                containerId: string;
                 updatedById: string | null;
             })[];
             products: ({
                 product: {
                     id: string;
-                    standardContainerMt: number;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     category: string | null;
                     defaultSpecification: string | null;
+                    standardContainerMt: number;
+                    defaultUnit: string;
+                    allowsFullProcess: boolean;
+                    allowsSortex: boolean;
+                    samplingNormallyApplicable: boolean;
                 };
                 productVariant: {
                     id: string;
-                    productId: string;
-                    processingType: string | null;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    productId: string;
+                    processingType: string | null;
                 } | null;
                 packagingType: {
                     id: string;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     material: string;
                     description: string | null;
                 } | null;
                 packagingSize: {
                     id: string;
-                    packagingTypeId: string;
+                    isActive: boolean;
                     createdAt: Date;
                     updatedAt: Date;
-                    isActive: boolean;
                     description: string | null;
+                    packagingTypeId: string;
                     label: string;
                     weightKg: number;
                     weightUnit: string;
                 } | null;
             } & {
                 id: string;
+                createdAt: Date;
+                updatedAt: Date;
                 productId: string;
+                processingType: string | null;
+                packagingTypeId: string | null;
                 productVariantId: string | null;
                 specification: string | null;
                 productRemarks: string | null;
-                processingType: string | null;
-                packagingTypeId: string | null;
                 packagingSizeId: string | null;
                 packingDescription: string | null;
                 packingSizeValue: number | null;
                 packingSizeUnit: string | null;
-                createdAt: Date;
-                updatedAt: Date;
-                contractId: string;
                 quantityMt: number;
+                contractId: string;
                 containerId: string;
                 productIndex: number;
             })[];
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             productId: string;
+            processingType: string | null;
+            packagingTypeId: string | null;
             productVariantId: string | null;
             invoiceNumber: string | null;
             invoiceDate: Date | null;
             containerNo: string | null;
             specification: string | null;
             productRemarks: string | null;
-            processingType: string | null;
             incoterm: string;
             fobPrice: number | null;
             fobCurrency: string | null;
@@ -862,7 +996,6 @@ export declare class ContractsService {
             cifPrice: number | null;
             exchangeRate: number | null;
             fobInrPerKg: number | null;
-            packagingTypeId: string | null;
             packagingSizeId: string | null;
             packingDescription: string | null;
             packingSizeValue: number | null;
@@ -873,11 +1006,9 @@ export declare class ContractsService {
             shipmentYear: number | null;
             shipmentHalf: string | null;
             commercialRemarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
             quantityMt: number | null;
             dispatchStatus: string;
+            contractId: string;
             containerIndex: number;
             factorySealNo: string | null;
             shippingLineSealNo: string | null;
@@ -885,17 +1016,17 @@ export declare class ContractsService {
             exchangeRateSource: string | null;
             exchangeRateManual: boolean;
             totalFreight: number | null;
-            freightPerMt: number | null;
-            cnfPrice: number | null;
-            originalCifCnfPrice: number | null;
-            currentCifCnfPrice: number | null;
             invoiceAmount: number | null;
             paymentReceived: boolean;
             paymentStatus: string;
             receivedAmount: number | null;
-            remainingAmount: number | null;
             paymentRemarks: string | null;
             containerStatus: string;
+            freightPerMt: number | null;
+            cnfPrice: number | null;
+            originalCifCnfPrice: number | null;
+            currentCifCnfPrice: number | null;
+            remainingAmount: number | null;
             actualShipmentDate: Date | null;
             productionUnitId: string | null;
             productionRemarks: string | null;
@@ -903,47 +1034,54 @@ export declare class ContractsService {
         salesAttributions: ({
             salesperson: {
                 id: string;
-                name: string;
                 code: string;
+                name: string;
             };
         } & {
             id: string;
-            salespersonId: string;
             createdAt: Date;
+            salespersonId: string;
             contractId: string;
             contributionPct: number | null;
             addedById: string | null;
         })[];
         amendments: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
             amendmentPrice: number | null;
             amendmentDate: Date;
             status: string;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
-            amendedValue: string | null;
-            currency: string | null;
             reason: string;
+            contractId: string;
+            currency: string | null;
             amendmentNumber: string;
             amendmentType: string;
             originalValue: string | null;
+            amendedValue: string | null;
             originalPrice: number | null;
         }[];
         statusHistory: {
             id: string;
-            remarks: string | null;
             createdAt: Date;
-            contractId: string;
+            remarks: string | null;
             fromStatus: string | null;
             toStatus: string;
             changedBy: string | null;
+            contractId: string;
         }[];
-    } & {
         id: string;
-        contractNumber: string;
+        createdAt: Date;
+        updatedAt: Date;
         officeId: string;
+        euClassification: string | null;
+        standardContainerMt: number;
+        productId: string;
+        processingType: string | null;
+        packagingTypeId: string | null;
+        remarks: string | null;
+        contractNumber: string;
         receivedDate: Date | null;
         contractDate: Date | null;
         signedContractReceivedDate: Date | null;
@@ -951,7 +1089,6 @@ export declare class ContractsService {
         contractOnBehalfOf: string | null;
         salespersonId: string | null;
         buyerId: string;
-        productId: string;
         productVariantId: string | null;
         buyerLotNo: string | null;
         invoiceNumber: string | null;
@@ -963,12 +1100,10 @@ export declare class ContractsService {
         qualityRequirement: string | null;
         productRemarks: string | null;
         buyerRemarks: string | null;
-        processingType: string | null;
         quantityUnit: string;
         totalMt: number;
         numberOfContainers: number;
         numberOfLots: number;
-        standardContainerMt: number;
         incoterm: string;
         fobPrice: number | null;
         fobCurrency: string;
@@ -985,7 +1120,6 @@ export declare class ContractsService {
         amendmentDate: Date | null;
         amendmentReason: string | null;
         cifManualOverride: boolean;
-        packagingTypeId: string | null;
         packagingSizeId: string | null;
         packingDescription: string | null;
         packingSizeValue: number | null;
@@ -1006,7 +1140,6 @@ export declare class ContractsService {
         portOfLoadingId: string | null;
         destinationPortId: string | null;
         destinationCountry: string | null;
-        euClassification: string | null;
         shipmentPeriodStart: Date | null;
         shipmentPeriodEnd: Date | null;
         expectedShipmentDate: Date | null;
@@ -1022,29 +1155,26 @@ export declare class ContractsService {
         status: string;
         productionInformed: boolean;
         productionInformedDate: Date | null;
-        remarks: string | null;
         internalRemarks: string | null;
         commercialRemarks: string | null;
         createdById: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     private createContractInTx;
     findAll(query: ContractQueryDto, user: JwtPayload): Promise<({
         salesperson: {
             id: string;
-            name: string;
             code: string;
+            name: string;
         } | null;
-        buyer: {
-            id: string;
-            name: string;
-            code: string;
-        };
         product: {
             id: string;
-            name: string;
             code: string;
+            name: string;
+        };
+        buyer: {
+            id: string;
+            code: string;
+            name: string;
         };
         destinationPort: {
             id: string;
@@ -1058,8 +1188,8 @@ export declare class ContractsService {
         containers: ({
             product: {
                 id: string;
-                name: string;
                 code: string;
+                name: string;
             };
             productVariant: {
                 id: string;
@@ -1067,8 +1197,8 @@ export declare class ContractsService {
             } | null;
             packagingType: {
                 id: string;
-                name: string;
                 code: string;
+                name: string;
             } | null;
             packagingSize: {
                 id: string;
@@ -1081,38 +1211,41 @@ export declare class ContractsService {
             products: ({
                 product: {
                     id: string;
-                    name: string;
                     code: string;
+                    name: string;
                 };
             } & {
                 id: string;
+                createdAt: Date;
+                updatedAt: Date;
                 productId: string;
+                processingType: string | null;
+                packagingTypeId: string | null;
                 productVariantId: string | null;
                 specification: string | null;
                 productRemarks: string | null;
-                processingType: string | null;
-                packagingTypeId: string | null;
                 packagingSizeId: string | null;
                 packingDescription: string | null;
                 packingSizeValue: number | null;
                 packingSizeUnit: string | null;
-                createdAt: Date;
-                updatedAt: Date;
-                contractId: string;
                 quantityMt: number;
+                contractId: string;
                 containerId: string;
                 productIndex: number;
             })[];
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             productId: string;
+            processingType: string | null;
+            packagingTypeId: string | null;
             productVariantId: string | null;
             invoiceNumber: string | null;
             invoiceDate: Date | null;
             containerNo: string | null;
             specification: string | null;
             productRemarks: string | null;
-            processingType: string | null;
             incoterm: string;
             fobPrice: number | null;
             fobCurrency: string | null;
@@ -1120,7 +1253,6 @@ export declare class ContractsService {
             cifPrice: number | null;
             exchangeRate: number | null;
             fobInrPerKg: number | null;
-            packagingTypeId: string | null;
             packagingSizeId: string | null;
             packingDescription: string | null;
             packingSizeValue: number | null;
@@ -1131,11 +1263,9 @@ export declare class ContractsService {
             shipmentYear: number | null;
             shipmentHalf: string | null;
             commercialRemarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
             quantityMt: number | null;
             dispatchStatus: string;
+            contractId: string;
             containerIndex: number;
             factorySealNo: string | null;
             shippingLineSealNo: string | null;
@@ -1143,17 +1273,17 @@ export declare class ContractsService {
             exchangeRateSource: string | null;
             exchangeRateManual: boolean;
             totalFreight: number | null;
-            freightPerMt: number | null;
-            cnfPrice: number | null;
-            originalCifCnfPrice: number | null;
-            currentCifCnfPrice: number | null;
             invoiceAmount: number | null;
             paymentReceived: boolean;
             paymentStatus: string;
             receivedAmount: number | null;
-            remainingAmount: number | null;
             paymentRemarks: string | null;
             containerStatus: string;
+            freightPerMt: number | null;
+            cnfPrice: number | null;
+            originalCifCnfPrice: number | null;
+            currentCifCnfPrice: number | null;
+            remainingAmount: number | null;
             actualShipmentDate: Date | null;
             productionUnitId: string | null;
             productionRemarks: string | null;
@@ -1161,21 +1291,29 @@ export declare class ContractsService {
         salesAttributions: ({
             salesperson: {
                 id: string;
-                name: string;
                 code: string;
+                name: string;
             };
         } & {
             id: string;
-            salespersonId: string;
             createdAt: Date;
+            salespersonId: string;
             contractId: string;
             contributionPct: number | null;
             addedById: string | null;
         })[];
     } & {
         id: string;
-        contractNumber: string;
+        createdAt: Date;
+        updatedAt: Date;
         officeId: string;
+        euClassification: string | null;
+        standardContainerMt: number;
+        productId: string;
+        processingType: string | null;
+        packagingTypeId: string | null;
+        remarks: string | null;
+        contractNumber: string;
         receivedDate: Date | null;
         contractDate: Date | null;
         signedContractReceivedDate: Date | null;
@@ -1183,7 +1321,6 @@ export declare class ContractsService {
         contractOnBehalfOf: string | null;
         salespersonId: string | null;
         buyerId: string;
-        productId: string;
         productVariantId: string | null;
         buyerLotNo: string | null;
         invoiceNumber: string | null;
@@ -1195,12 +1332,10 @@ export declare class ContractsService {
         qualityRequirement: string | null;
         productRemarks: string | null;
         buyerRemarks: string | null;
-        processingType: string | null;
         quantityUnit: string;
         totalMt: number;
         numberOfContainers: number;
         numberOfLots: number;
-        standardContainerMt: number;
         incoterm: string;
         fobPrice: number | null;
         fobCurrency: string;
@@ -1217,7 +1352,6 @@ export declare class ContractsService {
         amendmentDate: Date | null;
         amendmentReason: string | null;
         cifManualOverride: boolean;
-        packagingTypeId: string | null;
         packagingSizeId: string | null;
         packingDescription: string | null;
         packingSizeValue: number | null;
@@ -1238,7 +1372,6 @@ export declare class ContractsService {
         portOfLoadingId: string | null;
         destinationPortId: string | null;
         destinationCountry: string | null;
-        euClassification: string | null;
         shipmentPeriodStart: Date | null;
         shipmentPeriodEnd: Date | null;
         expectedShipmentDate: Date | null;
@@ -1254,213 +1387,272 @@ export declare class ContractsService {
         status: string;
         productionInformed: boolean;
         productionInformedDate: Date | null;
-        remarks: string | null;
         internalRemarks: string | null;
         commercialRemarks: string | null;
         createdById: string;
-        createdAt: Date;
-        updatedAt: Date;
     })[]>;
     private assertContainerQuantities;
     private isUnresolvedPendingId;
     private normalizeContainerRows;
     private attributionIds;
     findOne(id: string, user: JwtPayload): Promise<{
-        office: {
+        productionAllocations: {
+            product: {
+                id: string;
+                code: string;
+                name: string;
+            } | null;
+            productionRun: {
+                id: string;
+                productionNumber: string;
+            } | null;
+            processedLot: {
+                id: string;
+                lotNumber: string;
+            } | null;
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            containerProductId: string | null;
+            quantityKg: number;
+            allocationDate: Date;
+            allocatedById: string;
+        }[];
+        sampleRecords: ({
+            product: {
+                id: string;
+                code: string;
+                name: string;
+            };
+        } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
-            isActive: boolean;
+            result: string | null;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            allocationId: string | null;
+            collectionDate: Date | null;
+            testingAgency: string | null;
+            resultDate: Date | null;
+            reportReference: string | null;
+            reportPath: string | null;
+            updatedById: string | null;
+        })[];
+        office: {
+            id: string;
             code: string;
+            name: string;
             city: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
         };
         salesperson: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
+            code: string;
             name: string;
             isActive: boolean;
-            code: string;
+            createdAt: Date;
+            updatedAt: Date;
             phone: string | null;
         } | null;
-        buyer: {
-            country: {
-                id: string;
-                euClassification: string;
-                createdAt: Date;
-                updatedAt: Date;
-                name: string;
-                isActive: boolean;
-                code: string;
-                region: string | null;
-            };
-        } & {
-            id: string;
-            officeId: string | null;
-            euClassification: string | null;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            email: string | null;
-            name: string;
-            isActive: boolean;
-            code: string;
-            phone: string | null;
-            countryId: string;
-            address: string | null;
-            contactPerson: string | null;
-            defaultPortId: string | null;
-        };
-        product: {
-            id: string;
-            standardContainerMt: number;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-            category: string | null;
-            defaultSpecification: string | null;
-        };
-        productVariant: {
-            id: string;
-            productId: string;
-            processingType: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-        } | null;
-        packagingType: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-            material: string;
-            description: string | null;
-        } | null;
-        packagingSize: {
-            id: string;
-            packagingTypeId: string;
-            createdAt: Date;
-            updatedAt: Date;
-            isActive: boolean;
-            description: string | null;
-            label: string;
-            weightKg: number;
-            weightUnit: string;
-        } | null;
-        portOfLoading: {
-            id: string;
-            euClassification: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string | null;
-            countryId: string;
-            portType: string;
-        } | null;
-        destinationPort: ({
-            country: {
-                id: string;
-                euClassification: string;
-                createdAt: Date;
-                updatedAt: Date;
-                name: string;
-                isActive: boolean;
-                code: string;
-                region: string | null;
-            };
-        } & {
-            id: string;
-            euClassification: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string | null;
-            countryId: string;
-            portType: string;
-        }) | null;
-        createdBy: {
-            id: string;
-            email: string;
-            name: string;
-            role: string;
-        };
         lots: ({
             destinationPort: {
                 id: string;
-                euClassification: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string | null;
                 name: string;
                 isActive: boolean;
-                code: string | null;
-                countryId: string;
+                createdAt: Date;
+                updatedAt: Date;
+                euClassification: string | null;
                 portType: string;
+                countryId: string;
             } | null;
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
             numberOfContainers: number;
             destinationPortId: string | null;
             expectedShipmentDate: Date | null;
             shipmentMonth: string | null;
             shipmentYear: number | null;
             shipmentHalf: string | null;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
             lotNumber: string;
             quantityMt: number;
             productionStatus: string;
             dispatchStatus: string;
+            contractId: string;
         })[];
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        productVariant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            processingType: string | null;
+        } | null;
+        packagingType: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            material: string;
+            description: string | null;
+        } | null;
+        packagingSize: {
+            id: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            description: string | null;
+            packagingTypeId: string;
+            label: string;
+            weightKg: number;
+            weightUnit: string;
+        } | null;
+        buyer: {
+            country: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                region: string | null;
+                euClassification: string;
+            };
+        } & {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            officeId: string | null;
+            phone: string | null;
+            euClassification: string | null;
+            countryId: string;
+            address: string | null;
+            contactPerson: string | null;
+            defaultPortId: string | null;
+            remarks: string | null;
+        };
+        portOfLoading: {
+            id: string;
+            code: string | null;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            euClassification: string | null;
+            portType: string;
+            countryId: string;
+        } | null;
+        destinationPort: ({
+            country: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                region: string | null;
+                euClassification: string;
+            };
+        } & {
+            id: string;
+            code: string | null;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            euClassification: string | null;
+            portType: string;
+            countryId: string;
+        }) | null;
+        createdBy: {
+            id: string;
+            name: string;
+            email: string;
+            role: string;
+        };
         containers: ({
             product: {
                 id: string;
-                standardContainerMt: number;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
                 category: string | null;
                 defaultSpecification: string | null;
+                standardContainerMt: number;
+                defaultUnit: string;
+                allowsFullProcess: boolean;
+                allowsSortex: boolean;
+                samplingNormallyApplicable: boolean;
             };
             productVariant: {
                 id: string;
-                productId: string;
-                processingType: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                processingType: string | null;
             } | null;
             packagingType: {
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
                 material: string;
                 description: string | null;
             } | null;
             packagingSize: {
                 id: string;
-                packagingTypeId: string;
+                isActive: boolean;
                 createdAt: Date;
                 updatedAt: Date;
-                isActive: boolean;
                 description: string | null;
+                packagingTypeId: string;
                 label: string;
                 weightKg: number;
                 weightUnit: string;
@@ -1468,24 +1660,24 @@ export declare class ContractsService {
             destinationPort: ({
                 country: {
                     id: string;
-                    euClassification: string;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     region: string | null;
+                    euClassification: string;
                 };
             } & {
                 id: string;
-                euClassification: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string | null;
                 name: string;
                 isActive: boolean;
-                code: string | null;
-                countryId: string;
+                createdAt: Date;
+                updatedAt: Date;
+                euClassification: string | null;
                 portType: string;
+                countryId: string;
             }) | null;
             amendments: ({
                 amendedBy: {
@@ -1494,17 +1686,17 @@ export declare class ContractsService {
                 };
             } & {
                 id: string;
+                createdAt: Date;
                 invoiceNumber: string | null;
                 incoterm: string;
                 amendmentDate: Date;
-                createdAt: Date;
+                previousValue: number;
+                reason: string;
                 contractId: string;
                 containerId: string;
-                priceType: string;
-                previousValue: number;
-                amendedValue: number;
                 currency: string;
-                reason: string;
+                amendedValue: number;
+                priceType: string;
                 amendedById: string;
             })[];
             statusHistory: ({
@@ -1514,86 +1706,93 @@ export declare class ContractsService {
                 } | null;
             } & {
                 id: string;
-                remarks: string | null;
                 createdAt: Date;
-                contractId: string;
-                containerId: string;
+                remarks: string | null;
                 fromStatus: string | null;
                 toStatus: string;
+                contractId: string;
+                containerId: string;
                 updatedById: string | null;
             })[];
             products: ({
                 product: {
                     id: string;
-                    standardContainerMt: number;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     category: string | null;
                     defaultSpecification: string | null;
+                    standardContainerMt: number;
+                    defaultUnit: string;
+                    allowsFullProcess: boolean;
+                    allowsSortex: boolean;
+                    samplingNormallyApplicable: boolean;
                 };
                 productVariant: {
                     id: string;
-                    productId: string;
-                    processingType: string | null;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    productId: string;
+                    processingType: string | null;
                 } | null;
                 packagingType: {
                     id: string;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     material: string;
                     description: string | null;
                 } | null;
                 packagingSize: {
                     id: string;
-                    packagingTypeId: string;
+                    isActive: boolean;
                     createdAt: Date;
                     updatedAt: Date;
-                    isActive: boolean;
                     description: string | null;
+                    packagingTypeId: string;
                     label: string;
                     weightKg: number;
                     weightUnit: string;
                 } | null;
             } & {
                 id: string;
+                createdAt: Date;
+                updatedAt: Date;
                 productId: string;
+                processingType: string | null;
+                packagingTypeId: string | null;
                 productVariantId: string | null;
                 specification: string | null;
                 productRemarks: string | null;
-                processingType: string | null;
-                packagingTypeId: string | null;
                 packagingSizeId: string | null;
                 packingDescription: string | null;
                 packingSizeValue: number | null;
                 packingSizeUnit: string | null;
-                createdAt: Date;
-                updatedAt: Date;
-                contractId: string;
                 quantityMt: number;
+                contractId: string;
                 containerId: string;
                 productIndex: number;
             })[];
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             productId: string;
+            processingType: string | null;
+            packagingTypeId: string | null;
             productVariantId: string | null;
             invoiceNumber: string | null;
             invoiceDate: Date | null;
             containerNo: string | null;
             specification: string | null;
             productRemarks: string | null;
-            processingType: string | null;
             incoterm: string;
             fobPrice: number | null;
             fobCurrency: string | null;
@@ -1601,7 +1800,6 @@ export declare class ContractsService {
             cifPrice: number | null;
             exchangeRate: number | null;
             fobInrPerKg: number | null;
-            packagingTypeId: string | null;
             packagingSizeId: string | null;
             packingDescription: string | null;
             packingSizeValue: number | null;
@@ -1612,11 +1810,9 @@ export declare class ContractsService {
             shipmentYear: number | null;
             shipmentHalf: string | null;
             commercialRemarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
             quantityMt: number | null;
             dispatchStatus: string;
+            contractId: string;
             containerIndex: number;
             factorySealNo: string | null;
             shippingLineSealNo: string | null;
@@ -1624,17 +1820,17 @@ export declare class ContractsService {
             exchangeRateSource: string | null;
             exchangeRateManual: boolean;
             totalFreight: number | null;
-            freightPerMt: number | null;
-            cnfPrice: number | null;
-            originalCifCnfPrice: number | null;
-            currentCifCnfPrice: number | null;
             invoiceAmount: number | null;
             paymentReceived: boolean;
             paymentStatus: string;
             receivedAmount: number | null;
-            remainingAmount: number | null;
             paymentRemarks: string | null;
             containerStatus: string;
+            freightPerMt: number | null;
+            cnfPrice: number | null;
+            originalCifCnfPrice: number | null;
+            currentCifCnfPrice: number | null;
+            remainingAmount: number | null;
             actualShipmentDate: Date | null;
             productionUnitId: string | null;
             productionRemarks: string | null;
@@ -1642,47 +1838,54 @@ export declare class ContractsService {
         salesAttributions: ({
             salesperson: {
                 id: string;
-                name: string;
                 code: string;
+                name: string;
             };
         } & {
             id: string;
-            salespersonId: string;
             createdAt: Date;
+            salespersonId: string;
             contractId: string;
             contributionPct: number | null;
             addedById: string | null;
         })[];
         amendments: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
             amendmentPrice: number | null;
             amendmentDate: Date;
             status: string;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
-            amendedValue: string | null;
-            currency: string | null;
             reason: string;
+            contractId: string;
+            currency: string | null;
             amendmentNumber: string;
             amendmentType: string;
             originalValue: string | null;
+            amendedValue: string | null;
             originalPrice: number | null;
         }[];
         statusHistory: {
             id: string;
-            remarks: string | null;
             createdAt: Date;
-            contractId: string;
+            remarks: string | null;
             fromStatus: string | null;
             toStatus: string;
             changedBy: string | null;
+            contractId: string;
         }[];
-    } & {
         id: string;
-        contractNumber: string;
+        createdAt: Date;
+        updatedAt: Date;
         officeId: string;
+        euClassification: string | null;
+        standardContainerMt: number;
+        productId: string;
+        processingType: string | null;
+        packagingTypeId: string | null;
+        remarks: string | null;
+        contractNumber: string;
         receivedDate: Date | null;
         contractDate: Date | null;
         signedContractReceivedDate: Date | null;
@@ -1690,7 +1893,6 @@ export declare class ContractsService {
         contractOnBehalfOf: string | null;
         salespersonId: string | null;
         buyerId: string;
-        productId: string;
         productVariantId: string | null;
         buyerLotNo: string | null;
         invoiceNumber: string | null;
@@ -1702,12 +1904,10 @@ export declare class ContractsService {
         qualityRequirement: string | null;
         productRemarks: string | null;
         buyerRemarks: string | null;
-        processingType: string | null;
         quantityUnit: string;
         totalMt: number;
         numberOfContainers: number;
         numberOfLots: number;
-        standardContainerMt: number;
         incoterm: string;
         fobPrice: number | null;
         fobCurrency: string;
@@ -1724,7 +1924,6 @@ export declare class ContractsService {
         amendmentDate: Date | null;
         amendmentReason: string | null;
         cifManualOverride: boolean;
-        packagingTypeId: string | null;
         packagingSizeId: string | null;
         packingDescription: string | null;
         packingSizeValue: number | null;
@@ -1745,7 +1944,6 @@ export declare class ContractsService {
         portOfLoadingId: string | null;
         destinationPortId: string | null;
         destinationCountry: string | null;
-        euClassification: string | null;
         shipmentPeriodStart: Date | null;
         shipmentPeriodEnd: Date | null;
         expectedShipmentDate: Date | null;
@@ -1761,209 +1959,268 @@ export declare class ContractsService {
         status: string;
         productionInformed: boolean;
         productionInformedDate: Date | null;
-        remarks: string | null;
         internalRemarks: string | null;
         commercialRemarks: string | null;
         createdById: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     update(id: string, dto: UpdateContractDto, user: JwtPayload): Promise<{
-        office: {
+        productionAllocations: {
+            product: {
+                id: string;
+                code: string;
+                name: string;
+            } | null;
+            productionRun: {
+                id: string;
+                productionNumber: string;
+            } | null;
+            processedLot: {
+                id: string;
+                lotNumber: string;
+            } | null;
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            containerProductId: string | null;
+            quantityKg: number;
+            allocationDate: Date;
+            allocatedById: string;
+        }[];
+        sampleRecords: ({
+            product: {
+                id: string;
+                code: string;
+                name: string;
+            };
+        } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
-            isActive: boolean;
+            result: string | null;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            allocationId: string | null;
+            collectionDate: Date | null;
+            testingAgency: string | null;
+            resultDate: Date | null;
+            reportReference: string | null;
+            reportPath: string | null;
+            updatedById: string | null;
+        })[];
+        office: {
+            id: string;
             code: string;
+            name: string;
             city: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
         };
         salesperson: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
+            code: string;
             name: string;
             isActive: boolean;
-            code: string;
+            createdAt: Date;
+            updatedAt: Date;
             phone: string | null;
         } | null;
-        buyer: {
-            country: {
-                id: string;
-                euClassification: string;
-                createdAt: Date;
-                updatedAt: Date;
-                name: string;
-                isActive: boolean;
-                code: string;
-                region: string | null;
-            };
-        } & {
-            id: string;
-            officeId: string | null;
-            euClassification: string | null;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            email: string | null;
-            name: string;
-            isActive: boolean;
-            code: string;
-            phone: string | null;
-            countryId: string;
-            address: string | null;
-            contactPerson: string | null;
-            defaultPortId: string | null;
-        };
-        product: {
-            id: string;
-            standardContainerMt: number;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-            category: string | null;
-            defaultSpecification: string | null;
-        };
-        productVariant: {
-            id: string;
-            productId: string;
-            processingType: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-        } | null;
-        packagingType: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-            material: string;
-            description: string | null;
-        } | null;
-        packagingSize: {
-            id: string;
-            packagingTypeId: string;
-            createdAt: Date;
-            updatedAt: Date;
-            isActive: boolean;
-            description: string | null;
-            label: string;
-            weightKg: number;
-            weightUnit: string;
-        } | null;
-        portOfLoading: {
-            id: string;
-            euClassification: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string | null;
-            countryId: string;
-            portType: string;
-        } | null;
-        destinationPort: ({
-            country: {
-                id: string;
-                euClassification: string;
-                createdAt: Date;
-                updatedAt: Date;
-                name: string;
-                isActive: boolean;
-                code: string;
-                region: string | null;
-            };
-        } & {
-            id: string;
-            euClassification: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string | null;
-            countryId: string;
-            portType: string;
-        }) | null;
-        createdBy: {
-            id: string;
-            email: string;
-            name: string;
-            role: string;
-        };
         lots: ({
             destinationPort: {
                 id: string;
-                euClassification: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string | null;
                 name: string;
                 isActive: boolean;
-                code: string | null;
-                countryId: string;
+                createdAt: Date;
+                updatedAt: Date;
+                euClassification: string | null;
                 portType: string;
+                countryId: string;
             } | null;
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
             numberOfContainers: number;
             destinationPortId: string | null;
             expectedShipmentDate: Date | null;
             shipmentMonth: string | null;
             shipmentYear: number | null;
             shipmentHalf: string | null;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
             lotNumber: string;
             quantityMt: number;
             productionStatus: string;
             dispatchStatus: string;
+            contractId: string;
         })[];
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        productVariant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            processingType: string | null;
+        } | null;
+        packagingType: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            material: string;
+            description: string | null;
+        } | null;
+        packagingSize: {
+            id: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            description: string | null;
+            packagingTypeId: string;
+            label: string;
+            weightKg: number;
+            weightUnit: string;
+        } | null;
+        buyer: {
+            country: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                region: string | null;
+                euClassification: string;
+            };
+        } & {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            officeId: string | null;
+            phone: string | null;
+            euClassification: string | null;
+            countryId: string;
+            address: string | null;
+            contactPerson: string | null;
+            defaultPortId: string | null;
+            remarks: string | null;
+        };
+        portOfLoading: {
+            id: string;
+            code: string | null;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            euClassification: string | null;
+            portType: string;
+            countryId: string;
+        } | null;
+        destinationPort: ({
+            country: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                region: string | null;
+                euClassification: string;
+            };
+        } & {
+            id: string;
+            code: string | null;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            euClassification: string | null;
+            portType: string;
+            countryId: string;
+        }) | null;
+        createdBy: {
+            id: string;
+            name: string;
+            email: string;
+            role: string;
+        };
         containers: ({
             product: {
                 id: string;
-                standardContainerMt: number;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
                 category: string | null;
                 defaultSpecification: string | null;
+                standardContainerMt: number;
+                defaultUnit: string;
+                allowsFullProcess: boolean;
+                allowsSortex: boolean;
+                samplingNormallyApplicable: boolean;
             };
             productVariant: {
                 id: string;
-                productId: string;
-                processingType: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                processingType: string | null;
             } | null;
             packagingType: {
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
                 material: string;
                 description: string | null;
             } | null;
             packagingSize: {
                 id: string;
-                packagingTypeId: string;
+                isActive: boolean;
                 createdAt: Date;
                 updatedAt: Date;
-                isActive: boolean;
                 description: string | null;
+                packagingTypeId: string;
                 label: string;
                 weightKg: number;
                 weightUnit: string;
@@ -1971,24 +2228,24 @@ export declare class ContractsService {
             destinationPort: ({
                 country: {
                     id: string;
-                    euClassification: string;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     region: string | null;
+                    euClassification: string;
                 };
             } & {
                 id: string;
-                euClassification: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string | null;
                 name: string;
                 isActive: boolean;
-                code: string | null;
-                countryId: string;
+                createdAt: Date;
+                updatedAt: Date;
+                euClassification: string | null;
                 portType: string;
+                countryId: string;
             }) | null;
             amendments: ({
                 amendedBy: {
@@ -1997,17 +2254,17 @@ export declare class ContractsService {
                 };
             } & {
                 id: string;
+                createdAt: Date;
                 invoiceNumber: string | null;
                 incoterm: string;
                 amendmentDate: Date;
-                createdAt: Date;
+                previousValue: number;
+                reason: string;
                 contractId: string;
                 containerId: string;
-                priceType: string;
-                previousValue: number;
-                amendedValue: number;
                 currency: string;
-                reason: string;
+                amendedValue: number;
+                priceType: string;
                 amendedById: string;
             })[];
             statusHistory: ({
@@ -2017,86 +2274,93 @@ export declare class ContractsService {
                 } | null;
             } & {
                 id: string;
-                remarks: string | null;
                 createdAt: Date;
-                contractId: string;
-                containerId: string;
+                remarks: string | null;
                 fromStatus: string | null;
                 toStatus: string;
+                contractId: string;
+                containerId: string;
                 updatedById: string | null;
             })[];
             products: ({
                 product: {
                     id: string;
-                    standardContainerMt: number;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     category: string | null;
                     defaultSpecification: string | null;
+                    standardContainerMt: number;
+                    defaultUnit: string;
+                    allowsFullProcess: boolean;
+                    allowsSortex: boolean;
+                    samplingNormallyApplicable: boolean;
                 };
                 productVariant: {
                     id: string;
-                    productId: string;
-                    processingType: string | null;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    productId: string;
+                    processingType: string | null;
                 } | null;
                 packagingType: {
                     id: string;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     material: string;
                     description: string | null;
                 } | null;
                 packagingSize: {
                     id: string;
-                    packagingTypeId: string;
+                    isActive: boolean;
                     createdAt: Date;
                     updatedAt: Date;
-                    isActive: boolean;
                     description: string | null;
+                    packagingTypeId: string;
                     label: string;
                     weightKg: number;
                     weightUnit: string;
                 } | null;
             } & {
                 id: string;
+                createdAt: Date;
+                updatedAt: Date;
                 productId: string;
+                processingType: string | null;
+                packagingTypeId: string | null;
                 productVariantId: string | null;
                 specification: string | null;
                 productRemarks: string | null;
-                processingType: string | null;
-                packagingTypeId: string | null;
                 packagingSizeId: string | null;
                 packingDescription: string | null;
                 packingSizeValue: number | null;
                 packingSizeUnit: string | null;
-                createdAt: Date;
-                updatedAt: Date;
-                contractId: string;
                 quantityMt: number;
+                contractId: string;
                 containerId: string;
                 productIndex: number;
             })[];
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             productId: string;
+            processingType: string | null;
+            packagingTypeId: string | null;
             productVariantId: string | null;
             invoiceNumber: string | null;
             invoiceDate: Date | null;
             containerNo: string | null;
             specification: string | null;
             productRemarks: string | null;
-            processingType: string | null;
             incoterm: string;
             fobPrice: number | null;
             fobCurrency: string | null;
@@ -2104,7 +2368,6 @@ export declare class ContractsService {
             cifPrice: number | null;
             exchangeRate: number | null;
             fobInrPerKg: number | null;
-            packagingTypeId: string | null;
             packagingSizeId: string | null;
             packingDescription: string | null;
             packingSizeValue: number | null;
@@ -2115,11 +2378,9 @@ export declare class ContractsService {
             shipmentYear: number | null;
             shipmentHalf: string | null;
             commercialRemarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
             quantityMt: number | null;
             dispatchStatus: string;
+            contractId: string;
             containerIndex: number;
             factorySealNo: string | null;
             shippingLineSealNo: string | null;
@@ -2127,17 +2388,17 @@ export declare class ContractsService {
             exchangeRateSource: string | null;
             exchangeRateManual: boolean;
             totalFreight: number | null;
-            freightPerMt: number | null;
-            cnfPrice: number | null;
-            originalCifCnfPrice: number | null;
-            currentCifCnfPrice: number | null;
             invoiceAmount: number | null;
             paymentReceived: boolean;
             paymentStatus: string;
             receivedAmount: number | null;
-            remainingAmount: number | null;
             paymentRemarks: string | null;
             containerStatus: string;
+            freightPerMt: number | null;
+            cnfPrice: number | null;
+            originalCifCnfPrice: number | null;
+            currentCifCnfPrice: number | null;
+            remainingAmount: number | null;
             actualShipmentDate: Date | null;
             productionUnitId: string | null;
             productionRemarks: string | null;
@@ -2145,47 +2406,54 @@ export declare class ContractsService {
         salesAttributions: ({
             salesperson: {
                 id: string;
-                name: string;
                 code: string;
+                name: string;
             };
         } & {
             id: string;
-            salespersonId: string;
             createdAt: Date;
+            salespersonId: string;
             contractId: string;
             contributionPct: number | null;
             addedById: string | null;
         })[];
         amendments: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
             amendmentPrice: number | null;
             amendmentDate: Date;
             status: string;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
-            amendedValue: string | null;
-            currency: string | null;
             reason: string;
+            contractId: string;
+            currency: string | null;
             amendmentNumber: string;
             amendmentType: string;
             originalValue: string | null;
+            amendedValue: string | null;
             originalPrice: number | null;
         }[];
         statusHistory: {
             id: string;
-            remarks: string | null;
             createdAt: Date;
-            contractId: string;
+            remarks: string | null;
             fromStatus: string | null;
             toStatus: string;
             changedBy: string | null;
+            contractId: string;
         }[];
-    } & {
         id: string;
-        contractNumber: string;
+        createdAt: Date;
+        updatedAt: Date;
         officeId: string;
+        euClassification: string | null;
+        standardContainerMt: number;
+        productId: string;
+        processingType: string | null;
+        packagingTypeId: string | null;
+        remarks: string | null;
+        contractNumber: string;
         receivedDate: Date | null;
         contractDate: Date | null;
         signedContractReceivedDate: Date | null;
@@ -2193,7 +2461,6 @@ export declare class ContractsService {
         contractOnBehalfOf: string | null;
         salespersonId: string | null;
         buyerId: string;
-        productId: string;
         productVariantId: string | null;
         buyerLotNo: string | null;
         invoiceNumber: string | null;
@@ -2205,12 +2472,10 @@ export declare class ContractsService {
         qualityRequirement: string | null;
         productRemarks: string | null;
         buyerRemarks: string | null;
-        processingType: string | null;
         quantityUnit: string;
         totalMt: number;
         numberOfContainers: number;
         numberOfLots: number;
-        standardContainerMt: number;
         incoterm: string;
         fobPrice: number | null;
         fobCurrency: string;
@@ -2227,7 +2492,6 @@ export declare class ContractsService {
         amendmentDate: Date | null;
         amendmentReason: string | null;
         cifManualOverride: boolean;
-        packagingTypeId: string | null;
         packagingSizeId: string | null;
         packingDescription: string | null;
         packingSizeValue: number | null;
@@ -2248,7 +2512,6 @@ export declare class ContractsService {
         portOfLoadingId: string | null;
         destinationPortId: string | null;
         destinationCountry: string | null;
-        euClassification: string | null;
         shipmentPeriodStart: Date | null;
         shipmentPeriodEnd: Date | null;
         expectedShipmentDate: Date | null;
@@ -2264,209 +2527,268 @@ export declare class ContractsService {
         status: string;
         productionInformed: boolean;
         productionInformedDate: Date | null;
-        remarks: string | null;
         internalRemarks: string | null;
         commercialRemarks: string | null;
         createdById: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     updateStatus(id: string, status: ContractStatus, user: JwtPayload, remarks?: string): Promise<{
-        office: {
+        productionAllocations: {
+            product: {
+                id: string;
+                code: string;
+                name: string;
+            } | null;
+            productionRun: {
+                id: string;
+                productionNumber: string;
+            } | null;
+            processedLot: {
+                id: string;
+                lotNumber: string;
+            } | null;
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            containerProductId: string | null;
+            quantityKg: number;
+            allocationDate: Date;
+            allocatedById: string;
+        }[];
+        sampleRecords: ({
+            product: {
+                id: string;
+                code: string;
+                name: string;
+            };
+        } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
-            isActive: boolean;
+            result: string | null;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            allocationId: string | null;
+            collectionDate: Date | null;
+            testingAgency: string | null;
+            resultDate: Date | null;
+            reportReference: string | null;
+            reportPath: string | null;
+            updatedById: string | null;
+        })[];
+        office: {
+            id: string;
             code: string;
+            name: string;
             city: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
         };
         salesperson: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
+            code: string;
             name: string;
             isActive: boolean;
-            code: string;
+            createdAt: Date;
+            updatedAt: Date;
             phone: string | null;
         } | null;
-        buyer: {
-            country: {
-                id: string;
-                euClassification: string;
-                createdAt: Date;
-                updatedAt: Date;
-                name: string;
-                isActive: boolean;
-                code: string;
-                region: string | null;
-            };
-        } & {
-            id: string;
-            officeId: string | null;
-            euClassification: string | null;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            email: string | null;
-            name: string;
-            isActive: boolean;
-            code: string;
-            phone: string | null;
-            countryId: string;
-            address: string | null;
-            contactPerson: string | null;
-            defaultPortId: string | null;
-        };
-        product: {
-            id: string;
-            standardContainerMt: number;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-            category: string | null;
-            defaultSpecification: string | null;
-        };
-        productVariant: {
-            id: string;
-            productId: string;
-            processingType: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-        } | null;
-        packagingType: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-            material: string;
-            description: string | null;
-        } | null;
-        packagingSize: {
-            id: string;
-            packagingTypeId: string;
-            createdAt: Date;
-            updatedAt: Date;
-            isActive: boolean;
-            description: string | null;
-            label: string;
-            weightKg: number;
-            weightUnit: string;
-        } | null;
-        portOfLoading: {
-            id: string;
-            euClassification: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string | null;
-            countryId: string;
-            portType: string;
-        } | null;
-        destinationPort: ({
-            country: {
-                id: string;
-                euClassification: string;
-                createdAt: Date;
-                updatedAt: Date;
-                name: string;
-                isActive: boolean;
-                code: string;
-                region: string | null;
-            };
-        } & {
-            id: string;
-            euClassification: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string | null;
-            countryId: string;
-            portType: string;
-        }) | null;
-        createdBy: {
-            id: string;
-            email: string;
-            name: string;
-            role: string;
-        };
         lots: ({
             destinationPort: {
                 id: string;
-                euClassification: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string | null;
                 name: string;
                 isActive: boolean;
-                code: string | null;
-                countryId: string;
+                createdAt: Date;
+                updatedAt: Date;
+                euClassification: string | null;
                 portType: string;
+                countryId: string;
             } | null;
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
             numberOfContainers: number;
             destinationPortId: string | null;
             expectedShipmentDate: Date | null;
             shipmentMonth: string | null;
             shipmentYear: number | null;
             shipmentHalf: string | null;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
             lotNumber: string;
             quantityMt: number;
             productionStatus: string;
             dispatchStatus: string;
+            contractId: string;
         })[];
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        productVariant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            processingType: string | null;
+        } | null;
+        packagingType: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            material: string;
+            description: string | null;
+        } | null;
+        packagingSize: {
+            id: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            description: string | null;
+            packagingTypeId: string;
+            label: string;
+            weightKg: number;
+            weightUnit: string;
+        } | null;
+        buyer: {
+            country: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                region: string | null;
+                euClassification: string;
+            };
+        } & {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            officeId: string | null;
+            phone: string | null;
+            euClassification: string | null;
+            countryId: string;
+            address: string | null;
+            contactPerson: string | null;
+            defaultPortId: string | null;
+            remarks: string | null;
+        };
+        portOfLoading: {
+            id: string;
+            code: string | null;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            euClassification: string | null;
+            portType: string;
+            countryId: string;
+        } | null;
+        destinationPort: ({
+            country: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                region: string | null;
+                euClassification: string;
+            };
+        } & {
+            id: string;
+            code: string | null;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            euClassification: string | null;
+            portType: string;
+            countryId: string;
+        }) | null;
+        createdBy: {
+            id: string;
+            name: string;
+            email: string;
+            role: string;
+        };
         containers: ({
             product: {
                 id: string;
-                standardContainerMt: number;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
                 category: string | null;
                 defaultSpecification: string | null;
+                standardContainerMt: number;
+                defaultUnit: string;
+                allowsFullProcess: boolean;
+                allowsSortex: boolean;
+                samplingNormallyApplicable: boolean;
             };
             productVariant: {
                 id: string;
-                productId: string;
-                processingType: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                processingType: string | null;
             } | null;
             packagingType: {
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
                 material: string;
                 description: string | null;
             } | null;
             packagingSize: {
                 id: string;
-                packagingTypeId: string;
+                isActive: boolean;
                 createdAt: Date;
                 updatedAt: Date;
-                isActive: boolean;
                 description: string | null;
+                packagingTypeId: string;
                 label: string;
                 weightKg: number;
                 weightUnit: string;
@@ -2474,24 +2796,24 @@ export declare class ContractsService {
             destinationPort: ({
                 country: {
                     id: string;
-                    euClassification: string;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     region: string | null;
+                    euClassification: string;
                 };
             } & {
                 id: string;
-                euClassification: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string | null;
                 name: string;
                 isActive: boolean;
-                code: string | null;
-                countryId: string;
+                createdAt: Date;
+                updatedAt: Date;
+                euClassification: string | null;
                 portType: string;
+                countryId: string;
             }) | null;
             amendments: ({
                 amendedBy: {
@@ -2500,17 +2822,17 @@ export declare class ContractsService {
                 };
             } & {
                 id: string;
+                createdAt: Date;
                 invoiceNumber: string | null;
                 incoterm: string;
                 amendmentDate: Date;
-                createdAt: Date;
+                previousValue: number;
+                reason: string;
                 contractId: string;
                 containerId: string;
-                priceType: string;
-                previousValue: number;
-                amendedValue: number;
                 currency: string;
-                reason: string;
+                amendedValue: number;
+                priceType: string;
                 amendedById: string;
             })[];
             statusHistory: ({
@@ -2520,86 +2842,93 @@ export declare class ContractsService {
                 } | null;
             } & {
                 id: string;
-                remarks: string | null;
                 createdAt: Date;
-                contractId: string;
-                containerId: string;
+                remarks: string | null;
                 fromStatus: string | null;
                 toStatus: string;
+                contractId: string;
+                containerId: string;
                 updatedById: string | null;
             })[];
             products: ({
                 product: {
                     id: string;
-                    standardContainerMt: number;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     category: string | null;
                     defaultSpecification: string | null;
+                    standardContainerMt: number;
+                    defaultUnit: string;
+                    allowsFullProcess: boolean;
+                    allowsSortex: boolean;
+                    samplingNormallyApplicable: boolean;
                 };
                 productVariant: {
                     id: string;
-                    productId: string;
-                    processingType: string | null;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    productId: string;
+                    processingType: string | null;
                 } | null;
                 packagingType: {
                     id: string;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     material: string;
                     description: string | null;
                 } | null;
                 packagingSize: {
                     id: string;
-                    packagingTypeId: string;
+                    isActive: boolean;
                     createdAt: Date;
                     updatedAt: Date;
-                    isActive: boolean;
                     description: string | null;
+                    packagingTypeId: string;
                     label: string;
                     weightKg: number;
                     weightUnit: string;
                 } | null;
             } & {
                 id: string;
+                createdAt: Date;
+                updatedAt: Date;
                 productId: string;
+                processingType: string | null;
+                packagingTypeId: string | null;
                 productVariantId: string | null;
                 specification: string | null;
                 productRemarks: string | null;
-                processingType: string | null;
-                packagingTypeId: string | null;
                 packagingSizeId: string | null;
                 packingDescription: string | null;
                 packingSizeValue: number | null;
                 packingSizeUnit: string | null;
-                createdAt: Date;
-                updatedAt: Date;
-                contractId: string;
                 quantityMt: number;
+                contractId: string;
                 containerId: string;
                 productIndex: number;
             })[];
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             productId: string;
+            processingType: string | null;
+            packagingTypeId: string | null;
             productVariantId: string | null;
             invoiceNumber: string | null;
             invoiceDate: Date | null;
             containerNo: string | null;
             specification: string | null;
             productRemarks: string | null;
-            processingType: string | null;
             incoterm: string;
             fobPrice: number | null;
             fobCurrency: string | null;
@@ -2607,7 +2936,6 @@ export declare class ContractsService {
             cifPrice: number | null;
             exchangeRate: number | null;
             fobInrPerKg: number | null;
-            packagingTypeId: string | null;
             packagingSizeId: string | null;
             packingDescription: string | null;
             packingSizeValue: number | null;
@@ -2618,11 +2946,9 @@ export declare class ContractsService {
             shipmentYear: number | null;
             shipmentHalf: string | null;
             commercialRemarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
             quantityMt: number | null;
             dispatchStatus: string;
+            contractId: string;
             containerIndex: number;
             factorySealNo: string | null;
             shippingLineSealNo: string | null;
@@ -2630,17 +2956,17 @@ export declare class ContractsService {
             exchangeRateSource: string | null;
             exchangeRateManual: boolean;
             totalFreight: number | null;
-            freightPerMt: number | null;
-            cnfPrice: number | null;
-            originalCifCnfPrice: number | null;
-            currentCifCnfPrice: number | null;
             invoiceAmount: number | null;
             paymentReceived: boolean;
             paymentStatus: string;
             receivedAmount: number | null;
-            remainingAmount: number | null;
             paymentRemarks: string | null;
             containerStatus: string;
+            freightPerMt: number | null;
+            cnfPrice: number | null;
+            originalCifCnfPrice: number | null;
+            currentCifCnfPrice: number | null;
+            remainingAmount: number | null;
             actualShipmentDate: Date | null;
             productionUnitId: string | null;
             productionRemarks: string | null;
@@ -2648,47 +2974,54 @@ export declare class ContractsService {
         salesAttributions: ({
             salesperson: {
                 id: string;
-                name: string;
                 code: string;
+                name: string;
             };
         } & {
             id: string;
-            salespersonId: string;
             createdAt: Date;
+            salespersonId: string;
             contractId: string;
             contributionPct: number | null;
             addedById: string | null;
         })[];
         amendments: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
             amendmentPrice: number | null;
             amendmentDate: Date;
             status: string;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
-            amendedValue: string | null;
-            currency: string | null;
             reason: string;
+            contractId: string;
+            currency: string | null;
             amendmentNumber: string;
             amendmentType: string;
             originalValue: string | null;
+            amendedValue: string | null;
             originalPrice: number | null;
         }[];
         statusHistory: {
             id: string;
-            remarks: string | null;
             createdAt: Date;
-            contractId: string;
+            remarks: string | null;
             fromStatus: string | null;
             toStatus: string;
             changedBy: string | null;
+            contractId: string;
         }[];
-    } & {
         id: string;
-        contractNumber: string;
+        createdAt: Date;
+        updatedAt: Date;
         officeId: string;
+        euClassification: string | null;
+        standardContainerMt: number;
+        productId: string;
+        processingType: string | null;
+        packagingTypeId: string | null;
+        remarks: string | null;
+        contractNumber: string;
         receivedDate: Date | null;
         contractDate: Date | null;
         signedContractReceivedDate: Date | null;
@@ -2696,7 +3029,6 @@ export declare class ContractsService {
         contractOnBehalfOf: string | null;
         salespersonId: string | null;
         buyerId: string;
-        productId: string;
         productVariantId: string | null;
         buyerLotNo: string | null;
         invoiceNumber: string | null;
@@ -2708,12 +3040,10 @@ export declare class ContractsService {
         qualityRequirement: string | null;
         productRemarks: string | null;
         buyerRemarks: string | null;
-        processingType: string | null;
         quantityUnit: string;
         totalMt: number;
         numberOfContainers: number;
         numberOfLots: number;
-        standardContainerMt: number;
         incoterm: string;
         fobPrice: number | null;
         fobCurrency: string;
@@ -2730,7 +3060,6 @@ export declare class ContractsService {
         amendmentDate: Date | null;
         amendmentReason: string | null;
         cifManualOverride: boolean;
-        packagingTypeId: string | null;
         packagingSizeId: string | null;
         packingDescription: string | null;
         packingSizeValue: number | null;
@@ -2751,7 +3080,6 @@ export declare class ContractsService {
         portOfLoadingId: string | null;
         destinationPortId: string | null;
         destinationCountry: string | null;
-        euClassification: string | null;
         shipmentPeriodStart: Date | null;
         shipmentPeriodEnd: Date | null;
         expectedShipmentDate: Date | null;
@@ -2767,12 +3095,9 @@ export declare class ContractsService {
         status: string;
         productionInformed: boolean;
         productionInformedDate: Date | null;
-        remarks: string | null;
         internalRemarks: string | null;
         commercialRemarks: string | null;
         createdById: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     getDashboardStats(user: JwtPayload, query?: DashboardQueryDto): Promise<{
         total: number;
@@ -2783,16 +3108,16 @@ export declare class ContractsService {
         ready: number;
         underPreparation: number;
         recent: {
+            id: string;
             salesperson: {
                 name: string;
             } | null;
-            buyer: {
-                name: string;
-            };
             product: {
                 code: string;
             };
-            id: string;
+            buyer: {
+                name: string;
+            };
             contractNumber: string;
             receivedDate: Date | null;
             totalMt: number;
@@ -2879,201 +3204,263 @@ export declare class ContractsService {
     }>;
     fetchExchangeRate(currency: string): Promise<import("../../common/services/exchange-rate.service").ExchangeRateResult>;
     amendContainerCommercial(contractId: string, containerId: string, dto: AmendContainerCommercialDto, user: JwtPayload): Promise<{
-        office: {
+        productionAllocations: {
+            product: {
+                id: string;
+                code: string;
+                name: string;
+            } | null;
+            productionRun: {
+                id: string;
+                productionNumber: string;
+            } | null;
+            processedLot: {
+                id: string;
+                lotNumber: string;
+            } | null;
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            containerProductId: string | null;
+            quantityKg: number;
+            allocationDate: Date;
+            allocatedById: string;
+        }[];
+        sampleRecords: ({
+            product: {
+                id: string;
+                code: string;
+                name: string;
+            };
+        } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
-            isActive: boolean;
+            result: string | null;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            allocationId: string | null;
+            collectionDate: Date | null;
+            testingAgency: string | null;
+            resultDate: Date | null;
+            reportReference: string | null;
+            reportPath: string | null;
+            updatedById: string | null;
+        })[];
+        office: {
+            id: string;
             code: string;
+            name: string;
             city: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
         };
         salesperson: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
+            code: string;
             name: string;
             isActive: boolean;
-            code: string;
+            createdAt: Date;
+            updatedAt: Date;
             phone: string | null;
         } | null;
-        buyer: {
-            country: {
-                id: string;
-                euClassification: string;
-                createdAt: Date;
-                updatedAt: Date;
-                name: string;
-                isActive: boolean;
-                code: string;
-                region: string | null;
-            };
-        } & {
-            id: string;
-            officeId: string | null;
-            euClassification: string | null;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            email: string | null;
-            name: string;
-            isActive: boolean;
-            code: string;
-            phone: string | null;
-            countryId: string;
-            address: string | null;
-            contactPerson: string | null;
-            defaultPortId: string | null;
-        };
-        product: {
-            id: string;
-            standardContainerMt: number;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-            category: string | null;
-            defaultSpecification: string | null;
-        };
-        productVariant: {
-            id: string;
-            productId: string;
-            processingType: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-        } | null;
-        packagingType: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-            material: string;
-            description: string | null;
-        } | null;
-        packagingSize: {
-            id: string;
-            packagingTypeId: string;
-            createdAt: Date;
-            updatedAt: Date;
-            isActive: boolean;
-            description: string | null;
-            label: string;
-            weightKg: number;
-            weightUnit: string;
-        } | null;
-        portOfLoading: {
-            id: string;
-            euClassification: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string | null;
-            countryId: string;
-            portType: string;
-        } | null;
-        destinationPort: ({
-            country: {
-                id: string;
-                euClassification: string;
-                createdAt: Date;
-                updatedAt: Date;
-                name: string;
-                isActive: boolean;
-                code: string;
-                region: string | null;
-            };
-        } & {
-            id: string;
-            euClassification: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string | null;
-            countryId: string;
-            portType: string;
-        }) | null;
-        createdBy: {
-            id: string;
-            email: string;
-            name: string;
-            role: string;
-        };
         lots: ({
             destinationPort: {
                 id: string;
-                euClassification: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string | null;
                 name: string;
                 isActive: boolean;
-                code: string | null;
-                countryId: string;
+                createdAt: Date;
+                updatedAt: Date;
+                euClassification: string | null;
                 portType: string;
+                countryId: string;
             } | null;
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
             numberOfContainers: number;
             destinationPortId: string | null;
             expectedShipmentDate: Date | null;
             shipmentMonth: string | null;
             shipmentYear: number | null;
             shipmentHalf: string | null;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
             lotNumber: string;
             quantityMt: number;
             productionStatus: string;
             dispatchStatus: string;
+            contractId: string;
         })[];
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        productVariant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            processingType: string | null;
+        } | null;
+        packagingType: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            material: string;
+            description: string | null;
+        } | null;
+        packagingSize: {
+            id: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            description: string | null;
+            packagingTypeId: string;
+            label: string;
+            weightKg: number;
+            weightUnit: string;
+        } | null;
+        buyer: {
+            country: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                region: string | null;
+                euClassification: string;
+            };
+        } & {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            officeId: string | null;
+            phone: string | null;
+            euClassification: string | null;
+            countryId: string;
+            address: string | null;
+            contactPerson: string | null;
+            defaultPortId: string | null;
+            remarks: string | null;
+        };
+        portOfLoading: {
+            id: string;
+            code: string | null;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            euClassification: string | null;
+            portType: string;
+            countryId: string;
+        } | null;
+        destinationPort: ({
+            country: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                region: string | null;
+                euClassification: string;
+            };
+        } & {
+            id: string;
+            code: string | null;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            euClassification: string | null;
+            portType: string;
+            countryId: string;
+        }) | null;
+        createdBy: {
+            id: string;
+            name: string;
+            email: string;
+            role: string;
+        };
         containers: ({
             product: {
                 id: string;
-                standardContainerMt: number;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
                 category: string | null;
                 defaultSpecification: string | null;
+                standardContainerMt: number;
+                defaultUnit: string;
+                allowsFullProcess: boolean;
+                allowsSortex: boolean;
+                samplingNormallyApplicable: boolean;
             };
             productVariant: {
                 id: string;
-                productId: string;
-                processingType: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                processingType: string | null;
             } | null;
             packagingType: {
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
                 material: string;
                 description: string | null;
             } | null;
             packagingSize: {
                 id: string;
-                packagingTypeId: string;
+                isActive: boolean;
                 createdAt: Date;
                 updatedAt: Date;
-                isActive: boolean;
                 description: string | null;
+                packagingTypeId: string;
                 label: string;
                 weightKg: number;
                 weightUnit: string;
@@ -3081,24 +3468,24 @@ export declare class ContractsService {
             destinationPort: ({
                 country: {
                     id: string;
-                    euClassification: string;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     region: string | null;
+                    euClassification: string;
                 };
             } & {
                 id: string;
-                euClassification: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string | null;
                 name: string;
                 isActive: boolean;
-                code: string | null;
-                countryId: string;
+                createdAt: Date;
+                updatedAt: Date;
+                euClassification: string | null;
                 portType: string;
+                countryId: string;
             }) | null;
             amendments: ({
                 amendedBy: {
@@ -3107,17 +3494,17 @@ export declare class ContractsService {
                 };
             } & {
                 id: string;
+                createdAt: Date;
                 invoiceNumber: string | null;
                 incoterm: string;
                 amendmentDate: Date;
-                createdAt: Date;
+                previousValue: number;
+                reason: string;
                 contractId: string;
                 containerId: string;
-                priceType: string;
-                previousValue: number;
-                amendedValue: number;
                 currency: string;
-                reason: string;
+                amendedValue: number;
+                priceType: string;
                 amendedById: string;
             })[];
             statusHistory: ({
@@ -3127,86 +3514,93 @@ export declare class ContractsService {
                 } | null;
             } & {
                 id: string;
-                remarks: string | null;
                 createdAt: Date;
-                contractId: string;
-                containerId: string;
+                remarks: string | null;
                 fromStatus: string | null;
                 toStatus: string;
+                contractId: string;
+                containerId: string;
                 updatedById: string | null;
             })[];
             products: ({
                 product: {
                     id: string;
-                    standardContainerMt: number;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     category: string | null;
                     defaultSpecification: string | null;
+                    standardContainerMt: number;
+                    defaultUnit: string;
+                    allowsFullProcess: boolean;
+                    allowsSortex: boolean;
+                    samplingNormallyApplicable: boolean;
                 };
                 productVariant: {
                     id: string;
-                    productId: string;
-                    processingType: string | null;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    productId: string;
+                    processingType: string | null;
                 } | null;
                 packagingType: {
                     id: string;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     material: string;
                     description: string | null;
                 } | null;
                 packagingSize: {
                     id: string;
-                    packagingTypeId: string;
+                    isActive: boolean;
                     createdAt: Date;
                     updatedAt: Date;
-                    isActive: boolean;
                     description: string | null;
+                    packagingTypeId: string;
                     label: string;
                     weightKg: number;
                     weightUnit: string;
                 } | null;
             } & {
                 id: string;
+                createdAt: Date;
+                updatedAt: Date;
                 productId: string;
+                processingType: string | null;
+                packagingTypeId: string | null;
                 productVariantId: string | null;
                 specification: string | null;
                 productRemarks: string | null;
-                processingType: string | null;
-                packagingTypeId: string | null;
                 packagingSizeId: string | null;
                 packingDescription: string | null;
                 packingSizeValue: number | null;
                 packingSizeUnit: string | null;
-                createdAt: Date;
-                updatedAt: Date;
-                contractId: string;
                 quantityMt: number;
+                contractId: string;
                 containerId: string;
                 productIndex: number;
             })[];
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             productId: string;
+            processingType: string | null;
+            packagingTypeId: string | null;
             productVariantId: string | null;
             invoiceNumber: string | null;
             invoiceDate: Date | null;
             containerNo: string | null;
             specification: string | null;
             productRemarks: string | null;
-            processingType: string | null;
             incoterm: string;
             fobPrice: number | null;
             fobCurrency: string | null;
@@ -3214,7 +3608,6 @@ export declare class ContractsService {
             cifPrice: number | null;
             exchangeRate: number | null;
             fobInrPerKg: number | null;
-            packagingTypeId: string | null;
             packagingSizeId: string | null;
             packingDescription: string | null;
             packingSizeValue: number | null;
@@ -3225,11 +3618,9 @@ export declare class ContractsService {
             shipmentYear: number | null;
             shipmentHalf: string | null;
             commercialRemarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
             quantityMt: number | null;
             dispatchStatus: string;
+            contractId: string;
             containerIndex: number;
             factorySealNo: string | null;
             shippingLineSealNo: string | null;
@@ -3237,17 +3628,17 @@ export declare class ContractsService {
             exchangeRateSource: string | null;
             exchangeRateManual: boolean;
             totalFreight: number | null;
-            freightPerMt: number | null;
-            cnfPrice: number | null;
-            originalCifCnfPrice: number | null;
-            currentCifCnfPrice: number | null;
             invoiceAmount: number | null;
             paymentReceived: boolean;
             paymentStatus: string;
             receivedAmount: number | null;
-            remainingAmount: number | null;
             paymentRemarks: string | null;
             containerStatus: string;
+            freightPerMt: number | null;
+            cnfPrice: number | null;
+            originalCifCnfPrice: number | null;
+            currentCifCnfPrice: number | null;
+            remainingAmount: number | null;
             actualShipmentDate: Date | null;
             productionUnitId: string | null;
             productionRemarks: string | null;
@@ -3255,47 +3646,54 @@ export declare class ContractsService {
         salesAttributions: ({
             salesperson: {
                 id: string;
-                name: string;
                 code: string;
+                name: string;
             };
         } & {
             id: string;
-            salespersonId: string;
             createdAt: Date;
+            salespersonId: string;
             contractId: string;
             contributionPct: number | null;
             addedById: string | null;
         })[];
         amendments: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
             amendmentPrice: number | null;
             amendmentDate: Date;
             status: string;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
-            amendedValue: string | null;
-            currency: string | null;
             reason: string;
+            contractId: string;
+            currency: string | null;
             amendmentNumber: string;
             amendmentType: string;
             originalValue: string | null;
+            amendedValue: string | null;
             originalPrice: number | null;
         }[];
         statusHistory: {
             id: string;
-            remarks: string | null;
             createdAt: Date;
-            contractId: string;
+            remarks: string | null;
             fromStatus: string | null;
             toStatus: string;
             changedBy: string | null;
+            contractId: string;
         }[];
-    } & {
         id: string;
-        contractNumber: string;
+        createdAt: Date;
+        updatedAt: Date;
         officeId: string;
+        euClassification: string | null;
+        standardContainerMt: number;
+        productId: string;
+        processingType: string | null;
+        packagingTypeId: string | null;
+        remarks: string | null;
+        contractNumber: string;
         receivedDate: Date | null;
         contractDate: Date | null;
         signedContractReceivedDate: Date | null;
@@ -3303,7 +3701,6 @@ export declare class ContractsService {
         contractOnBehalfOf: string | null;
         salespersonId: string | null;
         buyerId: string;
-        productId: string;
         productVariantId: string | null;
         buyerLotNo: string | null;
         invoiceNumber: string | null;
@@ -3315,12 +3712,10 @@ export declare class ContractsService {
         qualityRequirement: string | null;
         productRemarks: string | null;
         buyerRemarks: string | null;
-        processingType: string | null;
         quantityUnit: string;
         totalMt: number;
         numberOfContainers: number;
         numberOfLots: number;
-        standardContainerMt: number;
         incoterm: string;
         fobPrice: number | null;
         fobCurrency: string;
@@ -3337,7 +3732,6 @@ export declare class ContractsService {
         amendmentDate: Date | null;
         amendmentReason: string | null;
         cifManualOverride: boolean;
-        packagingTypeId: string | null;
         packagingSizeId: string | null;
         packingDescription: string | null;
         packingSizeValue: number | null;
@@ -3358,7 +3752,6 @@ export declare class ContractsService {
         portOfLoadingId: string | null;
         destinationPortId: string | null;
         destinationCountry: string | null;
-        euClassification: string | null;
         shipmentPeriodStart: Date | null;
         shipmentPeriodEnd: Date | null;
         expectedShipmentDate: Date | null;
@@ -3374,209 +3767,268 @@ export declare class ContractsService {
         status: string;
         productionInformed: boolean;
         productionInformedDate: Date | null;
-        remarks: string | null;
         internalRemarks: string | null;
         commercialRemarks: string | null;
         createdById: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     updateContainerStatus(contractId: string, containerId: string, status: string, user: JwtPayload, remarks?: string): Promise<{
-        office: {
+        productionAllocations: {
+            product: {
+                id: string;
+                code: string;
+                name: string;
+            } | null;
+            productionRun: {
+                id: string;
+                productionNumber: string;
+            } | null;
+            processedLot: {
+                id: string;
+                lotNumber: string;
+            } | null;
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            containerProductId: string | null;
+            quantityKg: number;
+            allocationDate: Date;
+            allocatedById: string;
+        }[];
+        sampleRecords: ({
+            product: {
+                id: string;
+                code: string;
+                name: string;
+            };
+        } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
-            isActive: boolean;
+            result: string | null;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            allocationId: string | null;
+            collectionDate: Date | null;
+            testingAgency: string | null;
+            resultDate: Date | null;
+            reportReference: string | null;
+            reportPath: string | null;
+            updatedById: string | null;
+        })[];
+        office: {
+            id: string;
             code: string;
+            name: string;
             city: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
         };
         salesperson: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
+            code: string;
             name: string;
             isActive: boolean;
-            code: string;
+            createdAt: Date;
+            updatedAt: Date;
             phone: string | null;
         } | null;
-        buyer: {
-            country: {
-                id: string;
-                euClassification: string;
-                createdAt: Date;
-                updatedAt: Date;
-                name: string;
-                isActive: boolean;
-                code: string;
-                region: string | null;
-            };
-        } & {
-            id: string;
-            officeId: string | null;
-            euClassification: string | null;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            email: string | null;
-            name: string;
-            isActive: boolean;
-            code: string;
-            phone: string | null;
-            countryId: string;
-            address: string | null;
-            contactPerson: string | null;
-            defaultPortId: string | null;
-        };
-        product: {
-            id: string;
-            standardContainerMt: number;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-            category: string | null;
-            defaultSpecification: string | null;
-        };
-        productVariant: {
-            id: string;
-            productId: string;
-            processingType: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-        } | null;
-        packagingType: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string;
-            material: string;
-            description: string | null;
-        } | null;
-        packagingSize: {
-            id: string;
-            packagingTypeId: string;
-            createdAt: Date;
-            updatedAt: Date;
-            isActive: boolean;
-            description: string | null;
-            label: string;
-            weightKg: number;
-            weightUnit: string;
-        } | null;
-        portOfLoading: {
-            id: string;
-            euClassification: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string | null;
-            countryId: string;
-            portType: string;
-        } | null;
-        destinationPort: ({
-            country: {
-                id: string;
-                euClassification: string;
-                createdAt: Date;
-                updatedAt: Date;
-                name: string;
-                isActive: boolean;
-                code: string;
-                region: string | null;
-            };
-        } & {
-            id: string;
-            euClassification: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            isActive: boolean;
-            code: string | null;
-            countryId: string;
-            portType: string;
-        }) | null;
-        createdBy: {
-            id: string;
-            email: string;
-            name: string;
-            role: string;
-        };
         lots: ({
             destinationPort: {
                 id: string;
-                euClassification: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string | null;
                 name: string;
                 isActive: boolean;
-                code: string | null;
-                countryId: string;
+                createdAt: Date;
+                updatedAt: Date;
+                euClassification: string | null;
                 portType: string;
+                countryId: string;
             } | null;
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
             numberOfContainers: number;
             destinationPortId: string | null;
             expectedShipmentDate: Date | null;
             shipmentMonth: string | null;
             shipmentYear: number | null;
             shipmentHalf: string | null;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
             lotNumber: string;
             quantityMt: number;
             productionStatus: string;
             dispatchStatus: string;
+            contractId: string;
         })[];
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        productVariant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            processingType: string | null;
+        } | null;
+        packagingType: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            material: string;
+            description: string | null;
+        } | null;
+        packagingSize: {
+            id: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            description: string | null;
+            packagingTypeId: string;
+            label: string;
+            weightKg: number;
+            weightUnit: string;
+        } | null;
+        buyer: {
+            country: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                region: string | null;
+                euClassification: string;
+            };
+        } & {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            officeId: string | null;
+            phone: string | null;
+            euClassification: string | null;
+            countryId: string;
+            address: string | null;
+            contactPerson: string | null;
+            defaultPortId: string | null;
+            remarks: string | null;
+        };
+        portOfLoading: {
+            id: string;
+            code: string | null;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            euClassification: string | null;
+            portType: string;
+            countryId: string;
+        } | null;
+        destinationPort: ({
+            country: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                region: string | null;
+                euClassification: string;
+            };
+        } & {
+            id: string;
+            code: string | null;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            euClassification: string | null;
+            portType: string;
+            countryId: string;
+        }) | null;
+        createdBy: {
+            id: string;
+            name: string;
+            email: string;
+            role: string;
+        };
         containers: ({
             product: {
                 id: string;
-                standardContainerMt: number;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
                 category: string | null;
                 defaultSpecification: string | null;
+                standardContainerMt: number;
+                defaultUnit: string;
+                allowsFullProcess: boolean;
+                allowsSortex: boolean;
+                samplingNormallyApplicable: boolean;
             };
             productVariant: {
                 id: string;
-                productId: string;
-                processingType: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                processingType: string | null;
             } | null;
             packagingType: {
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string;
                 name: string;
                 isActive: boolean;
-                code: string;
+                createdAt: Date;
+                updatedAt: Date;
                 material: string;
                 description: string | null;
             } | null;
             packagingSize: {
                 id: string;
-                packagingTypeId: string;
+                isActive: boolean;
                 createdAt: Date;
                 updatedAt: Date;
-                isActive: boolean;
                 description: string | null;
+                packagingTypeId: string;
                 label: string;
                 weightKg: number;
                 weightUnit: string;
@@ -3584,24 +4036,24 @@ export declare class ContractsService {
             destinationPort: ({
                 country: {
                     id: string;
-                    euClassification: string;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     region: string | null;
+                    euClassification: string;
                 };
             } & {
                 id: string;
-                euClassification: string | null;
-                createdAt: Date;
-                updatedAt: Date;
+                code: string | null;
                 name: string;
                 isActive: boolean;
-                code: string | null;
-                countryId: string;
+                createdAt: Date;
+                updatedAt: Date;
+                euClassification: string | null;
                 portType: string;
+                countryId: string;
             }) | null;
             amendments: ({
                 amendedBy: {
@@ -3610,17 +4062,17 @@ export declare class ContractsService {
                 };
             } & {
                 id: string;
+                createdAt: Date;
                 invoiceNumber: string | null;
                 incoterm: string;
                 amendmentDate: Date;
-                createdAt: Date;
+                previousValue: number;
+                reason: string;
                 contractId: string;
                 containerId: string;
-                priceType: string;
-                previousValue: number;
-                amendedValue: number;
                 currency: string;
-                reason: string;
+                amendedValue: number;
+                priceType: string;
                 amendedById: string;
             })[];
             statusHistory: ({
@@ -3630,86 +4082,93 @@ export declare class ContractsService {
                 } | null;
             } & {
                 id: string;
-                remarks: string | null;
                 createdAt: Date;
-                contractId: string;
-                containerId: string;
+                remarks: string | null;
                 fromStatus: string | null;
                 toStatus: string;
+                contractId: string;
+                containerId: string;
                 updatedById: string | null;
             })[];
             products: ({
                 product: {
                     id: string;
-                    standardContainerMt: number;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     category: string | null;
                     defaultSpecification: string | null;
+                    standardContainerMt: number;
+                    defaultUnit: string;
+                    allowsFullProcess: boolean;
+                    allowsSortex: boolean;
+                    samplingNormallyApplicable: boolean;
                 };
                 productVariant: {
                     id: string;
-                    productId: string;
-                    processingType: string | null;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    productId: string;
+                    processingType: string | null;
                 } | null;
                 packagingType: {
                     id: string;
-                    createdAt: Date;
-                    updatedAt: Date;
+                    code: string;
                     name: string;
                     isActive: boolean;
-                    code: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     material: string;
                     description: string | null;
                 } | null;
                 packagingSize: {
                     id: string;
-                    packagingTypeId: string;
+                    isActive: boolean;
                     createdAt: Date;
                     updatedAt: Date;
-                    isActive: boolean;
                     description: string | null;
+                    packagingTypeId: string;
                     label: string;
                     weightKg: number;
                     weightUnit: string;
                 } | null;
             } & {
                 id: string;
+                createdAt: Date;
+                updatedAt: Date;
                 productId: string;
+                processingType: string | null;
+                packagingTypeId: string | null;
                 productVariantId: string | null;
                 specification: string | null;
                 productRemarks: string | null;
-                processingType: string | null;
-                packagingTypeId: string | null;
                 packagingSizeId: string | null;
                 packingDescription: string | null;
                 packingSizeValue: number | null;
                 packingSizeUnit: string | null;
-                createdAt: Date;
-                updatedAt: Date;
-                contractId: string;
                 quantityMt: number;
+                contractId: string;
                 containerId: string;
                 productIndex: number;
             })[];
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             productId: string;
+            processingType: string | null;
+            packagingTypeId: string | null;
             productVariantId: string | null;
             invoiceNumber: string | null;
             invoiceDate: Date | null;
             containerNo: string | null;
             specification: string | null;
             productRemarks: string | null;
-            processingType: string | null;
             incoterm: string;
             fobPrice: number | null;
             fobCurrency: string | null;
@@ -3717,7 +4176,6 @@ export declare class ContractsService {
             cifPrice: number | null;
             exchangeRate: number | null;
             fobInrPerKg: number | null;
-            packagingTypeId: string | null;
             packagingSizeId: string | null;
             packingDescription: string | null;
             packingSizeValue: number | null;
@@ -3728,11 +4186,9 @@ export declare class ContractsService {
             shipmentYear: number | null;
             shipmentHalf: string | null;
             commercialRemarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
             quantityMt: number | null;
             dispatchStatus: string;
+            contractId: string;
             containerIndex: number;
             factorySealNo: string | null;
             shippingLineSealNo: string | null;
@@ -3740,17 +4196,17 @@ export declare class ContractsService {
             exchangeRateSource: string | null;
             exchangeRateManual: boolean;
             totalFreight: number | null;
-            freightPerMt: number | null;
-            cnfPrice: number | null;
-            originalCifCnfPrice: number | null;
-            currentCifCnfPrice: number | null;
             invoiceAmount: number | null;
             paymentReceived: boolean;
             paymentStatus: string;
             receivedAmount: number | null;
-            remainingAmount: number | null;
             paymentRemarks: string | null;
             containerStatus: string;
+            freightPerMt: number | null;
+            cnfPrice: number | null;
+            originalCifCnfPrice: number | null;
+            currentCifCnfPrice: number | null;
+            remainingAmount: number | null;
             actualShipmentDate: Date | null;
             productionUnitId: string | null;
             productionRemarks: string | null;
@@ -3758,47 +4214,54 @@ export declare class ContractsService {
         salesAttributions: ({
             salesperson: {
                 id: string;
-                name: string;
                 code: string;
+                name: string;
             };
         } & {
             id: string;
-            salespersonId: string;
             createdAt: Date;
+            salespersonId: string;
             contractId: string;
             contributionPct: number | null;
             addedById: string | null;
         })[];
         amendments: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
             amendmentPrice: number | null;
             amendmentDate: Date;
             status: string;
-            remarks: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            contractId: string;
-            amendedValue: string | null;
-            currency: string | null;
             reason: string;
+            contractId: string;
+            currency: string | null;
             amendmentNumber: string;
             amendmentType: string;
             originalValue: string | null;
+            amendedValue: string | null;
             originalPrice: number | null;
         }[];
         statusHistory: {
             id: string;
-            remarks: string | null;
             createdAt: Date;
-            contractId: string;
+            remarks: string | null;
             fromStatus: string | null;
             toStatus: string;
             changedBy: string | null;
+            contractId: string;
         }[];
-    } & {
         id: string;
-        contractNumber: string;
+        createdAt: Date;
+        updatedAt: Date;
         officeId: string;
+        euClassification: string | null;
+        standardContainerMt: number;
+        productId: string;
+        processingType: string | null;
+        packagingTypeId: string | null;
+        remarks: string | null;
+        contractNumber: string;
         receivedDate: Date | null;
         contractDate: Date | null;
         signedContractReceivedDate: Date | null;
@@ -3806,7 +4269,6 @@ export declare class ContractsService {
         contractOnBehalfOf: string | null;
         salespersonId: string | null;
         buyerId: string;
-        productId: string;
         productVariantId: string | null;
         buyerLotNo: string | null;
         invoiceNumber: string | null;
@@ -3818,12 +4280,10 @@ export declare class ContractsService {
         qualityRequirement: string | null;
         productRemarks: string | null;
         buyerRemarks: string | null;
-        processingType: string | null;
         quantityUnit: string;
         totalMt: number;
         numberOfContainers: number;
         numberOfLots: number;
-        standardContainerMt: number;
         incoterm: string;
         fobPrice: number | null;
         fobCurrency: string;
@@ -3840,7 +4300,6 @@ export declare class ContractsService {
         amendmentDate: Date | null;
         amendmentReason: string | null;
         cifManualOverride: boolean;
-        packagingTypeId: string | null;
         packagingSizeId: string | null;
         packingDescription: string | null;
         packingSizeValue: number | null;
@@ -3861,7 +4320,6 @@ export declare class ContractsService {
         portOfLoadingId: string | null;
         destinationPortId: string | null;
         destinationCountry: string | null;
-        euClassification: string | null;
         shipmentPeriodStart: Date | null;
         shipmentPeriodEnd: Date | null;
         expectedShipmentDate: Date | null;
@@ -3877,12 +4335,9 @@ export declare class ContractsService {
         status: string;
         productionInformed: boolean;
         productionInformedDate: Date | null;
-        remarks: string | null;
         internalRemarks: string | null;
         commercialRemarks: string | null;
         createdById: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     getAllAudits(user: JwtPayload): Promise<({
         id: string;
@@ -3910,19 +4365,19 @@ export declare class ContractsService {
     getContractAudit(contractId: string, user: JwtPayload): Promise<({
         changedBy: {
             id: string;
-            email: string;
             name: string;
+            email: string;
         };
     } & {
         id: string;
-        contractNumber: string | null;
         createdAt: Date;
-        contractId: string;
-        containerIndex: number | null;
-        containerId: string | null;
+        contractNumber: string | null;
         previousValue: string | null;
-        fieldName: string;
         newValue: string | null;
+        contractId: string;
+        containerId: string | null;
+        containerIndex: number | null;
+        fieldName: string;
         changedById: string;
     })[]>;
 }

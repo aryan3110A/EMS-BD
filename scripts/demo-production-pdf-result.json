@@ -1,0 +1,129 @@
+{
+  "at": "2026-08-12T16:11:34.432Z",
+  "steps": [
+    {
+      "id": "login-production",
+      "pdf": "§4.1",
+      "ok": true,
+      "detail": "role=PRODUCTION_TEAM"
+    },
+    {
+      "id": "login-admin",
+      "pdf": "§4.2",
+      "ok": true,
+      "detail": "role=SUPER_ADMIN"
+    },
+    {
+      "id": "masters",
+      "pdf": "§5",
+      "ok": true,
+      "detail": "locs=3 suppliers=1 clean=3 hull=8 product=NSS"
+    },
+    {
+      "id": "inward-create",
+      "pdf": "§6",
+      "ok": true,
+      "detail": "INW-2026-00002"
+    },
+    {
+      "id": "inventory-after-inward",
+      "pdf": "§6.3/§24",
+      "ok": true,
+      "detail": "rawKg=30000"
+    },
+    {
+      "id": "pending-contracts",
+      "pdf": "§7",
+      "ok": true,
+      "detail": "count=14"
+    },
+    {
+      "id": "start-run",
+      "pdf": "§8/§9",
+      "ok": true,
+      "detail": "PR-2026-00002 status=CLEANING_IN_PROGRESS"
+    },
+    {
+      "id": "add-more-input",
+      "pdf": "§11",
+      "ok": true,
+      "detail": "totalInputKg=30000 inputs=2"
+    },
+    {
+      "id": "cleaning",
+      "pdf": "§12",
+      "ok": true,
+      "detail": "wastage=500 hullingInput=29500"
+    },
+    {
+      "id": "hulling-wastage-alert",
+      "pdf": "§15.1",
+      "ok": true,
+      "detail": "net=25370 pct=14% alert=true"
+    },
+    {
+      "id": "allocate-partial",
+      "pdf": "§17",
+      "ok": true,
+      "detail": "allocatedKg=5000 product=AMARANTH contract=CONT/2026/0017"
+    },
+    {
+      "id": "store-processed",
+      "pdf": "§18/§20",
+      "ok": true,
+      "detail": "net=25370 alloc=0 stored=25370 status=COMPLETED"
+    },
+    {
+      "id": "plant-transfer",
+      "pdf": "§26",
+      "ok": true,
+      "detail": "status=RECEIVED linkedInward=cmsqadluo0059103v4z7s5hus"
+    },
+    {
+      "id": "transfer-dispatch-transit",
+      "pdf": "§26.2",
+      "ok": true,
+      "detail": "dispatchWas=IN_TRANSIT"
+    },
+    {
+      "id": "owner-dashboard",
+      "pdf": "§27",
+      "ok": {
+        "pendingContainers": 0,
+        "overdueAmount": 0
+      },
+      "detail": "raw=3000 alerts=2 payPending=0"
+    },
+    {
+      "id": "audit-log",
+      "pdf": "§28",
+      "ok": true,
+      "detail": "entries=22"
+    },
+    {
+      "id": "inventory-role-block-run",
+      "pdf": "§4 roles",
+      "ok": true,
+      "detail": "POST /production/runs → 403: \"Forbidden resource\""
+    },
+    {
+      "id": "fulfil-from-stock",
+      "pdf": "§19",
+      "ok": true,
+      "detail": "allocated 0.5 MT lot→CONT/2026/0017"
+    },
+    {
+      "id": "sampling-list",
+      "pdf": "§22",
+      "ok": true,
+      "detail": "count=0"
+    },
+    {
+      "id": "negative-stock-guard",
+      "pdf": "§29",
+      "ok": true,
+      "detail": "POST /production/runs → 400: \"Insufficient raw material. Available: 500 kg\""
+    }
+  ],
+  "failed": 0
+}

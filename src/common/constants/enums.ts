@@ -28,13 +28,18 @@ export const ContractStatus = {
 } as const;
 export type ContractStatus = (typeof ContractStatus)[keyof typeof ContractStatus];
 
-/** Container-wise status (PDF §10.4). Strings kept flexible for future production workflow. */
+/** Container-wise status (contract + production fulfilment). */
 export const ContainerStatus = {
   DRAFT: 'DRAFT',
   UNDER_PREPARATION: 'UNDER_PREPARATION',
   PRODUCTION_ASSIGNED: 'PRODUCTION_ASSIGNED',
   UNDER_PROCESSING: 'UNDER_PROCESSING',
   PROCESSING_COMPLETED: 'PROCESSING_COMPLETED',
+  PARTIALLY_FULFILLED: 'PARTIALLY_FULFILLED',
+  FULFILLED: 'FULFILLED',
+  READY_FOR_SAMPLING: 'READY_FOR_SAMPLING',
+  SAMPLING_PASSED: 'SAMPLING_PASSED',
+  SAMPLING_FAILED: 'SAMPLING_FAILED',
   READY_FOR_DISPATCH: 'READY_FOR_DISPATCH',
   DISPATCHED_FROM_FACTORY: 'DISPATCHED_FROM_FACTORY',
   REACHED_PORT: 'REACHED_PORT',

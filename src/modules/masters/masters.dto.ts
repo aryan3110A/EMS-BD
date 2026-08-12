@@ -108,6 +108,18 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   defaultSpecification?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  allowsFullProcess?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  allowsSortex?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  samplingNormallyApplicable?: boolean;
 }
 
 export class CreateProductVariantDto {

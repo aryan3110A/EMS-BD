@@ -7,6 +7,7 @@ import { OfficesModule } from './modules/offices/offices.module';
 import { MastersModule } from './modules/masters/masters.module';
 import { ContractsModule } from './modules/contracts/contracts.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ProductionModule } from './modules/production/production.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -19,6 +20,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     MastersModule,
     ContractsModule,
     NotificationsModule,
+    ProductionModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

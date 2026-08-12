@@ -141,6 +141,10 @@ export declare class MastersController {
         category: string | null;
         defaultSpecification: string | null;
         standardContainerMt: number;
+        defaultUnit: string;
+        allowsFullProcess: boolean;
+        allowsSortex: boolean;
+        samplingNormallyApplicable: boolean;
     })[]>;
     createProduct(dto: CreateProductDto): Promise<({
         variants: {
@@ -163,6 +167,10 @@ export declare class MastersController {
         category: string | null;
         defaultSpecification: string | null;
         standardContainerMt: number;
+        defaultUnit: string;
+        allowsFullProcess: boolean;
+        allowsSortex: boolean;
+        samplingNormallyApplicable: boolean;
     }) | null>;
     createProductVariant(dto: CreateProductVariantDto): Promise<({
         variants: {
@@ -185,6 +193,10 @@ export declare class MastersController {
         category: string | null;
         defaultSpecification: string | null;
         standardContainerMt: number;
+        defaultUnit: string;
+        allowsFullProcess: boolean;
+        allowsSortex: boolean;
+        samplingNormallyApplicable: boolean;
     }) | null>;
     getPackaging(): import(".prisma/client").Prisma.PrismaPromise<({
         sizes: {

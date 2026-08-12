@@ -1,0 +1,2358 @@
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
+import type { JwtPayload } from '../../common/decorators/current-user.decorator';
+import { NotificationService } from '../../common/services/notification.service';
+import { InventoryLedgerService } from './inventory-ledger.service';
+import { ProductionAuditService } from './production-audit.service';
+import { AddInputDto, AllocateContainerDto, AllocateFromStockDto, CleaningResultDto, CreateInwardDto, CreateSupplierDto, CreateTransferDto, HullingResultDto, InwardQueryDto, SampleResultDto, StartProductionDto, StoreProcessedDto } from './production.dto';
+export declare class ProductionService {
+    private prisma;
+    private ledger;
+    private audit;
+    private notifications;
+    constructor(prisma: PrismaService, ledger: InventoryLedgerService, audit: ProductionAuditService, notifications: NotificationService);
+    private tx;
+    private nextNumber;
+    private wastageThreshold;
+    listLocations(): Prisma.PrismaPromise<{
+        id: string;
+        code: string;
+        name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+    }[]>;
+    listSuppliers(): Prisma.PrismaPromise<{
+        id: string;
+        code: string;
+        name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        email: string | null;
+        phone: string | null;
+        address: string | null;
+    }[]>;
+    createSupplier(dto: CreateSupplierDto): Promise<{
+        id: string;
+        code: string;
+        name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        email: string | null;
+        phone: string | null;
+        address: string | null;
+    }>;
+    listInwardTypes(): Prisma.PrismaPromise<{
+        id: string;
+        code: string;
+        name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        requiresDesc: boolean;
+    }[]>;
+    listWastageTypes(stage?: string): Prisma.PrismaPromise<{
+        id: string;
+        code: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        stage: string;
+        nameEn: string;
+        nameLocal: string | null;
+        sortOrder: number;
+    }[]>;
+    createInward(dto: CreateInwardDto, user: JwtPayload): Promise<{
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        inwardType: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            requiresDesc: boolean;
+        };
+        supplier: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            phone: string | null;
+            address: string | null;
+        };
+        location: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        weightKg: number;
+        remarks: string | null;
+        numberOfBags: number;
+        status: string;
+        createdById: string;
+        updatedById: string | null;
+        locationId: string;
+        supplierId: string;
+        inwardDate: Date;
+        truckNumber: string;
+        price: number | null;
+        inwardTypeId: string;
+        otherTypeDesc: string | null;
+        inwardNumber: string;
+        inputUnit: string;
+    }>;
+    listInwards(query: InwardQueryDto): Prisma.PrismaPromise<({
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        inwardType: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            requiresDesc: boolean;
+        };
+        supplier: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            phone: string | null;
+            address: string | null;
+        };
+        createdBy: {
+            id: string;
+            name: string;
+        };
+        location: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        weightKg: number;
+        remarks: string | null;
+        numberOfBags: number;
+        status: string;
+        createdById: string;
+        updatedById: string | null;
+        locationId: string;
+        supplierId: string;
+        inwardDate: Date;
+        truckNumber: string;
+        price: number | null;
+        inwardTypeId: string;
+        otherTypeDesc: string | null;
+        inwardNumber: string;
+        inputUnit: string;
+    })[]>;
+    getBalances(query: {
+        locationId?: string;
+        productId?: string;
+        stockCategory?: string;
+    }): Prisma.PrismaPromise<({
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        location: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    } & {
+        id: string;
+        updatedAt: Date;
+        productId: string;
+        quantityKg: number;
+        stockCategory: string;
+        locationId: string;
+    })[]>;
+    getLedger(query: {
+        productId?: string;
+        take?: number;
+    }): Prisma.PrismaPromise<({
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        createdBy: {
+            id: string;
+            name: string;
+        } | null;
+        sourceLocation: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
+        destLocation: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
+    } & {
+        id: string;
+        createdAt: Date;
+        productId: string;
+        remarks: string | null;
+        createdById: string | null;
+        txnNumber: string;
+        txnType: string;
+        stockCategory: string;
+        sourceLocationId: string | null;
+        destLocationId: string | null;
+        quantityInKg: number;
+        quantityOutKg: number;
+        balanceKg: number | null;
+        referenceType: string | null;
+        referenceId: string | null;
+    })[]>;
+    getPendingContracts(): Promise<any[]>;
+    listRuns(): Prisma.PrismaPromise<({
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        createdBy: {
+            id: string;
+            name: string;
+        };
+        plant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        createdById: string;
+        startDate: Date;
+        productionNumber: string;
+        plantId: string;
+        processType: string;
+        completionDate: Date | null;
+        daysSpanned: number | null;
+        totalInputKg: number;
+        cleaningWastageKg: number;
+        hullingInputKg: number;
+        hullingWastageKg: number;
+        hullingWastagePct: number | null;
+        netOutputKg: number;
+        allocatedKg: number;
+        storedProcessedKg: number;
+        wastageAlert: boolean;
+        cleaningFinalizedAt: Date | null;
+        hullingFinalizedAt: Date | null;
+        cancelledAt: Date | null;
+        cancelReason: string | null;
+        cancelledById: string | null;
+    })[]>;
+    getRun(id: string): Promise<{
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        createdBy: {
+            id: string;
+            name: string;
+        };
+        cleaning: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
+            productionRunId: string;
+            quantityKg: number;
+            wastageTypeId: string;
+            inputUnit: string;
+        })[];
+        plant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        inputs: ({
+            supplier: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                email: string | null;
+                phone: string | null;
+                address: string | null;
+            } | null;
+            inward: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                weightKg: number;
+                remarks: string | null;
+                numberOfBags: number;
+                status: string;
+                createdById: string;
+                updatedById: string | null;
+                locationId: string;
+                supplierId: string;
+                inwardDate: Date;
+                truckNumber: string;
+                price: number | null;
+                inwardTypeId: string;
+                otherTypeDesc: string | null;
+                inwardNumber: string;
+                inputUnit: string;
+            } | null;
+        } & {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            productionRunId: string;
+            processedLotId: string | null;
+            quantityKg: number;
+            addedById: string;
+            stockCategory: string;
+            supplierId: string | null;
+            inwardId: string | null;
+            rejectedLotId: string | null;
+            inputDate: Date;
+            inputUnit: string;
+            isAdditional: boolean;
+        })[];
+        hulling: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
+            numberOfBags: number | null;
+            productionRunId: string;
+            quantityKg: number;
+            wastageTypeId: string;
+            inputUnit: string;
+            weightPerBagKg: number | null;
+            directQtyKg: number | null;
+        })[];
+        outputLots: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            productionRunId: string;
+            quantityKg: number;
+            plantId: string;
+            processType: string;
+            completionDate: Date;
+            availableKg: number;
+            reservedKg: number;
+        }[];
+        allocations: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            containerProductId: string | null;
+            quantityKg: number;
+            allocationDate: Date;
+            allocatedById: string;
+        }[];
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        createdById: string;
+        startDate: Date;
+        productionNumber: string;
+        plantId: string;
+        processType: string;
+        completionDate: Date | null;
+        daysSpanned: number | null;
+        totalInputKg: number;
+        cleaningWastageKg: number;
+        hullingInputKg: number;
+        hullingWastageKg: number;
+        hullingWastagePct: number | null;
+        netOutputKg: number;
+        allocatedKg: number;
+        storedProcessedKg: number;
+        wastageAlert: boolean;
+        cleaningFinalizedAt: Date | null;
+        hullingFinalizedAt: Date | null;
+        cancelledAt: Date | null;
+        cancelReason: string | null;
+        cancelledById: string | null;
+    }>;
+    getSettings(): Promise<{
+        wastageAlertPct: number;
+        fullProcessDefaultProductId: string | null;
+    }>;
+    startRun(dto: StartProductionDto, user: JwtPayload): Promise<{
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        createdBy: {
+            id: string;
+            name: string;
+        };
+        cleaning: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
+            productionRunId: string;
+            quantityKg: number;
+            wastageTypeId: string;
+            inputUnit: string;
+        })[];
+        plant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        inputs: ({
+            supplier: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                email: string | null;
+                phone: string | null;
+                address: string | null;
+            } | null;
+            inward: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                weightKg: number;
+                remarks: string | null;
+                numberOfBags: number;
+                status: string;
+                createdById: string;
+                updatedById: string | null;
+                locationId: string;
+                supplierId: string;
+                inwardDate: Date;
+                truckNumber: string;
+                price: number | null;
+                inwardTypeId: string;
+                otherTypeDesc: string | null;
+                inwardNumber: string;
+                inputUnit: string;
+            } | null;
+        } & {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            productionRunId: string;
+            processedLotId: string | null;
+            quantityKg: number;
+            addedById: string;
+            stockCategory: string;
+            supplierId: string | null;
+            inwardId: string | null;
+            rejectedLotId: string | null;
+            inputDate: Date;
+            inputUnit: string;
+            isAdditional: boolean;
+        })[];
+        hulling: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
+            numberOfBags: number | null;
+            productionRunId: string;
+            quantityKg: number;
+            wastageTypeId: string;
+            inputUnit: string;
+            weightPerBagKg: number | null;
+            directQtyKg: number | null;
+        })[];
+        outputLots: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            productionRunId: string;
+            quantityKg: number;
+            plantId: string;
+            processType: string;
+            completionDate: Date;
+            availableKg: number;
+            reservedKg: number;
+        }[];
+        allocations: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            containerProductId: string | null;
+            quantityKg: number;
+            allocationDate: Date;
+            allocatedById: string;
+        }[];
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        createdById: string;
+        startDate: Date;
+        productionNumber: string;
+        plantId: string;
+        processType: string;
+        completionDate: Date | null;
+        daysSpanned: number | null;
+        totalInputKg: number;
+        cleaningWastageKg: number;
+        hullingInputKg: number;
+        hullingWastageKg: number;
+        hullingWastagePct: number | null;
+        netOutputKg: number;
+        allocatedKg: number;
+        storedProcessedKg: number;
+        wastageAlert: boolean;
+        cleaningFinalizedAt: Date | null;
+        hullingFinalizedAt: Date | null;
+        cancelledAt: Date | null;
+        cancelReason: string | null;
+        cancelledById: string | null;
+    }>;
+    reopenCleaning(runId: string, user: JwtPayload, reason?: string): Promise<{
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        createdBy: {
+            id: string;
+            name: string;
+        };
+        cleaning: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
+            productionRunId: string;
+            quantityKg: number;
+            wastageTypeId: string;
+            inputUnit: string;
+        })[];
+        plant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        inputs: ({
+            supplier: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                email: string | null;
+                phone: string | null;
+                address: string | null;
+            } | null;
+            inward: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                weightKg: number;
+                remarks: string | null;
+                numberOfBags: number;
+                status: string;
+                createdById: string;
+                updatedById: string | null;
+                locationId: string;
+                supplierId: string;
+                inwardDate: Date;
+                truckNumber: string;
+                price: number | null;
+                inwardTypeId: string;
+                otherTypeDesc: string | null;
+                inwardNumber: string;
+                inputUnit: string;
+            } | null;
+        } & {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            productionRunId: string;
+            processedLotId: string | null;
+            quantityKg: number;
+            addedById: string;
+            stockCategory: string;
+            supplierId: string | null;
+            inwardId: string | null;
+            rejectedLotId: string | null;
+            inputDate: Date;
+            inputUnit: string;
+            isAdditional: boolean;
+        })[];
+        hulling: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
+            numberOfBags: number | null;
+            productionRunId: string;
+            quantityKg: number;
+            wastageTypeId: string;
+            inputUnit: string;
+            weightPerBagKg: number | null;
+            directQtyKg: number | null;
+        })[];
+        outputLots: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            productionRunId: string;
+            quantityKg: number;
+            plantId: string;
+            processType: string;
+            completionDate: Date;
+            availableKg: number;
+            reservedKg: number;
+        }[];
+        allocations: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            containerProductId: string | null;
+            quantityKg: number;
+            allocationDate: Date;
+            allocatedById: string;
+        }[];
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        createdById: string;
+        startDate: Date;
+        productionNumber: string;
+        plantId: string;
+        processType: string;
+        completionDate: Date | null;
+        daysSpanned: number | null;
+        totalInputKg: number;
+        cleaningWastageKg: number;
+        hullingInputKg: number;
+        hullingWastageKg: number;
+        hullingWastagePct: number | null;
+        netOutputKg: number;
+        allocatedKg: number;
+        storedProcessedKg: number;
+        wastageAlert: boolean;
+        cleaningFinalizedAt: Date | null;
+        hullingFinalizedAt: Date | null;
+        cancelledAt: Date | null;
+        cancelReason: string | null;
+        cancelledById: string | null;
+    }>;
+    addInput(runId: string, dto: AddInputDto, user: JwtPayload): Promise<{
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        createdBy: {
+            id: string;
+            name: string;
+        };
+        cleaning: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
+            productionRunId: string;
+            quantityKg: number;
+            wastageTypeId: string;
+            inputUnit: string;
+        })[];
+        plant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        inputs: ({
+            supplier: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                email: string | null;
+                phone: string | null;
+                address: string | null;
+            } | null;
+            inward: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                weightKg: number;
+                remarks: string | null;
+                numberOfBags: number;
+                status: string;
+                createdById: string;
+                updatedById: string | null;
+                locationId: string;
+                supplierId: string;
+                inwardDate: Date;
+                truckNumber: string;
+                price: number | null;
+                inwardTypeId: string;
+                otherTypeDesc: string | null;
+                inwardNumber: string;
+                inputUnit: string;
+            } | null;
+        } & {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            productionRunId: string;
+            processedLotId: string | null;
+            quantityKg: number;
+            addedById: string;
+            stockCategory: string;
+            supplierId: string | null;
+            inwardId: string | null;
+            rejectedLotId: string | null;
+            inputDate: Date;
+            inputUnit: string;
+            isAdditional: boolean;
+        })[];
+        hulling: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
+            numberOfBags: number | null;
+            productionRunId: string;
+            quantityKg: number;
+            wastageTypeId: string;
+            inputUnit: string;
+            weightPerBagKg: number | null;
+            directQtyKg: number | null;
+        })[];
+        outputLots: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            productionRunId: string;
+            quantityKg: number;
+            plantId: string;
+            processType: string;
+            completionDate: Date;
+            availableKg: number;
+            reservedKg: number;
+        }[];
+        allocations: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            containerProductId: string | null;
+            quantityKg: number;
+            allocationDate: Date;
+            allocatedById: string;
+        }[];
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        createdById: string;
+        startDate: Date;
+        productionNumber: string;
+        plantId: string;
+        processType: string;
+        completionDate: Date | null;
+        daysSpanned: number | null;
+        totalInputKg: number;
+        cleaningWastageKg: number;
+        hullingInputKg: number;
+        hullingWastageKg: number;
+        hullingWastagePct: number | null;
+        netOutputKg: number;
+        allocatedKg: number;
+        storedProcessedKg: number;
+        wastageAlert: boolean;
+        cleaningFinalizedAt: Date | null;
+        hullingFinalizedAt: Date | null;
+        cancelledAt: Date | null;
+        cancelReason: string | null;
+        cancelledById: string | null;
+    }>;
+    submitCleaning(runId: string, dto: CleaningResultDto, user: JwtPayload): Promise<{
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        createdBy: {
+            id: string;
+            name: string;
+        };
+        cleaning: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
+            productionRunId: string;
+            quantityKg: number;
+            wastageTypeId: string;
+            inputUnit: string;
+        })[];
+        plant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        inputs: ({
+            supplier: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                email: string | null;
+                phone: string | null;
+                address: string | null;
+            } | null;
+            inward: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                weightKg: number;
+                remarks: string | null;
+                numberOfBags: number;
+                status: string;
+                createdById: string;
+                updatedById: string | null;
+                locationId: string;
+                supplierId: string;
+                inwardDate: Date;
+                truckNumber: string;
+                price: number | null;
+                inwardTypeId: string;
+                otherTypeDesc: string | null;
+                inwardNumber: string;
+                inputUnit: string;
+            } | null;
+        } & {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            productionRunId: string;
+            processedLotId: string | null;
+            quantityKg: number;
+            addedById: string;
+            stockCategory: string;
+            supplierId: string | null;
+            inwardId: string | null;
+            rejectedLotId: string | null;
+            inputDate: Date;
+            inputUnit: string;
+            isAdditional: boolean;
+        })[];
+        hulling: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
+            numberOfBags: number | null;
+            productionRunId: string;
+            quantityKg: number;
+            wastageTypeId: string;
+            inputUnit: string;
+            weightPerBagKg: number | null;
+            directQtyKg: number | null;
+        })[];
+        outputLots: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            productionRunId: string;
+            quantityKg: number;
+            plantId: string;
+            processType: string;
+            completionDate: Date;
+            availableKg: number;
+            reservedKg: number;
+        }[];
+        allocations: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            containerProductId: string | null;
+            quantityKg: number;
+            allocationDate: Date;
+            allocatedById: string;
+        }[];
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        createdById: string;
+        startDate: Date;
+        productionNumber: string;
+        plantId: string;
+        processType: string;
+        completionDate: Date | null;
+        daysSpanned: number | null;
+        totalInputKg: number;
+        cleaningWastageKg: number;
+        hullingInputKg: number;
+        hullingWastageKg: number;
+        hullingWastagePct: number | null;
+        netOutputKg: number;
+        allocatedKg: number;
+        storedProcessedKg: number;
+        wastageAlert: boolean;
+        cleaningFinalizedAt: Date | null;
+        hullingFinalizedAt: Date | null;
+        cancelledAt: Date | null;
+        cancelReason: string | null;
+        cancelledById: string | null;
+    }>;
+    submitHulling(runId: string, dto: HullingResultDto, user: JwtPayload): Promise<{
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        createdBy: {
+            id: string;
+            name: string;
+        };
+        cleaning: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
+            productionRunId: string;
+            quantityKg: number;
+            wastageTypeId: string;
+            inputUnit: string;
+        })[];
+        plant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        inputs: ({
+            supplier: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                email: string | null;
+                phone: string | null;
+                address: string | null;
+            } | null;
+            inward: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                weightKg: number;
+                remarks: string | null;
+                numberOfBags: number;
+                status: string;
+                createdById: string;
+                updatedById: string | null;
+                locationId: string;
+                supplierId: string;
+                inwardDate: Date;
+                truckNumber: string;
+                price: number | null;
+                inwardTypeId: string;
+                otherTypeDesc: string | null;
+                inwardNumber: string;
+                inputUnit: string;
+            } | null;
+        } & {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            productionRunId: string;
+            processedLotId: string | null;
+            quantityKg: number;
+            addedById: string;
+            stockCategory: string;
+            supplierId: string | null;
+            inwardId: string | null;
+            rejectedLotId: string | null;
+            inputDate: Date;
+            inputUnit: string;
+            isAdditional: boolean;
+        })[];
+        hulling: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
+            numberOfBags: number | null;
+            productionRunId: string;
+            quantityKg: number;
+            wastageTypeId: string;
+            inputUnit: string;
+            weightPerBagKg: number | null;
+            directQtyKg: number | null;
+        })[];
+        outputLots: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            productionRunId: string;
+            quantityKg: number;
+            plantId: string;
+            processType: string;
+            completionDate: Date;
+            availableKg: number;
+            reservedKg: number;
+        }[];
+        allocations: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            containerProductId: string | null;
+            quantityKg: number;
+            allocationDate: Date;
+            allocatedById: string;
+        }[];
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        createdById: string;
+        startDate: Date;
+        productionNumber: string;
+        plantId: string;
+        processType: string;
+        completionDate: Date | null;
+        daysSpanned: number | null;
+        totalInputKg: number;
+        cleaningWastageKg: number;
+        hullingInputKg: number;
+        hullingWastageKg: number;
+        hullingWastagePct: number | null;
+        netOutputKg: number;
+        allocatedKg: number;
+        storedProcessedKg: number;
+        wastageAlert: boolean;
+        cleaningFinalizedAt: Date | null;
+        hullingFinalizedAt: Date | null;
+        cancelledAt: Date | null;
+        cancelReason: string | null;
+        cancelledById: string | null;
+    }>;
+    private refreshContainerStatus;
+    allocateToContainer(runId: string, dto: AllocateContainerDto, user: JwtPayload): Promise<{
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        createdBy: {
+            id: string;
+            name: string;
+        };
+        cleaning: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
+            productionRunId: string;
+            quantityKg: number;
+            wastageTypeId: string;
+            inputUnit: string;
+        })[];
+        plant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        inputs: ({
+            supplier: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                email: string | null;
+                phone: string | null;
+                address: string | null;
+            } | null;
+            inward: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                weightKg: number;
+                remarks: string | null;
+                numberOfBags: number;
+                status: string;
+                createdById: string;
+                updatedById: string | null;
+                locationId: string;
+                supplierId: string;
+                inwardDate: Date;
+                truckNumber: string;
+                price: number | null;
+                inwardTypeId: string;
+                otherTypeDesc: string | null;
+                inwardNumber: string;
+                inputUnit: string;
+            } | null;
+        } & {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            productionRunId: string;
+            processedLotId: string | null;
+            quantityKg: number;
+            addedById: string;
+            stockCategory: string;
+            supplierId: string | null;
+            inwardId: string | null;
+            rejectedLotId: string | null;
+            inputDate: Date;
+            inputUnit: string;
+            isAdditional: boolean;
+        })[];
+        hulling: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
+            numberOfBags: number | null;
+            productionRunId: string;
+            quantityKg: number;
+            wastageTypeId: string;
+            inputUnit: string;
+            weightPerBagKg: number | null;
+            directQtyKg: number | null;
+        })[];
+        outputLots: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            productionRunId: string;
+            quantityKg: number;
+            plantId: string;
+            processType: string;
+            completionDate: Date;
+            availableKg: number;
+            reservedKg: number;
+        }[];
+        allocations: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            containerProductId: string | null;
+            quantityKg: number;
+            allocationDate: Date;
+            allocatedById: string;
+        }[];
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        createdById: string;
+        startDate: Date;
+        productionNumber: string;
+        plantId: string;
+        processType: string;
+        completionDate: Date | null;
+        daysSpanned: number | null;
+        totalInputKg: number;
+        cleaningWastageKg: number;
+        hullingInputKg: number;
+        hullingWastageKg: number;
+        hullingWastagePct: number | null;
+        netOutputKg: number;
+        allocatedKg: number;
+        storedProcessedKg: number;
+        wastageAlert: boolean;
+        cleaningFinalizedAt: Date | null;
+        hullingFinalizedAt: Date | null;
+        cancelledAt: Date | null;
+        cancelReason: string | null;
+        cancelledById: string | null;
+    }>;
+    storeRemainingProcessed(runId: string, dto: StoreProcessedDto, user: JwtPayload): Promise<{
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        createdBy: {
+            id: string;
+            name: string;
+        };
+        cleaning: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
+            productionRunId: string;
+            quantityKg: number;
+            wastageTypeId: string;
+            inputUnit: string;
+        })[];
+        plant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        inputs: ({
+            supplier: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                email: string | null;
+                phone: string | null;
+                address: string | null;
+            } | null;
+            inward: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                weightKg: number;
+                remarks: string | null;
+                numberOfBags: number;
+                status: string;
+                createdById: string;
+                updatedById: string | null;
+                locationId: string;
+                supplierId: string;
+                inwardDate: Date;
+                truckNumber: string;
+                price: number | null;
+                inwardTypeId: string;
+                otherTypeDesc: string | null;
+                inwardNumber: string;
+                inputUnit: string;
+            } | null;
+        } & {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            productionRunId: string;
+            processedLotId: string | null;
+            quantityKg: number;
+            addedById: string;
+            stockCategory: string;
+            supplierId: string | null;
+            inwardId: string | null;
+            rejectedLotId: string | null;
+            inputDate: Date;
+            inputUnit: string;
+            isAdditional: boolean;
+        })[];
+        hulling: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            remarks: string | null;
+            numberOfBags: number | null;
+            productionRunId: string;
+            quantityKg: number;
+            wastageTypeId: string;
+            inputUnit: string;
+            weightPerBagKg: number | null;
+            directQtyKg: number | null;
+        })[];
+        outputLots: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            productionRunId: string;
+            quantityKg: number;
+            plantId: string;
+            processType: string;
+            completionDate: Date;
+            availableKg: number;
+            reservedKg: number;
+        }[];
+        allocations: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            contractId: string;
+            containerId: string;
+            productionRunId: string | null;
+            processedLotId: string | null;
+            containerProductId: string | null;
+            quantityKg: number;
+            allocationDate: Date;
+            allocatedById: string;
+        }[];
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        createdById: string;
+        startDate: Date;
+        productionNumber: string;
+        plantId: string;
+        processType: string;
+        completionDate: Date | null;
+        daysSpanned: number | null;
+        totalInputKg: number;
+        cleaningWastageKg: number;
+        hullingInputKg: number;
+        hullingWastageKg: number;
+        hullingWastagePct: number | null;
+        netOutputKg: number;
+        allocatedKg: number;
+        storedProcessedKg: number;
+        wastageAlert: boolean;
+        cleaningFinalizedAt: Date | null;
+        hullingFinalizedAt: Date | null;
+        cancelledAt: Date | null;
+        cancelReason: string | null;
+        cancelledById: string | null;
+    }>;
+    allocateFromProcessedStock(dto: AllocateFromStockDto, user: JwtPayload): Promise<{
+        ok: boolean;
+    }>;
+    listProcessedLots(): Prisma.PrismaPromise<({
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        productionRun: {
+            productionNumber: string;
+            processType: string;
+        };
+        plant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        status: string;
+        lotNumber: string;
+        productionRunId: string;
+        quantityKg: number;
+        plantId: string;
+        processType: string;
+        completionDate: Date;
+        availableKg: number;
+        reservedKg: number;
+    })[]>;
+    listSamples(): Promise<{
+        contract: {
+            id: string;
+            contractNumber: string;
+        } | null;
+        container: {
+            id: string;
+            containerIndex: number;
+            containerStatus: string;
+        } | null;
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        productionRun: {
+            productionNumber: string;
+        } | null;
+        updatedBy: {
+            id: string;
+            name: string;
+        } | null;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        result: string | null;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        contractId: string;
+        containerId: string;
+        productionRunId: string | null;
+        processedLotId: string | null;
+        allocationId: string | null;
+        collectionDate: Date | null;
+        testingAgency: string | null;
+        resultDate: Date | null;
+        reportReference: string | null;
+        reportPath: string | null;
+        updatedById: string | null;
+    }[]>;
+    updateSample(id: string, dto: SampleResultDto, user: JwtPayload): Promise<({
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        result: string | null;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        contractId: string;
+        containerId: string;
+        productionRunId: string | null;
+        processedLotId: string | null;
+        allocationId: string | null;
+        collectionDate: Date | null;
+        testingAgency: string | null;
+        resultDate: Date | null;
+        reportReference: string | null;
+        reportPath: string | null;
+        updatedById: string | null;
+    }) | null>;
+    listRejectedLots(): Prisma.PrismaPromise<({
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        productionRun: {
+            productionNumber: string;
+        } | null;
+        plant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        status: string;
+        lotNumber: string;
+        contractId: string | null;
+        containerId: string | null;
+        productionRunId: string | null;
+        quantityKg: number;
+        plantId: string;
+        availableKg: number;
+        reprocessedKg: number;
+        transferredKg: number;
+        sampleRecordId: string | null;
+        failureDate: Date;
+        failureRemarks: string | null;
+    })[]>;
+    listTransfers(): Prisma.PrismaPromise<({
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        createdBy: {
+            id: string;
+            name: string;
+        };
+        sourceLocation: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        destLocation: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        receivedBy: {
+            id: string;
+            name: string;
+        } | null;
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        receivedDate: Date | null;
+        status: string;
+        createdById: string;
+        productionRunId: string | null;
+        processedLotId: string | null;
+        quantityKg: number;
+        stockCategory: string;
+        sourceLocationId: string;
+        destLocationId: string;
+        rejectedLotId: string | null;
+        transferDate: Date;
+        inputUnit: string;
+        transferNumber: string;
+        dispatchDate: Date | null;
+        receivedById: string | null;
+        linkedInwardId: string | null;
+    })[]>;
+    createTransfer(dto: CreateTransferDto, user: JwtPayload): Promise<{
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        sourceLocation: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        destLocation: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        receivedDate: Date | null;
+        status: string;
+        createdById: string;
+        productionRunId: string | null;
+        processedLotId: string | null;
+        quantityKg: number;
+        stockCategory: string;
+        sourceLocationId: string;
+        destLocationId: string;
+        rejectedLotId: string | null;
+        transferDate: Date;
+        inputUnit: string;
+        transferNumber: string;
+        dispatchDate: Date | null;
+        receivedById: string | null;
+        linkedInwardId: string | null;
+    }>;
+    dispatchTransfer(id: string, user: JwtPayload): Promise<({
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        sourceLocation: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        destLocation: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        receivedDate: Date | null;
+        status: string;
+        createdById: string;
+        productionRunId: string | null;
+        processedLotId: string | null;
+        quantityKg: number;
+        stockCategory: string;
+        sourceLocationId: string;
+        destLocationId: string;
+        rejectedLotId: string | null;
+        transferDate: Date;
+        inputUnit: string;
+        transferNumber: string;
+        dispatchDate: Date | null;
+        receivedById: string | null;
+        linkedInwardId: string | null;
+    }) | null>;
+    receiveTransfer(id: string, user: JwtPayload): Promise<({
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        sourceLocation: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        destLocation: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        receivedDate: Date | null;
+        status: string;
+        createdById: string;
+        productionRunId: string | null;
+        processedLotId: string | null;
+        quantityKg: number;
+        stockCategory: string;
+        sourceLocationId: string;
+        destLocationId: string;
+        rejectedLotId: string | null;
+        transferDate: Date;
+        inputUnit: string;
+        transferNumber: string;
+        dispatchDate: Date | null;
+        receivedById: string | null;
+        linkedInwardId: string | null;
+    }) | null>;
+    getOwnerDashboard(): Promise<{
+        inventory: {
+            byCategory: Record<string, number>;
+            byLocation: Record<string, number>;
+            rawByProduct: {
+                name: string;
+                total: number;
+                locations: Record<string, number>;
+            }[];
+            totalRaw: number;
+            totalProcessed: number;
+            totalWip: number;
+            totalRejected: number;
+            totalInTransit: number;
+        };
+        wastageAlerts: ({
+            product: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                category: string | null;
+                defaultSpecification: string | null;
+                standardContainerMt: number;
+                defaultUnit: string;
+                allowsFullProcess: boolean;
+                allowsSortex: boolean;
+                samplingNormallyApplicable: boolean;
+            };
+            createdBy: {
+                id: string;
+                name: string;
+            };
+            plant: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            remarks: string | null;
+            status: string;
+            createdById: string;
+            startDate: Date;
+            productionNumber: string;
+            plantId: string;
+            processType: string;
+            completionDate: Date | null;
+            daysSpanned: number | null;
+            totalInputKg: number;
+            cleaningWastageKg: number;
+            hullingInputKg: number;
+            hullingWastageKg: number;
+            hullingWastagePct: number | null;
+            netOutputKg: number;
+            allocatedKg: number;
+            storedProcessedKg: number;
+            wastageAlert: boolean;
+            cleaningFinalizedAt: Date | null;
+            hullingFinalizedAt: Date | null;
+            cancelledAt: Date | null;
+            cancelReason: string | null;
+            cancelledById: string | null;
+        })[];
+        sampling: {
+            status: string;
+            count: number;
+        }[];
+        transfers: {
+            status: string;
+            count: number;
+        }[];
+        pendingContracts: {
+            overdue: number;
+            dueSoon: number;
+            other: number;
+            items: any[];
+        };
+        production: {
+            activeRuns: number;
+            completedToday: {
+                productionNumber: string;
+                product: string;
+                plant: string;
+                netOutputKg: number;
+            }[];
+        };
+        payments: {
+            pendingContainers: number;
+            overdueAmount: number;
+        };
+    }>;
+    listAudit(query: {
+        module?: string;
+        recordNumber?: string;
+    }): Prisma.PrismaPromise<({
+        changedBy: {
+            id: string;
+            name: string;
+            email: string;
+        } | null;
+    } & {
+        id: string;
+        createdAt: Date;
+        module: string;
+        action: string;
+        newValue: string | null;
+        reason: string | null;
+        fieldName: string | null;
+        changedById: string | null;
+        oldValue: string | null;
+        recordType: string;
+        recordNumber: string | null;
+        ipAddress: string | null;
+    })[]>;
+}

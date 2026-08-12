@@ -155,6 +155,9 @@ class CreateProductDto {
     code;
     category;
     defaultSpecification;
+    allowsFullProcess;
+    allowsSortex;
+    samplingNormallyApplicable;
 }
 exports.CreateProductDto = CreateProductDto;
 __decorate([
@@ -176,6 +179,21 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateProductDto.prototype, "defaultSpecification", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], CreateProductDto.prototype, "allowsFullProcess", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], CreateProductDto.prototype, "allowsSortex", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], CreateProductDto.prototype, "samplingNormallyApplicable", void 0);
 class CreateProductVariantDto {
     productId;
     name;

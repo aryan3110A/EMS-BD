@@ -567,7 +567,37 @@ let ContractsService = class ContractsService {
         if (!this.canAccessAnyOffice(user) && user.officeId !== contract.officeId) {
             throw new common_1.ForbiddenException('Access denied');
         }
-        return contract;
+        const [allocations, sampleRecords] = await Promise.all([
+            this.prisma.containerAllocation.findMany({
+                where: { contractId: id, status: 'ACTIVE' },
+                include: {
+                    productionRun: { select: { id: true, productionNumber: true } },
+                    processedLot: { select: { id: true, lotNumber: true } },
+                },
+                orderBy: { allocationDate: 'desc' },
+            }),
+            this.prisma.sampleRecord.findMany({
+                where: { contractId: id },
+                include: { product: { select: { id: true, code: true, name: true } } },
+                orderBy: { createdAt: 'desc' },
+            }),
+        ]);
+        const productIds = [...new Set(allocations.map((a) => a.productId))];
+        const products = productIds.length
+            ? await this.prisma.product.findMany({
+                where: { id: { in: productIds } },
+                select: { id: true, code: true, name: true },
+            })
+            : [];
+        const productMap = new Map(products.map((p) => [p.id, p]));
+        return {
+            ...contract,
+            productionAllocations: allocations.map((a) => ({
+                ...a,
+                product: productMap.get(a.productId) || null,
+            })),
+            sampleRecords,
+        };
     }
     async update(id, dto, user) {
         const existing = await this.prisma.contract.findUnique({

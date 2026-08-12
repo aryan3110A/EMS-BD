@@ -34,6 +34,9 @@ export declare class CreateProductDto {
     code?: string;
     category?: string;
     defaultSpecification?: string;
+    allowsFullProcess?: boolean;
+    allowsSortex?: boolean;
+    samplingNormallyApplicable?: boolean;
 }
 export declare class CreateProductVariantDto {
     productId: string;
