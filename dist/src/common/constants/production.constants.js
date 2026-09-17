@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.FULL_PROCESS_DEFAULT_PRODUCT_KEY = exports.DEFAULT_WASTAGE_ALERT_PCT = exports.WASTAGE_ALERT_THRESHOLD_KEY = exports.KG_PER_MT = exports.WeightUnit = exports.RejectedStockStatus = exports.WastageStage = exports.InwardTypeCode = exports.LedgerTxnType = exports.TransferStatus = exports.SamplingStatus = exports.ProductionRunStatus = exports.StockCategory = exports.InputStockCategory = exports.ProcessType = void 0;
+exports.SAMPLING_REQUIRED_COUNTRIES = exports.FULL_PROCESS_DEFAULT_PRODUCT_KEY = exports.DEFAULT_WASTAGE_ALERT_PCT = exports.WASTAGE_ALERT_THRESHOLD_KEY = exports.KG_PER_MT = exports.WeightUnit = exports.RejectedStockStatus = exports.WastageStage = exports.InwardTypeCode = exports.LedgerTxnType = exports.JobWorkWastageDisposition = exports.JobWorkReturnCategory = exports.JobWorkStatus = exports.TransferStatus = exports.SamplingStatus = exports.WastageLotStatus = exports.WastageDisposition = exports.ProductionRunStatus = exports.ProductionSource = exports.StockCategory = exports.InputStockCategory = exports.ProcessType = void 0;
+exports.requiresSampling = requiresSampling;
 exports.toKg = toKg;
 exports.fromKg = fromKg;
 exports.ProcessType = {
@@ -11,6 +12,8 @@ exports.InputStockCategory = {
     NORMAL_RAW_MATERIAL: 'NORMAL_RAW_MATERIAL',
     EXISTING_PROCESSED_STOCK: 'EXISTING_PROCESSED_STOCK',
     SAMPLE_REJECTED_STOCK: 'SAMPLE_REJECTED_STOCK',
+    WASTAGE_INVENTORY: 'WASTAGE_INVENTORY',
+    JOB_WORK_RETURNED_PROCESSED: 'JOB_WORK_RETURNED_PROCESSED',
 };
 exports.StockCategory = {
     RAW_MATERIAL: 'RAW_MATERIAL',
@@ -19,8 +22,16 @@ exports.StockCategory = {
     PROCESSED_AVAILABLE: 'PROCESSED_AVAILABLE',
     PROCESSED_RESERVED: 'PROCESSED_RESERVED',
     SAMPLE_REJECTED: 'SAMPLE_REJECTED',
+    WASTAGE_INVENTORY: 'WASTAGE_INVENTORY',
     WASTAGE_BY_PRODUCT: 'WASTAGE_BY_PRODUCT',
     STOCK_IN_TRANSIT: 'STOCK_IN_TRANSIT',
+    MATERIAL_WITH_JOB_WORKER: 'MATERIAL_WITH_JOB_WORKER',
+};
+exports.ProductionSource = {
+    IN_HOUSE: 'IN_HOUSE',
+    JOB_WORK: 'JOB_WORK',
+    WASTAGE_REPROCESSING: 'WASTAGE_REPROCESSING',
+    SAMPLING_REJECTED_REPROCESSING: 'SAMPLING_REJECTED_REPROCESSING',
 };
 exports.ProductionRunStatus = {
     DRAFT: 'DRAFT',
@@ -30,6 +41,7 @@ exports.ProductionRunStatus = {
     HULLING_IN_PROGRESS: 'HULLING_IN_PROGRESS',
     HULLING_RESULT_PENDING: 'HULLING_RESULT_PENDING',
     HULLING_COMPLETED: 'HULLING_COMPLETED',
+    AWAITING_FINALISATION: 'AWAITING_FINALISATION',
     ALLOCATION_PENDING: 'ALLOCATION_PENDING',
     PARTIALLY_ALLOCATED: 'PARTIALLY_ALLOCATED',
     FULLY_ALLOCATED: 'FULLY_ALLOCATED',
@@ -38,6 +50,17 @@ exports.ProductionRunStatus = {
     COMPLETED: 'COMPLETED',
     ON_HOLD: 'ON_HOLD',
     CANCELLED: 'CANCELLED',
+};
+exports.WastageDisposition = {
+    STORE: 'STORE',
+    DISCARD: 'DISCARD',
+};
+exports.WastageLotStatus = {
+    AVAILABLE: 'AVAILABLE',
+    PARTIALLY_REPROCESSED: 'PARTIALLY_REPROCESSED',
+    FULLY_REPROCESSED: 'FULLY_REPROCESSED',
+    DISCARDED: 'DISCARDED',
+    CLOSED: 'CLOSED',
 };
 exports.SamplingStatus = {
     NOT_READY: 'NOT_READY',
@@ -57,6 +80,28 @@ exports.TransferStatus = {
     RECEIVED: 'RECEIVED',
     CANCELLED: 'CANCELLED',
 };
+exports.JobWorkStatus = {
+    DRAFT: 'DRAFT',
+    ACTIVE: 'ACTIVE',
+    MATERIAL_PARTIALLY_SENT: 'MATERIAL_PARTIALLY_SENT',
+    MATERIAL_SENT: 'MATERIAL_SENT',
+    PROCESSING: 'PROCESSING',
+    PARTIALLY_RECEIVED: 'PARTIALLY_RECEIVED',
+    AWAITING_REMAINING_MATERIAL: 'AWAITING_REMAINING_MATERIAL',
+    AWAITING_RECONCILIATION: 'AWAITING_RECONCILIATION',
+    READY_TO_CLOSE: 'READY_TO_CLOSE',
+    CLOSED: 'CLOSED',
+    CANCELLED: 'CANCELLED',
+};
+exports.JobWorkReturnCategory = {
+    PROCESSED: 'PROCESSED',
+    UNPROCESSED: 'UNPROCESSED',
+    WASTAGE: 'WASTAGE',
+};
+exports.JobWorkWastageDisposition = {
+    RETURNED: 'RETURNED',
+    DISCARDED_AT_WORKER: 'DISCARDED_AT_WORKER',
+};
 exports.LedgerTxnType = {
     RAW_MATERIAL_INWARD: 'RAW_MATERIAL_INWARD',
     PRODUCTION_ISSUE: 'PRODUCTION_ISSUE',
@@ -74,6 +119,13 @@ exports.LedgerTxnType = {
     PLANT_TRANSFER_IN: 'PLANT_TRANSFER_IN',
     STOCK_ADJUSTMENT: 'STOCK_ADJUSTMENT',
     TRANSACTION_REVERSAL: 'TRANSACTION_REVERSAL',
+    WASTAGE_STORE: 'WASTAGE_STORE',
+    WASTAGE_DISCARD: 'WASTAGE_DISCARD',
+    WASTAGE_REPROCESS_ISSUE: 'WASTAGE_REPROCESS_ISSUE',
+    JOB_WORK_OUTWARD: 'JOB_WORK_OUTWARD',
+    JOB_WORK_INWARD_PROCESSED: 'JOB_WORK_INWARD_PROCESSED',
+    JOB_WORK_INWARD_WASTAGE: 'JOB_WORK_INWARD_WASTAGE',
+    JOB_WORK_INWARD_UNPROCESSED: 'JOB_WORK_INWARD_UNPROCESSED',
 };
 exports.InwardTypeCode = {
     DOMESTIC: 'DOMESTIC',
@@ -101,6 +153,15 @@ exports.KG_PER_MT = 1000;
 exports.WASTAGE_ALERT_THRESHOLD_KEY = 'HULLING_WASTAGE_ALERT_PCT';
 exports.DEFAULT_WASTAGE_ALERT_PCT = 12;
 exports.FULL_PROCESS_DEFAULT_PRODUCT_KEY = 'FULL_PROCESS_DEFAULT_PRODUCT_ID';
+exports.SAMPLING_REQUIRED_COUNTRIES = ['RUSSIA', 'RU'];
+function requiresSampling(euClassification, destinationCountry, productSamplingNormallyApplicable) {
+    const eu = (euClassification || '').toUpperCase() === 'EU';
+    const country = (destinationCountry || '').trim().toUpperCase();
+    const russia = country === 'RUSSIA' ||
+        country === 'RU' ||
+        country.includes('RUSSIA');
+    return eu || russia || !!productSamplingNormallyApplicable;
+}
 function toKg(quantity, unit) {
     const u = (unit || 'KG').toUpperCase();
     if (u === 'MT')

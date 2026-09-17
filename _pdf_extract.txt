@@ -1,0 +1,1740 @@
+PRODUCTION, INVENTORY, FULFILMENT,
+WASTAGE & JOB WORK MODULE
+OWNER REVIEW – REVISED DEVELOPMENT
+REQUIREMENTS / CHANGE DOCUMENT
+1. Purpose of This Revision
+This document contains the changes and additional requirements received after presenting the
+Production and Inventory Module to the Owner.
+These requirements should be treated as an update to the previously approved Production,
+Inventory and Quality Control Module.
+Where any requirement in this document conflicts with the previous document, this revised
+document will take priority.
+The major changes are related to:
+● Production Run workflow
+● Product-based fulfilment
+● Processed Inventory-based fulfilment
+● Sortex vs Full Process logic
+● Wastage Inventory
+● Wastage reprocessing
+● Inventory UI and graphical representation
+● Sampling logic for Russia
+● Default quantity unit
+● Outside Warehouse location
+● Job Work processing
+● Job Work inward/outward tracking
+● Job Work reconciliation
+● Re-Sortex of material received from Job Work
+
+-- 1 of 64 --
+
+2. MAJOR ARCHITECTURAL CHANGE –
+PRODUCTION AND FULFILMENT MUST
+BE SEPARATE
+The most important change is that Container Fulfilment should no longer happen inside the
+Production Run.
+The revised flow should be:
+Raw Material Inventory → Production Run → Production Finalisation → Processed
+Inventory → Fulfilment → Sampling if applicable → Ready for Dispatch
+Therefore:
+Production Run is responsible for:
+● Selecting input material
+● Selecting process
+● Processing material
+● Entering wastage
+● Deciding which wastage is stored/discarded
+● Calculating final processed output
+● Moving the final good output into Processed Inventory
+Fulfilment is responsible for:
+● Selecting available processed product
+● Showing only contracts requiring that product
+● Allocating processed inventory to contracts/containers
+● Updating pending quantities
+● Sending applicable containers to Sampling
+Production Run must no longer directly allocate material to contracts or containers.
+This separation is required throughout the application.
+3. REVISED PRODUCTION RUN
+CREATION FLOW
+
+-- 2 of 64 --
+
+When clicking New Run, the system should first ask:
+Processing Location / Processing Mode
+● In-House
+● Job Work
+If the user selects In-House, continue to the normal Production Run flow.
+If the user selects Job Work, redirect the user into the dedicated Job Work creation workflow
+described later in this document.
+4. IN-HOUSE PRODUCTION RUN –
+REVISED FLOW
+For an In-House Production Run, the flow should be:
+Step 1 – Select Plant / Location
+Select where the production is happening.
+Example:
+● Bhramanwada
+● Nedra
+● Other applicable production location
+Step 2 – Select Product
+Select the product being processed.
+Step 3 – Select Process Type
+Available Process Types:
+● Sortex
+● Full Process
+The available options must change according to the selected product.
+
+-- 3 of 64 --
+
+5. FULL PROCESS PRODUCT
+RESTRICTION
+At present, only Sesame Seeds are allowed to go through Full Process.
+Therefore:
+If selected product is a Sesame Seed product:
+Allow:
+● Sortex
+● Full Process
+If selected product is NOT Sesame Seeds:
+Allow:
+● Sortex only
+Full Process should either:
+● Not appear at all, or
+● Appear disabled with a message such as:
+“Full Process is currently available only for Sesame Seed products.”
+This rule should be controlled through Product Master configuration instead of being
+permanently hard-coded wherever possible.
+Recommended Product Master field:
+Full Process Allowed: Yes / No
+Initially, this should be enabled only for applicable Sesame Seed products.
+6. RAW MATERIAL VISIBILITY WHILE
+CREATING A RUN
+A Quality-of-Life improvement is required during Production Run creation.
+
+-- 4 of 64 --
+
+Once the Production Location is selected, the system should immediately show the available
+Raw Material stock at that location.
+Example:
+Bhramanwada – Available Raw Material
+Product 	Available Quantity
+Natural Sesame
+Seeds
+18,500 KG
+Hulled Sesame
+Seeds
+4,200 KG
+Amaranth Seeds 	7,800 KG
+Once the user selects a particular product, prominently show:
+Available at Bhramanwada: 18,500 KG
+If the requested production quantity exceeds available Raw Material, the Production Run must
+not be created.
+7. DEFAULT UNIT ACROSS THE
+COMPLETE SYSTEM
+The complete application should now use:
+KG – Kilograms
+as the default display unit.
+Do not display MT as the default unit anywhere.
+This applies to:
+● Inventory
+● Inward
+● Production Runs
+● Processed Inventory
+
+-- 5 of 64 --
+
+● Fulfilment
+● Wastage
+● Sampling Rejection
+● Plant Transfer
+● Job Work
+● Job Work Inward
+● Job Work Outward
+● Dashboard
+● Reports
+● Ledger
+Example:
+Instead of:
+29 MT
+Display:
+29,000 KG
+Backend quantities should preferably also be standardised in kilograms to avoid conversion and
+rounding issues.
+If MT is required anywhere for reporting purposes later, it can be shown as an optional
+converted value.
+8. REVISED SORTEX FLOW
+A major correction is required in the current Sortex process.
+Currently, even when the user selects Sortex, the system continues into Hulling and asks for
+Hulling wastage.
+This is incorrect.
+8.1 Correct Sortex Flow
+The Sortex flow should be:
+Input Material → Sortex/Cleaning → Type 2/3/4 Wastage → Final Output → Processed
+Inventory
+
+-- 6 of 64 --
+
+There is no Hulling stage in Sortex.
+There is no Hulling WIP in Sortex.
+There are no Hulling rejection/wastage fields in Sortex.
+8.2 Sortex Wastage
+For Sortex, ask only:
+● Type 2 Wastage
+● Type 3 Wastage
+● Type 4 Wastage
+After these values are entered:
+Total Sortex Wastage = Type 2 + Type 3 + Type 4
+Net Processed Output = Total Input – Total Sortex Wastage
+The run can then proceed directly to the Finalisation screen.
+9. REVISED FULL PROCESS FLOW
+Full Process should continue through both stages.
+The flow should be:
+Input → Cleaning/Sortex → Type 2/3/4 Wastage → Hulling → Hulling Wastage/Rejections
+→ Final Output → Processed Inventory
+Therefore Full Process contains:
+Stage 1 – Cleaning / Sortex
+● Type 2
+● Type 3
+● Type 4
+Stage 2 – Hulling
+All configured Hulling wastage/rejection types.
+
+-- 7 of 64 --
+
+Stage 3 – Finalisation
+● Calculate total wastage
+● Calculate net output
+● Decide which wastage types to Store or Discard
+● Move good output to Processed Inventory
+10. REVISED PRODUCTION RUN FINAL
+PAGE
+The current final page shows:
+● Total Output
+● Total Allocated
+● Total Remaining
+This is no longer relevant because fulfilment has been removed from the Production Run.
+Remove:
+● Total Allocated
+● Allocation to Containers
+● Remaining after Allocation
+● Contract/Container selection
+The revised Production Finalisation page should show:
+Production Summary
+● Production Number
+● Product
+● Plant
+● Process Type
+● Total Input
+● Total Wastage
+● Net Processed Output
+● Production Start Date
+● Production Completion Date
+
+-- 8 of 64 --
+
+11. WASTAGE SUMMARY ON FINAL
+PRODUCTION PAGE
+The final page should prominently display wastage.
+11.1 Sortex Example
+Total Wastage: 850 KG
+On hover/click:
+● Type 2: 300 KG
+● Type 3: 350 KG
+● Type 4: 200 KG
+11.2 Full Process Example
+Show:
+Total Production Wastage: 2,450 KG
+The breakdown should include:
+Cleaning Wastage
+● Type 2
+● Type 3
+● Type 4
+Hulling Wastage
+● Rejection 1
+● Rejection 2
+● All other configured Hulling wastage categories
+The user should be able to hover/click Total Wastage to see exactly what contributes to the
+total.
+
+-- 9 of 64 --
+
+12. WASTAGE DISPOSITION – STORE OR
+DISCARD
+A major new functionality is required.
+Every wastage category generated during production should allow the Production User to
+decide whether that wastage should be:
+● Stored in Wastage Inventory
+● Discarded
+This should happen on the Production Finalisation page.
+Example:
+Wastage
+Type
+Quantity 	Action
+Type 2 	300 KG Store / Discard
+Type 3 	350 KG Store / Discard
+Type 4 	200 KG Store / Discard
+For Full Process, the same should be shown for all Hulling wastage/rejection types.
+Example:
+Wastage Type 	Quantity 	Action
+Rejection 1 	500 KG Store / Discard
+Rejection 2 	300 KG Store / Discard
+Other Hulling Waste 150 KG Store / Discard
+The Production Run cannot be completely finalised until a disposition has been selected for
+every wastage type having quantity greater than zero.
+13. WASTAGE INVENTORY
+
+-- 10 of 64 --
+
+Wastage should no longer exist only as historical percentage/data against a Production Number.
+It must now become an actual traceable inventory category.
+For each wastage quantity stored in inventory, maintain:
+● Wastage Lot Number
+● Product
+● Wastage Type
+● Quantity
+● Location
+● Original Production Number
+● Original Process Type
+● Production Date
+● Reprocessing Cycle
+● Available Quantity
+● Reprocessed Quantity
+● Discarded Quantity
+● Current Status
+Example:
+Product: Hulled Sesame Seeds
+Wastage Type: Type 2
+Production: PR-2026-0045
+Stored Quantity: 300 KG
+Available Quantity: 300 KG
+14. IMPORTANT TERMINOLOGY – DO NOT
+MIX TWO TYPES OF “REJECTION”
+There are two completely different concepts in the system.
+A. Process Wastage / Hulling Rejection
+Examples:
+● Rejection 1
+● Rejection 2
+● Type 2
+● Type 3
+
+-- 11 of 64 --
+
+● Type 4
+● Other Hulling wastage
+These belong to:
+Wastage Inventory
+B. Sampling-Rejected Material
+This means finished material that failed third-party sampling.
+This belongs to:
+Sampling-Rejected Inventory
+These two categories must remain completely separate throughout:
+● Inventory
+● Reports
+● Dashboard
+● Reprocessing
+● Ledger
+● Fulfilment
+15. WASTAGE REPROCESSING
+The business frequently reprocesses wastage to recover usable material that may have been
+incorrectly separated.
+This can happen multiple times.
+The system must support at least two reprocessing cycles and should not technically limit
+the number of cycles.
+15.1 Reprocessing Method
+Wastage should be reprocessed through:
+Sortex
+
+-- 12 of 64 --
+
+It should not directly go into Full Process.
+The Sortex Production Run should allow an additional source category:
+● Raw Material
+● Wastage Inventory
+● Sampling-Rejected Stock
+● Eligible Processed Stock
+When Wastage Inventory is selected, the user should select:
+● Product
+● Wastage Type
+● Wastage Lot
+● Available Quantity
+● Quantity to Reprocess
+16. WASTAGE REPROCESSING LINEAGE
+The system must preserve complete traceability.
+Example:
+PR-001
+produces
+Type 2 Wastage – 500 KG
+500 KG is stored in Wastage Inventory.
+Later:
+PR-015 – Sortex Reprocessing
+uses:
+400 KG Type 2 Wastage from PR-001
+PR-015 produces:
+● Good Processed Output: 300 KG
+● Type 2 Wastage: 50 KG
+● Type 3 Wastage: 30 KG
+● Type 4 Wastage: 20 KG
+
+-- 13 of 64 --
+
+If the user stores the new Type 2 and Type 3 wastage, they should become new wastage
+inventory quantities linked to:
+● PR-015
+● Parent Wastage Lot
+● Original Production PR-001
+● Reprocessing Cycle Number
+Example:
+Reprocessing Cycle: 2
+This process should be repeatable again.
+17. WASTAGE REPROCESSING
+INVENTORY EFFECT
+When wastage is used for reprocessing:
+The source Wastage Inventory should reduce.
+Example:
+Available Type 2 Wastage:
+500 KG
+Used in Sortex:
+400 KG
+Remaining:
+100 KG
+After production:
+Good recovered material should move into:
+Processed Inventory
+New wastage should either:
+
+-- 14 of 64 --
+
+● Return to Wastage Inventory, or
+● Be discarded
+according to the Production User’s selection.
+18. PRODUCTION FINALISATION
+When the Production User clicks:
+Finalise Production
+the system should:
+1. Validate all required production fields.
+2. Validate all wastage fields.
+3. Validate Store/Discard selection for every wastage quantity.
+4. Calculate total wastage.
+5. Calculate final processed output.
+6. Store selected wastage in Wastage Inventory.
+7. Mark discarded wastage as Discarded.
+8. Reduce/close Work in Progress.
+9. Add the final good output to Processed Inventory.
+10. Mark the Production Run as Completed.
+11. Create all Inventory Ledger transactions.
+At this stage, no contract allocation should occur.
+19. PROCESSED INVENTORY
+All successfully produced material must first enter Processed Inventory.
+Each processed stock record must retain:
+● Product
+● Quantity
+● Available Quantity
+● Reserved Quantity
+● Location
+
+-- 15 of 64 --
+
+● Production Number
+● Process Type
+● Production Source
+● Production Date
+● Reprocessing Source, if applicable
+● Job Work Reference, if applicable
+● Sampling-Rejected Source, if applicable
+● Wastage Reprocessing Source, if applicable
+Production Source
+Recommended values:
+● In-House Production
+● Job Work
+● Wastage Reprocessing
+● Sampling-Rejected Reprocessing
+These can help generate Dashboard analytics later.
+20. REVISED FULFILMENT TAB
+The current Fulfilment screen should be redesigned.
+The user should not first select a Production Batch/Output Batch.
+Instead, fulfilment should start from:
+Processed Inventory
+Recommended flow:
+Select Product → Select/Confirm Location → View Available Processed Stock → View
+Matching Contracts → Allocate Stock
+21. PRODUCT-BASED CONTRACT
+FILTERING
+
+-- 16 of 64 --
+
+This is a strict business rule.
+If the selected processed product is:
+Hulled Sesame Seeds
+the user must only see contracts/containers containing:
+Hulled Sesame Seeds
+The user must not be able to fulfil:
+● Amaranth Seeds
+● Natural Sesame Seeds
+● Any other product
+using Hulled Sesame Seed inventory.
+Similarly, Amaranth processed stock can fulfil only Amaranth requirements.
+Matching should happen using:
+Product ID
+and not merely similar product names.
+Unless an explicit product-mapping rule is configured later, only an exact Product ID match
+should be allowed.
+22. QUALITY-OF-LIFE CONTRACT
+FILTERING
+Once a product is selected in Fulfilment, automatically hide every contract/container that does
+not require that product.
+Example:
+Selected Processed Product:
+Hulled Sesame Seeds
+Show only:
+
+-- 17 of 64 --
+
+● Contract A – Hulled Sesame Seeds required
+● Contract D – Hulled Sesame Seeds required
+● Contract F – Hulled Sesame Seeds required
+Do not show unrelated contracts at all.
+This keeps the screen simple and prevents incorrect allocation.
+23. CORRECT AVAILABLE QUANTITY IN
+FULFILMENT
+There is currently a mismatch where the screen displays one available quantity, but allocation
+validation uses another quantity.
+Example:
+Screen shows:
+29,000 KG Available
+but when allocating, the system may return an error saying:
+Only X KG is available.
+This must be corrected.
+There should be one authoritative quantity calculation used by:
+● Processed Inventory
+● Fulfilment UI
+● Fulfilment validation
+● Ledger
+● Contract allocation
+Recommended formula:
+Available Processed Quantity = Total Processed Quantity – Quantity Already
+Reserved/Allocated – Quantity Already Consumed/Dispatched
+The same backend-calculated value must be displayed and validated.
+Do not calculate the UI quantity separately from the backend allocation quantity.
+
+-- 18 of 64 --
+
+24. FULFILMENT SCREEN STRUCTURE
+Recommended screen:
+Section 1 – Product Selection
+Product:
+Hulled Sesame Seeds
+Section 2 – Processed Stock
+Available Processed Stock: 29,000 KG
+If multiple locations contain stock, display:
+● Bhramanwada: 18,000 KG
+● Nedra: 7,000 KG
+● In-House/Godown: 4,000 KG
+If allocation requires a physical source location, the user must select the location before
+confirming the allocation.
+Section 3 – Matching Contracts
+Only contracts requiring the selected product should appear.
+Section 4 – Matching Containers
+Display:
+● Contract Number
+● Container Number
+● Buyer
+● Country
+● EU/Non-EU
+● Required Product
+● Required Quantity
+● Already Fulfilled
+● Pending Quantity
+● Due Date
+
+-- 19 of 64 --
+
+Section 5 – Allocation
+Allow the user to enter quantity to fulfil.
+25. BATCH / LOT HANDLING IN
+FULFILMENT
+The user should not be forced to manually select Output Batch/Production Number before
+fulfilling a contract.
+However, backend traceability must still be maintained.
+Therefore:
+● User selects Processed Product
+● User selects source location where necessary
+● System identifies eligible processed lots
+● System deducts quantities from eligible lots
+● Allocation keeps references to the Production Numbers/lots consumed
+Recommended backend allocation method:
+FIFO – Oldest eligible processed stock first
+If one container requires 5,000 KG and the stock comes from:
+● PR-001: 3,000 KG
+● PR-002: 2,000 KG
+the user can simply allocate:
+5,000 KG
+Backend should retain that:
+● 3,000 KG came from PR-001
+● 2,000 KG came from PR-002
+The user does not need to manually perform this split.
+
+-- 20 of 64 --
+
+26. FULFILMENT VALIDATION
+The system must prevent:
+● Product mismatch
+● Allocation above Processed Inventory
+● Allocation above container pending quantity
+● Allocation from another physical location without transfer
+● Allocation of Wastage Inventory
+● Allocation of Sampling-Rejected Inventory
+● Allocation from uncompleted production
+● Allocation from discarded stock
+Example:
+Container requires:
+10,000 KG Hulled Sesame Seeds
+Available:
+8,000 KG
+Maximum allocation allowed:
+8,000 KG
+Container status becomes:
+Partially Fulfilled
+Remaining:
+2,000 KG
+27. EU + RUSSIA SAMPLING RULE
+The previous system automatically sends EU containers to Sampling after fulfilment.
+This logic must now be extended.
+A fulfilled container must go to Sampling when:
+
+-- 21 of 64 --
+
+Condition 1
+Container/Contract is EU
+OR
+Condition 2
+Destination Country is Russia
+Therefore:
+Requires Sampling = EU = Yes OR Country = Russia
+Russia must require Sampling even when that contract is marked Non-EU.
+28. SAMPLING EXAMPLES
+EU + Germany
+Fully Fulfilled → Sampling Required
+Non-EU + UAE
+Fully Fulfilled → Ready for Dispatch
+Non-EU + Russia
+Fully Fulfilled → Sampling Required
+EU + Russia
+Fully Fulfilled → Sampling Required
+The system should create only one sampling requirement even if both rules are true.
+29. REVISED INVENTORY ARCHITECTURE
+
+-- 22 of 64 --
+
+At any point, the system should be able to answer:
+“If we have 100,000 KG of this product, what exactly makes up those 100,000 KG?”
+The system should distinguish:
+● Raw Material
+● Work in Progress
+● Processed Stock
+● Wastage Inventory
+● Sampling-Rejected Stock
+● Reserved Processed Stock
+● Stock in Transit, where applicable
+And should also distinguish physical location.
+30. INVENTORY LOCATIONS
+Current Receiving Locations should now contain four options:
+1. In-House / Godown
+2. Bhramanwada
+3. Nedra
+4. Outside Warehouse
+Therefore, when clicking:
+New Inward
+the Receiving Location field must show all four options.
+“Outside Warehouse” should also be available wherever inventory location is relevant.
+31. INVENTORY DEFAULT SCREEN –
+COMPLETE REDESIGN
+The current Inventory screen is too cluttered because separate rows are being displayed for:
+
+-- 23 of 64 --
+
+● Raw Material
+● Processed Available
+● Wastage
+● Rejected
+● etc.
+This should be changed.
+The default Inventory screen should show one row/card per Product.
+Example:
+Product 	Total Tracked Stock
+Natural Sesame
+Seeds
+125,400 KG
+Hulled Sesame
+Seeds
+78,250 KG
+Amaranth Seeds 	34,500 KG
+This should be the clean default view.
+32. INVENTORY TOTAL CALCULATION
+The displayed Product Total should be generated from all physically tracked stock categories.
+For example:
+Total Tracked Stock = Raw Material + WIP + Processed Stock + Wastage Stock +
+Sampling-Rejected Stock
+Reserved Processed Stock must not be double-counted if it is already part of Processed Stock.
+Stock in Transit must also not be double-counted at both source and destination.
+For company-wide overview, Stock in Transit may be included in Company Total but should be
+separately identified.
+Discarded stock must never contribute to Inventory Total.
+
+-- 24 of 64 --
+
+33. INVENTORY HOVER SUMMARY
+When the user hovers over the Product Total, show a quick breakdown.
+Example:
+Hulled Sesame Seeds – 78,250 KG
+● Raw Material: 20,000 KG
+● Processed: 41,000 KG
+● Wastage: 7,250 KG
+● Sampling-Rejected: 5,000 KG
+● Work in Progress: 5,000 KG
+This should be a lightweight quick summary.
+34. INVENTORY PRODUCT DETAIL
+SCREEN
+When the user clicks a Product or its Total, open a detailed Inventory view.
+The top of the page should first show a table.
+Example:
+Location 	Raw WIP Processe
+d
+Wastag
+e
+Sampling
+Rejected
+Total
+In-House 	8,000 0 	12,000 	1,000 	0 	21,000 KG
+Bhramanwad
+a
+7,000 3,000 20,000 	4,000 	3,000 	37,000 KG
+Nedra 	5,000 2,000 9,000 	2,250 	2,000 	20,250 KG
+Total 	20,000 5,000 41,000 	7,250 	5,000 	78,250 KG
+
+-- 25 of 64 --
+
+35. WASTAGE DETAIL INSIDE INVENTORY
+The Wastage number should itself be expandable/hoverable.
+Example:
+Wastage: 7,250 KG
+Hover/click should show:
+● Type 2: 2,000 KG
+● Type 3: 1,500 KG
+● Type 4: 900 KG
+● Rejection 1: 1,200 KG
+● Rejection 2: 750 KG
+● Other Wastage: 900 KG
+The system must be able to provide this because every wastage inventory entry is being stored
+with its Wastage Type.
+36. INVENTORY GRAPHS AND
+VISUALISATIONS
+The detailed Product Inventory page should use the available data to provide an attractive
+graphical representation.
+Recommended visualisations:
+Stock Composition – Donut / Pie / Sunburst
+Show:
+● Raw Material
+● Processed
+● WIP
+● Wastage
+● Sampling-Rejected
+Location Distribution
+
+-- 26 of 64 --
+
+Show how total stock is distributed among:
+● In-House
+● Bhramanwada
+● Nedra
+● Outside Warehouse
+Wastage Composition
+Show:
+● Type 2
+● Type 3
+● Type 4
+● Rejection 1
+● Rejection 2
+● Other categories
+Inventory Movement
+Where sufficient historical ledger information exists, show:
+● Inward
+● Production Consumption
+● Production Output
+● Fulfilment
+● Transfers
+● Wastage additions
+● Reprocessing
+over a selected date period.
+Graphs should improve understanding rather than make the page crowded.
+37. INVENTORY LOCATION FILTER
+The Inventory screen should support location filtering.
+Example:
+Location = In-House / Godown
+
+-- 27 of 64 --
+
+The screen structure should remain exactly the same:
+Product 	Total
+Natural
+Sesame
+25,000 KG
+Hulled Sesame 16,000 KG
+Amaranth 	8,500 KG
+But all calculations should now contain only stock located at In-House/Godown.
+Hover should show the category breakdown for that location.
+Click should open the same detailed view, already filtered to the selected location.
+This same behaviour should apply to:
+● All Locations
+● In-House
+● Bhramanwada
+● Nedra
+● Outside Warehouse
+38. INVENTORY FILTERS
+Recommended filters:
+● Location
+● Product
+● Stock Category
+● Search
+● Date / Snapshot Date where supported
+Default:
+All Locations + All Products
+
+-- 28 of 64 --
+
+39. RECENT INVENTORY LEDGER FIX
+The current Recent Ledger is not properly showing quantity information.
+This must be corrected.
+Every ledger row should clearly show:
+● Date & Time
+● Product
+● Transaction Type
+● Reference Number
+● Location
+● Quantity In
+● Quantity Out
+● Balance After Transaction
+● User
+● Remarks
+Example:
+Transaction 	Product 	Qty In 	Qty Out 	Balance
+Raw Material Inward Sesame 	+2,000 KG — 	12,000 KG
+Production Issue 	Sesame 	— 	-3,000 KG 9,000 KG
+Processed Output 	Hulled
+Sesame
++2,650 KG — 	6,250 KG
+Every quantity in the Ledger should default to KG.
+40. WASTAGE INVENTORY DEDICATED
+SECTION
+Inventory should contain a dedicated:
+Wastage Inventory
+
+-- 29 of 64 --
+
+section.
+The user should be able to see:
+● Product
+● Wastage Type
+● Total Available Wastage
+● Location
+● Source Production Runs
+● Reprocessing Cycle
+● Available for Reprocessing
+● Already Reprocessed
+● Discarded Quantity
+Available actions:
+● Start Sortex
+● View Source
+● View History
+● Transfer, if permitted
+● Discard remaining stock with permission/reason
+41. START SORTEX FROM WASTAGE
+INVENTORY
+From Wastage Inventory, provide:
+Start Sortex
+When clicked:
+● Product should auto-populate
+● Source should be Wastage Inventory
+● Wastage Type/Lot should be linked
+● Available quantity should be shown
+● User selects quantity
+● Location should be validated
+● New Production Number should be created
+The complete lineage must remain traceable.
+
+-- 30 of 64 --
+
+42. JOB WORK MODULE – OVERVIEW
+A completely new Job Work workflow is required.
+Job Work means material is sent outside the company’s plant for processing and later returned.
+There may be:
+● Multiple outward shipments
+● Multiple inward/return receipts
+● Additional material sent after processing begins
+● Partial processed material returned
+● Wastage returned separately
+● Certain wastage discarded by the Job Worker
+Therefore, every Job Work operation must have a unique Job Work Number.
+43. JOB WORK NUMBER
+Recommended format:
+JW-YYYY-00001
+This number should represent one complete Job Work processing cycle.
+All outward and inward entries should remain linked to this Job Work Number.
+44. JOB WORK TAB
+Create a dedicated main navigation tab:
+Job Work
+The default Job Work page should show:
+
+-- 31 of 64 --
+
+● Job Work Number
+● Job Worker / Party
+● Product
+● Process
+● Source Location
+● Total Sent
+● Total Received
+● Processed Material Received
+● Wastage Returned
+● Quantity Still Outside
+● Start Date
+● Current Status
+Filters:
+● Active
+● Closed
+● Product
+● Process
+● Job Worker
+● Source Location
+● Date Range
+45. JOB WORK CREATION
+When creating a Job Work record, ask:
+Job Work Details
+● Job Work Number – Auto-generated
+● Job Worker / Party
+● Source Factory / Location
+● Product
+● Process Type
+● Start Date
+● Remarks
+Source Location may be:
+● In-House/Godown
+● Bhramanwada
+● Nedra
+
+-- 32 of 64 --
+
+● Outside Warehouse, if applicable
+46. JOB WORK PROCESS VALIDATION
+The same process rule applies to Job Work.
+Sesame Seed Product
+Allow:
+● Sortex
+● Full Process
+Other Products
+Allow:
+● Sortex only
+47. JOB WORK OUTWARD
+Inside every Job Work record there should be:
+Outward Entries
+Every time material is sent to the Job Worker, create a separate Outward entry.
+Example:
+Job Work:
+JW-001
+First Outward:
+500 KG
+Second Outward:
+
+-- 33 of 64 --
+
+500 KG
+Total Sent:
+1,000 KG
+Do not overwrite the first outward entry.
+48. JOB WORK OUTWARD FIELDS
+Recommended fields:
+● Outward Number – Auto-generated
+● Job Work Number
+● Date
+● Source Location
+● Product
+● Quantity
+● Number of Bags, where applicable
+● Truck / Vehicle Number
+● Challan Number, where applicable
+● Remarks
+● Created By
+● Created Date & Time
+When Outward is confirmed:
+● Reduce available inventory from the source location
+● Increase the operational quantity marked as Material with Job Worker
+● Do not count it as available stock at the source location
+This “Material with Job Worker” quantity should primarily be tracked inside the Job Work module
+rather than creating a normal Processed Inventory category.
+49. ADD MORE MATERIAL TO ACTIVE
+JOB WORK
+An active Job Work should contain:
+
+-- 34 of 64 --
+
+Add More Material
+This creates another Job Work Outward entry.
+Example:
+Originally sent:
+500 KG
+Later sent:
+500 KG
+Total Job Work Material Sent:
+1,000 KG
+Each outward remains independently traceable.
+50. JOB WORK INWARD / RETURN
+RECEIPTS
+Material may return from the Job Worker in several separate deliveries.
+Example:
+Sent:
+1,000 KG
+Return 1:
+200 KG
+Return 2:
+300 KG
+Return 3:
+250 KG
+
+-- 35 of 64 --
+
+Return 4:
+150 KG
+Return 5:
+100 KG
+Therefore, every receipt must be entered separately.
+Inside the Job Work record create:
+Inward / Return Entries
+Do not combine all receipts into one entry.
+51. JOB WORK RETURN ENTRY FIELDS
+Each Job Work return entry should contain:
+● Job Work Inward Number
+● Job Work Number
+● Receipt Date
+● Receiving Location
+● Product
+● Return Category
+● Wastage Type, when applicable
+● Quantity
+● Number of Bags, where applicable
+● Truck / Vehicle Number
+● Challan Number, where applicable
+● Remarks
+● Received By
+● Created Date & Time
+52. JOB WORK RETURN CATEGORIES
+A Job Work return can contain different material categories.
+
+-- 36 of 64 --
+
+Possible categories:
+● Processed Material
+● Unprocessed Material Return, if applicable
+● Type 2 Wastage
+● Type 3 Wastage
+● Type 4 Wastage
+● Hulling Rejection/Wastage
+● Other configured Wastage
+One vehicle/receipt may contain multiple rows.
+Example:
+Job Work Receipt JW-IN-004
+● Processed Hulled Sesame: 700 KG
+● Type 2: 80 KG
+● Type 3: 40 KG
+Each component must be stored separately.
+53. JOB WORK PROCESS RESULT
+Before a Job Work can be closed, the Job Worker’s production result must be entered.
+This is essential because simply tracking what was sent and what returned will not provide
+accurate production and wastage information.
+The Job Work result should ask for the same processing data as an In-House Run.
+54. JOB WORK SORTEX RESULT
+For Sortex Job Work, collect:
+● Total Quantity Processed
+● Type 2 Wastage
+● Type 3 Wastage
+● Type 4 Wastage
+
+-- 37 of 64 --
+
+● Net Processed Output
+Calculation:
+Net Processed Output = Processed Input – Type 2 – Type 3 – Type 4
+55. JOB WORK FULL PROCESS RESULT
+For Full Process Job Work, collect:
+Cleaning Wastage
+● Type 2
+● Type 3
+● Type 4
+Hulling Wastage
+● All configured Hulling wastage/rejection categories
+Then calculate:
+● Total Wastage
+● Net Processed Output
+● Wastage Percentage
+The same >12% wastage alert logic should apply if applicable to the relevant Full Process
+wastage calculation.
+56. JOB WORK WASTAGE DISPOSITION
+The Job Worker may tell the company:
+● Processed material is being returned
+● Type 2 is being returned
+● Type 3 is being returned
+● Type 4 was discarded
+● Certain Hulling wastage was discarded
+
+-- 38 of 64 --
+
+Therefore, every Job Work wastage category should contain a disposition.
+Recommended:
+● Returned by Job Worker
+● Discarded at Job Worker
+Example:
+Wastag
+e
+Total
+Produced
+Dispositio
+n
+Type 2 	80 KG 	Returned
+Type 3 	40 KG 	Returned
+Type 4 	20 KG 	Discarded
+If Returned is selected, the cumulative Job Work inward records must eventually account for
+that quantity.
+If Discarded is selected, it should not be added to Inventory.
+57. JOB WORK RECONCILIATION
+Each Job Work needs a reconciliation section.
+Show:
+Material Movement
+● Total Material Sent
+● Total Quantity Processed
+● Processed Output Expected
+● Processed Output Received
+● Wastage Expected to Return
+● Wastage Actually Received
+● Wastage Discarded
+● Unprocessed Material Returned
+● Quantity Still Pending
+● Reconciliation Difference
+
+-- 39 of 64 --
+
+The system should clearly flag any unexplained difference.
+58. JOB WORK CLOSURE VALIDATION
+The user must not be allowed to close a Job Work simply because some material has returned.
+Before enabling:
+Close Job Work
+the system must validate:
+● Required process result has been entered
+● Total processed quantity has been entered
+● All required wastage quantities have been entered
+● Wastage disposition has been selected
+● Expected processed material has been accounted for
+● Expected returned wastage has been accounted for
+● All relevant inward/return entries are complete
+● Remaining quantity with Job Worker is zero, unless an Admin-authorised variance is
+entered
+If there is a variance, clearly show:
+Unreconciled Difference: X KG
+Normal Production Users should not be able to silently close this.
+59. JOB WORK STATUSES
+Recommended statuses:
+● Draft
+● Active
+● Material Partially Sent
+● Material Sent
+● Processing
+● Partially Received
+
+-- 40 of 64 --
+
+● Awaiting Remaining Material
+● Awaiting Reconciliation
+● Ready to Close
+● Closed
+● Cancelled
+The status should be derived automatically wherever possible.
+60. JOB WORK INVENTORY HANDLING
+Do not create a permanently separate “Job Work Processed Inventory” category.
+Instead:
+While material is outside:
+Track it operationally as:
+Material with Job Worker
+against the Job Work Number.
+When processed material returns:
+Add it to normal:
+Processed Inventory
+at the Receiving Location.
+However, preserve metadata:
+Production Source = Job Work
+and:
+Job Work Number = JW-XXXX
+This allows Dashboard reporting without creating a separate permanent stock category.
+
+-- 41 of 64 --
+
+61. JOB WORK RETURNED WASTAGE
+Returned Job Work wastage should be handled similarly to In-House wastage.
+If it has physically returned and is intended to be kept:
+Add it to:
+Wastage Inventory
+Maintain:
+● Product
+● Wastage Type
+● Job Work Number
+● Job Worker
+● Quantity
+● Location
+● Receipt Number
+If the Job Worker discarded it:
+Do not add it to inventory.
+Record it only as:
+Disposed/Discarded at Job Worker
+for historical reconciliation.
+62. JOB WORK PROCESSED MATERIAL –
+MULTIPLE INWARD AGGREGATION
+The Job Work system must distinguish between:
+Individual Receipt Records
+Example:
+● Receipt 1: 200 KG
+
+-- 42 of 64 --
+
+● Receipt 2: 300 KG
+● Receipt 3: 500 KG
+and:
+Total Processed Material Received
+1,000 KG
+This total should be calculated automatically across all Processed Material return entries
+belonging to the same Job Work Number.
+63. RE-SORTEX OF JOB WORK
+RETURNED MATERIAL
+After the processed material has returned from Job Work, the company may want to run the
+entire returned output through Sortex again internally.
+Provide a button:
+Start Re-Sortex
+This should operate on the aggregate available Job Work processed output, not require the
+user to individually select each Job Work inward receipt.
+Example:
+JW-001 processed receipts:
+● 200 KG
+● 300 KG
+● 500 KG
+Total returned processed material:
+1,000 KG
+The user should be able to click:
+Start Re-Sortex – 1,000 KG Available
+
+-- 43 of 64 --
+
+64. RE-SORTEX FROM JOB WORK –
+SYSTEM BEHAVIOUR
+When Start Re-Sortex is clicked:
+● Create a new In-House Sortex Production Run
+● Preserve the originating Job Work Number
+● Product should auto-populate
+● Source Category should be Job Work Returned Processed Material
+● Show total currently available Job Work processed quantity
+● Allow user to select quantity
+● Validate receiving/current location
+● Move selected quantity from Processed Inventory into Sortex WIP
+● Follow normal Sortex logic
+● Store resulting good output back into Processed Inventory
+● Store/discard resulting Type 2/3/4 wastage normally
+All source Job Work receipt references should remain available in the backend history.
+65. JOB WORK RE-SORTEX BUTTON
+AVAILABILITY
+The button should only be enabled when:
+● Processed Job Work material has been received
+● The received material is currently available
+● It has not already been completely consumed/fulfilled/reprocessed
+Preferably show:
+Processed Received: 1,000 KG
+Available for Re-Sortex: 750 KG
+rather than simply using historical received quantity.
+
+-- 44 of 64 --
+
+66. JOB WORK DASHBOARD
+Add Job Work information to the Owner Dashboard.
+Recommended cards:
+Active Job Works
+Number of currently active Job Work records.
+Material Currently at Job Workers
+Total KG currently outside and not yet returned.
+Job Work Processed This Month
+Total processed output generated through Job Work during the selected month.
+Job Work Material Received
+Total processed material received back.
+Job Work Pending Return
+Quantity expected but not yet received.
+The Owner should be able to click these cards to open the corresponding Job Work records.
+67. PRODUCTION SOURCE ANALYTICS
+The Owner should be able to understand how production is being performed.
+For selected period show:
+● In-House Processed Quantity
+● Job Work Processed Quantity
+● Wastage-Reprocessing Recovery
+● Sampling-Rejected Reprocessing Recovery
+Example:
+
+-- 45 of 64 --
+
+Total Processed This Month: 125,000 KG
+● In-House: 90,000 KG
+● Job Work: 30,000 KG
+● Reprocessing Recovery: 5,000 KG
+This information should come from Production Source metadata.
+68. REVISED INVENTORY CATEGORIES
+For clarity, the inventory architecture should now contain:
+1. Raw Material
+Unprocessed normal stock.
+2. Work in Progress
+In-House material currently inside an active Production Run.
+Possible subcategories:
+● Sortex/Cleaning WIP
+● Hulling WIP
+3. Processed Inventory
+Finished usable product available for fulfilment.
+4. Reserved Processed Inventory
+Processed material already allocated but not yet dispatched.
+This should be treated as a subset/state of Processed Inventory and should not be
+double-counted.
+5. Wastage Inventory
+Process wastage intentionally retained for possible reprocessing.
+This must have Wastage Type.
+
+-- 46 of 64 --
+
+6. Sampling-Rejected Inventory
+Finished material that failed Sampling.
+7. Stock in Transit
+Material moving between company locations.
+8. Material with Job Worker
+Operational quantity currently outside for Job Work.
+This may be displayed separately from normal location inventory so it does not confuse physical
+stock available for use.
+69. INVENTORY TRACEABILITY
+For every quantity in the system, the application should be capable of tracing its origin.
+Examples:
+Raw Material
+Inward → Party → Location
+Processed Material
+Production Run → Input → Process → Location
+Wastage
+Production Run → Product → Wastage Type → Reprocessing Cycle
+Sampling-Rejected
+Container → Sample → Production Source
+Job Work Output
+Job Work → Individual Return Entries → Processed Inventory
+
+-- 47 of 64 --
+
+Reprocessed Wastage Output
+Original Production → Wastage Lot → Reprocessing Production → New Processed Output
+This lineage should remain available even when the normal UI shows only a simplified inventory
+total.
+70. DASHBOARD ADDITIONS
+In addition to the existing Owner Dashboard requirements, add:
+● Total Wastage Inventory
+● Wastage by Type
+● Wastage awaiting Reprocessing
+● Reprocessing Recovery
+● Active Job Works
+● Material currently with Job Workers
+● Job Work Processed Quantity
+● Job Work Pending Return
+● Processed Inventory available for Fulfilment
+● Sampling required for EU
+● Sampling required for Russia
+● High Wastage Alerts
+Charts should be used where they improve visibility.
+71. MIGRATION / EXISTING DATA
+HANDLING
+Because Fulfilment is being removed from the Production Run flow, existing records must not
+be broken.
+Existing historical Production Runs
+Keep historical container allocations visible as read-only history.
+New Production Runs
+
+-- 48 of 64 --
+
+Do not allow allocation from the Run page.
+Existing completed runs with unallocated output
+Ensure their currently available output exists correctly inside Processed Inventory.
+Existing Processed Inventory
+Recalculate available quantities before activating the revised Fulfilment flow so that the UI and
+backend use the same balance.
+72. REVISED HIGH-LEVEL WORKFLOWS
+A. Normal In-House Sortex
+Raw Material → Production Run → Type 2/3/4 Wastage → Wastage Store/Discard →
+Processed Inventory → Fulfilment → Sampling if EU/Russia → Dispatch
+B. Normal In-House Full Process
+Raw Material → Cleaning → Type 2/3/4 Wastage → Hulling → Hulling Wastage → Wastage
+Store/Discard → Processed Inventory → Fulfilment → Sampling if EU/Russia → Dispatch
+C. Wastage Reprocessing
+Wastage Inventory → Sortex → Recovered Processed Output → Processed Inventory +
+New Wastage → Store/Discard → Can Repeat
+D. Sampling-Rejected Reprocessing
+Sampling-Rejected Inventory → Sortex → Processed Inventory → Future Fulfilment →
+Sampling rules apply again
+E. Job Work
+Company Inventory → Job Work Outward(s) → Material with Job Worker → External
+Processing → Job Work Return(s) → Processed Inventory + Returned Wastage →
+Reconciliation → Close Job Work
+
+-- 49 of 64 --
+
+F. Job Work Re-Sortex
+Job Work Returned Processed Inventory → Start Re-Sortex → In-House Sortex → New
+Processed Output + Wastage
+73. FINAL ACCEPTANCE CHECKLIST
+A. Production Run Architecture
+☐ Production and Fulfilment are separate modules.
+☐ Production Run no longer contains Contract/Container allocation.
+☐ Final Production output always enters Processed Inventory first.
+☐ Production Run starts by distinguishing In-House vs Job Work.
+☐ Selecting Job Work routes the user into the Job Work workflow.
+B. Product and Process Rules
+☐ Product is selected during New Run creation.
+☐ Sortex is available for eligible products.
+☐ Full Process is available only for Sesame Seed products.
+☐ Non-Sesame products cannot select Full Process.
+☐ Product Master supports Full Process Allowed configuration.
+☐ Exact Product IDs are used for inventory and fulfilment matching.
+C. Raw Material Visibility
+☐ Location is selected before Production quantity.
+
+-- 50 of 64 --
+
+☐ Raw stock available at the selected location is displayed.
+☐ Selected product's available stock is prominently displayed.
+☐ Production quantity above available stock is blocked.
+☐ Stock shown to the user matches backend stock validation.
+D. Sortex Flow
+☐ Sortex does not enter Hulling.
+☐ Sortex does not create Hulling WIP.
+☐ Sortex asks only for Type 2, Type 3 and Type 4 wastage.
+☐ Sortex calculates Total Wastage.
+☐ Sortex calculates Net Processed Output.
+☐ Sortex proceeds directly to Production Finalisation.
+E. Full Process Flow
+☐ Full Process contains Cleaning.
+☐ Cleaning contains Type 2/3/4 wastage.
+☐ Full Process continues into Hulling.
+☐ Hulling contains configured rejection/wastage types.
+☐ Total Full Process wastage is calculated correctly.
+☐ Net Processed Output is calculated correctly.
+F. Production Final Page
+☐ Total Allocated has been removed.
+
+-- 51 of 64 --
+
+☐ Container allocation has been removed.
+☐ Total Remaining after allocation has been removed.
+☐ Total Input is displayed.
+☐ Total Wastage is displayed.
+☐ Net Processed Output is displayed.
+☐ Wastage breakdown is available on hover/click.
+☐ Every non-zero wastage category contains Store/Discard controls.
+☐ Production cannot finalise until each wastage category has a disposition.
+G. Processed Inventory
+☐ Every completed Production Run adds good output to Processed Inventory.
+☐ Product is stored correctly.
+☐ Location is stored correctly.
+☐ Production Number is preserved.
+☐ Process Type is preserved.
+☐ Production Source is preserved.
+☐ Available and Reserved quantities are separately tracked.
+H. Fulfilment Redesign
+☐ Fulfilment no longer starts by selecting a Production Batch.
+☐ User selects a Processed Inventory product.
+☐ Available Processed Stock is displayed.
+☐ Location-wise available stock is displayed where relevant.
+
+-- 52 of 64 --
+
+☐ Only matching contracts are shown.
+☐ Only matching containers are shown.
+☐ Product mismatch fulfilment is impossible.
+☐ Hulled Sesame cannot fulfil Amaranth.
+☐ Amaranth cannot fulfil Sesame.
+☐ Exact Product ID is used for validation.
+☐ Partial fulfilment remains supported.
+☐ Backend preserves consumed Production Lot references.
+☐ User does not need to manually split allocation across Production Lots.
+I. Fulfilment Quantity Bug
+☐ One backend calculation determines available processed quantity.
+☐ Inventory screen uses that calculation.
+☐ Fulfilment screen uses that calculation.
+☐ Fulfilment validation uses that calculation.
+☐ Displayed quantity and allocatable quantity can no longer differ.
+☐ Reserved quantity is properly deducted.
+☐ Already consumed/dispatched quantity is properly deducted.
+J. Sampling
+☐ EU contracts require Sampling after full fulfilment.
+☐ Russia contracts require Sampling after full fulfilment.
+☐ Non-EU Russia contracts still require Sampling.
+
+-- 53 of 64 --
+
+☐ EU Russia contracts generate only one Sampling workflow.
+☐ Other Non-EU countries continue directly to Ready for Dispatch unless manually configured
+otherwise.
+K. Wastage Inventory
+☐ Wastage is stored as actual inventory and not only historical percentage.
+☐ Product is stored with each wastage entry.
+☐ Wastage Type is stored.
+☐ Quantity is stored.
+☐ Location is stored.
+☐ Production Number is stored.
+☐ Reprocessing cycle is stored.
+☐ Available wastage quantity is tracked.
+☐ Stored wastage increases Wastage Inventory.
+☐ Discarded wastage does not enter Inventory.
+L. Wastage Store/Discard
+☐ Type 2 can independently be stored/discarded.
+☐ Type 3 can independently be stored/discarded.
+☐ Type 4 can independently be stored/discarded.
+☐ Hulling rejection/wastage categories can independently be stored/discarded.
+☐ Disposition is preserved historically.
+☐ Discarded quantities never appear as available stock.
+
+-- 54 of 64 --
+
+M. Wastage Reprocessing
+☐ Wastage Inventory can be selected as a Sortex source.
+☐ Available wastage quantity is validated.
+☐ Used wastage stock reduces from inventory.
+☐ Reprocessing creates a new Production Number.
+☐ Parent Wastage Lot is preserved.
+☐ Original Production lineage is preserved.
+☐ Reprocessing cycle is preserved.
+☐ Recovered good material enters Processed Inventory.
+☐ New wastage may again be stored or discarded.
+☐ More than two reprocessing cycles are technically supported.
+N. Rejection Separation
+☐ Process Rejection/Wastage remains under Wastage Inventory.
+☐ Sampling-Rejected Material remains under Sampling-Rejected Inventory.
+☐ The two are never combined.
+☐ Both remain independently reportable.
+☐ Sampling-Rejected stock continues to follow its dedicated reprocessing rules.
+O. Inventory Default View
+☐ Inventory default screen shows one row/card per Product.
+☐ Product Total is prominently displayed.
+☐ Raw/Processed/Wastage records are not shown as cluttered independent rows by default.
+
+-- 55 of 64 --
+
+☐ Hovering Product Total shows category breakdown.
+☐ Clicking Product opens detailed Inventory analysis.
+P. Inventory Detail Page
+☐ Location-wise table is shown first.
+☐ Raw Material quantity is shown.
+☐ WIP quantity is shown.
+☐ Processed quantity is shown.
+☐ Wastage quantity is shown.
+☐ Sampling-Rejected quantity is shown.
+☐ Total is shown.
+☐ Wastage can be further expanded by Wastage Type.
+☐ Values are displayed in KG.
+Q. Inventory Graphs
+☐ Product composition chart is available.
+☐ Location distribution chart is available.
+☐ Wastage composition chart is available.
+☐ Historical inventory movement chart is available where data permits.
+☐ Charts use the same quantities as Inventory tables.
+☐ Charts do not introduce separate calculation logic.
+R. Inventory Location Filters
+
+-- 56 of 64 --
+
+☐ All Locations filter works.
+☐ In-House/Godown filter works.
+☐ Bhramanwada filter works.
+☐ Nedra filter works.
+☐ Outside Warehouse filter works.
+☐ Product totals change according to location filter.
+☐ Hover summaries follow the current location filter.
+☐ Detail pages follow the current location filter.
+S. Receiving Location
+☐ New Inward includes In-House/Godown.
+☐ New Inward includes Bhramanwada.
+☐ New Inward includes Nedra.
+☐ New Inward includes Outside Warehouse.
+☐ Inventory can track stock at all four locations.
+T. KG Unit Standardisation
+☐ Inventory defaults to KG.
+☐ Production defaults to KG.
+☐ Fulfilment defaults to KG.
+☐ Wastage defaults to KG.
+☐ Inward defaults to KG.
+☐ Plant Transfer defaults to KG.
+
+-- 57 of 64 --
+
+☐ Job Work defaults to KG.
+☐ Dashboard defaults to KG.
+☐ Reports default to KG.
+☐ Ledger defaults to KG.
+U. Recent Ledger
+☐ Quantity In is visible.
+☐ Quantity Out is visible.
+☐ Balance after transaction is visible.
+☐ Product is visible.
+☐ Transaction type is visible.
+☐ Reference number is visible.
+☐ Location is visible.
+☐ User is visible.
+☐ All quantities display in KG.
+V. Job Work Creation
+☐ Dedicated Job Work page exists.
+☐ Every Job Work receives a unique Job Work Number.
+☐ Job Worker/Party is stored.
+☐ Source Factory/Location is stored.
+☐ Product is stored.
+☐ Process Type is stored.
+
+-- 58 of 64 --
+
+☐ Full Process restrictions apply to Job Work.
+☐ Job Work status is visible.
+W. Job Work Outward
+☐ Multiple Outward entries can exist under one Job Work.
+☐ Each Outward retains its own number.
+☐ Date is stored.
+☐ Quantity is stored.
+☐ Product is stored.
+☐ Source Location is stored.
+☐ Truck/Vehicle information can be stored.
+☐ Challan information can be stored.
+☐ Sending additional material does not overwrite previous Outward entries.
+☐ Source inventory reduces correctly.
+☐ Material currently with Job Worker is tracked.
+X. Job Work Inward / Returns
+☐ Multiple Inward/Return entries can exist under one Job Work.
+☐ Each receipt retains its own number.
+☐ Processed material can be recorded.
+☐ Returned Type 2 can be recorded.
+☐ Returned Type 3 can be recorded.
+☐ Returned Type 4 can be recorded.
+
+-- 59 of 64 --
+
+☐ Hulling wastage returns can be recorded.
+☐ Multiple categories can exist within a receipt.
+☐ Individual receipts remain visible.
+☐ Cumulative totals are automatically calculated.
+Y. Job Work Process Result
+☐ Sortex Job Work asks for Type 2/3/4 quantities.
+☐ Full Process Job Work asks for Cleaning and Hulling wastage.
+☐ Total Processed Input is stored.
+☐ Net Processed Output is calculated.
+☐ Total Wastage is calculated.
+☐ Wastage Percentage is calculated where applicable.
+☐ Required production information must be entered before closure.
+Z. Job Work Wastage
+☐ Every Job Work wastage type has a disposition.
+☐ Returned wastage can enter Wastage Inventory.
+☐ Wastage discarded by Job Worker does not enter Inventory.
+☐ Returned quantity is reconciled against expected returned quantity.
+☐ Job Work Number remains linked with returned wastage.
+AA. Job Work Reconciliation
+☐ Total Sent is displayed.
+
+-- 60 of 64 --
+
+☐ Total Processed is displayed.
+☐ Processed Output Expected is displayed.
+☐ Processed Output Received is displayed.
+☐ Wastage Expected is displayed.
+☐ Wastage Received is displayed.
+☐ Wastage Discarded is displayed.
+☐ Material Still Outside is displayed.
+☐ Reconciliation Difference is displayed.
+☐ Unexplained differences are flagged.
+AB. Job Work Closure
+☐ Job Work cannot close without process results.
+☐ Job Work cannot close without wastage details.
+☐ Job Work cannot close without disposition of wastage.
+☐ Required return receipts must be accounted for.
+☐ Outstanding Material with Job Worker must normally be zero.
+☐ Admin-authorised variance requires a reason.
+☐ Closed Job Work becomes read-only except authorised correction.
+AC. Job Work Processed Inventory
+☐ Returned good material enters normal Processed Inventory.
+☐ Job Work does not create a permanently separate processed-stock category.
+☐ Production Source is marked Job Work.
+
+-- 61 of 64 --
+
+☐ Job Work Number is preserved.
+☐ Receiving Location is preserved.
+☐ Processed Job Work material can later fulfil normal contracts.
+AD. Job Work Re-Sortex
+☐ Total processed Job Work receipts are aggregated.
+☐ User does not need to select every receipt manually.
+☐ Start Re-Sortex button exists.
+☐ Button displays currently available returned processed quantity.
+☐ Re-Sortex creates a new In-House Sortex Production Run.
+☐ Originating Job Work Number is preserved.
+☐ Original receipt references remain traceable.
+☐ Selected quantity reduces from Processed Inventory.
+☐ Re-Sortex output returns to Processed Inventory.
+☐ Re-Sortex wastage follows normal Store/Discard logic.
+AE. Job Work Dashboard
+☐ Active Job Works are visible.
+☐ Material with Job Workers is visible.
+☐ Job Work Processed This Month is visible.
+☐ Processed Material Received is visible.
+☐ Pending Job Work return quantity is visible.
+☐ Owner can open Job Work details from Dashboard.
+
+-- 62 of 64 --
+
+AF. Dashboard Production Analytics
+☐ In-House production quantity is measurable.
+☐ Job Work production quantity is measurable.
+☐ Wastage-reprocessing recovery is measurable.
+☐ Sampling-rejected reprocessing is measurable.
+☐ Processed Inventory available for fulfilment is visible.
+☐ Wastage Inventory is visible.
+☐ Sampling-Rejected Inventory is visible.
+AG. Audit Trail
+☐ Production Store/Discard decisions are logged.
+☐ Wastage reprocessing is logged.
+☐ Fulfilment allocation is logged.
+☐ Job Work creation is logged.
+☐ Job Work Outward is logged.
+☐ Job Work Inward is logged.
+☐ Additional Job Work material is logged.
+☐ Job Work Process Result changes are logged.
+☐ Job Work closure is logged.
+☐ Re-Sortex creation is logged.
+☐ Old and new values are retained for edits.
+☐ User, date and time are retained.
+
+-- 63 of 64 --
+
+74. FINAL DEVELOPMENT PRINCIPLE
+The revised system should be built around one central principle:
+Every kilogram of material should always have a clear
+state, location and history.
+At any point, the system should be able to answer:
+What product is it?
+How many KG are there?
+Where is it?
+Is it Raw, WIP, Processed, Wastage or Sampling-Rejected?
+If Wastage, which Wastage Type is it?
+Which Production or Job Work did it come from?
+Has it been reprocessed before?
+Is it available or already reserved?
+Has it been sent outside for Job Work?
+Has it returned?
+Has it been allocated to a Contract?
+Does that Contract require Sampling?
+The UI should keep this complexity hidden wherever possible and provide the Production Team
+with simple actions, while the backend maintains complete stock traceability.
+The intended result is a system where the Production Team can operate it without confusion,
+while the Owner receives a highly visual, accurate and detailed picture of inventory,
+production, wastage, fulfilment, sampling and Job Work at any given time.
+
+-- 64 of 64 --
+

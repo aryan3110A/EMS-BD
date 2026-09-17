@@ -20,6 +20,7 @@ const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 const enums_1 = require("../../common/constants/enums");
 const production_service_1 = require("./production.service");
+const job_work_service_1 = require("./job-work.service");
 const production_dto_1 = require("./production.dto");
 const PROD_ROLES = [
     enums_1.UserRole.SUPER_ADMIN,
@@ -46,8 +47,10 @@ const READ_ROLES = [
 ];
 let ProductionController = class ProductionController {
     production;
-    constructor(production) {
+    jobWork;
+    constructor(production, jobWork) {
         this.production = production;
+        this.jobWork = jobWork;
     }
     locations() {
         return this.production.listLocations();
@@ -76,8 +79,20 @@ let ProductionController = class ProductionController {
     balances(locationId, productId, stockCategory) {
         return this.production.getBalances({ locationId, productId, stockCategory });
     }
+    inventoryByProduct(locationId) {
+        return this.production.getInventoryByProduct(locationId);
+    }
+    inventoryProductDetail(id, locationId) {
+        return this.production.getInventoryProductDetail(id, locationId);
+    }
     ledger(productId) {
         return this.production.getLedger({ productId });
+    }
+    wastageLots(productId, locationId) {
+        return this.production.listWastageLots({ productId, locationId });
+    }
+    discardWastage(id, body, user) {
+        return this.production.discardWastageLot(id, user, body?.reason);
     }
     pendingContracts() {
         return this.production.getPendingContracts();
@@ -103,14 +118,20 @@ let ProductionController = class ProductionController {
     hulling(id, dto, user) {
         return this.production.submitHulling(id, dto, user);
     }
-    allocate(id, dto, user) {
-        return this.production.allocateToContainer(id, dto, user);
-    }
-    storeProcessed(id, dto, user) {
-        return this.production.storeRemainingProcessed(id, dto, user);
+    finalise(id, dto, user) {
+        return this.production.finaliseProduction(id, dto, user);
     }
     fromStock(dto, user) {
         return this.production.allocateFromProcessedStock(dto, user);
+    }
+    fulfilmentStock(productId, locationId) {
+        return this.production.getProcessedStockForFulfilment(productId, locationId);
+    }
+    matchingContainers(productId) {
+        return this.production.getMatchingContainersForProduct(productId);
+    }
+    fulfilmentAllocate(dto, user) {
+        return this.production.allocateFulfilmentFifo(dto, user);
     }
     processedLots() {
         return this.production.listProcessedLots();
@@ -136,8 +157,45 @@ let ProductionController = class ProductionController {
     receiveTransfer(id, user) {
         return this.production.receiveTransfer(id, user);
     }
-    dashboard() {
-        return this.production.getOwnerDashboard();
+    jobWorkers() {
+        return this.jobWork.listWorkers();
+    }
+    createJobWorker(dto) {
+        return this.jobWork.createWorker(dto);
+    }
+    listJobWork(status, productId, jobWorkerId) {
+        return this.jobWork.list({ status, productId, jobWorkerId });
+    }
+    createJobWork(dto, user) {
+        return this.jobWork.create(dto, user);
+    }
+    getJobWork(id) {
+        return this.jobWork.getOne(id);
+    }
+    jobWorkOutward(id, dto, user) {
+        return this.jobWork.addOutward(id, dto, user);
+    }
+    jobWorkInward(id, dto, user) {
+        return this.jobWork.addInward(id, dto, user);
+    }
+    jobWorkProcessResult(id, dto, user) {
+        return this.jobWork.submitProcessResult(id, dto, user);
+    }
+    closeJobWork(id, dto, user) {
+        return this.jobWork.close(id, dto, user);
+    }
+    reopenJobWork(id, dto, user) {
+        return this.jobWork.reopen(id, dto, user);
+    }
+    reSortex(id, dto, user) {
+        return this.jobWork.startReSortex(id, dto, user);
+    }
+    async dashboard() {
+        const [base, jw] = await Promise.all([
+            this.production.getOwnerDashboard(),
+            this.jobWork.dashboardStats(),
+        ]);
+        return { ...base, jobWork: jw };
     }
     audit(module, recordNumber) {
         return this.production.listAudit({ module, recordNumber });
@@ -217,12 +275,48 @@ __decorate([
 ], ProductionController.prototype, "balances", null);
 __decorate([
     (0, roles_decorator_1.Roles)(...READ_ROLES),
+    (0, common_1.Get)('inventory/by-product'),
+    __param(0, (0, common_1.Query)('locationId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "inventoryByProduct", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...READ_ROLES),
+    (0, common_1.Get)('inventory/products/:id/detail'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('locationId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "inventoryProductDetail", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...READ_ROLES),
     (0, common_1.Get)('inventory/ledger'),
     __param(0, (0, common_1.Query)('productId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], ProductionController.prototype, "ledger", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...READ_ROLES),
+    (0, common_1.Get)('wastage-lots'),
+    __param(0, (0, common_1.Query)('productId')),
+    __param(1, (0, common_1.Query)('locationId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "wastageLots", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...PRODUCTION_OPS),
+    (0, common_1.Post)('wastage-lots/:id/discard'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "discardWastage", null);
 __decorate([
     (0, roles_decorator_1.Roles)(...READ_ROLES),
     (0, common_1.Get)('pending-contracts'),
@@ -296,24 +390,14 @@ __decorate([
 ], ProductionController.prototype, "hulling", null);
 __decorate([
     (0, roles_decorator_1.Roles)(...PRODUCTION_OPS),
-    (0, common_1.Post)('runs/:id/allocate'),
+    (0, common_1.Post)('runs/:id/finalise'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, production_dto_1.AllocateContainerDto, Object]),
+    __metadata("design:paramtypes", [String, production_dto_1.FinaliseProductionDto, Object]),
     __metadata("design:returntype", void 0)
-], ProductionController.prototype, "allocate", null);
-__decorate([
-    (0, roles_decorator_1.Roles)(...PRODUCTION_OPS),
-    (0, common_1.Post)('runs/:id/store-processed'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
-    __param(2, (0, current_user_decorator_1.CurrentUser)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, production_dto_1.StoreProcessedDto, Object]),
-    __metadata("design:returntype", void 0)
-], ProductionController.prototype, "storeProcessed", null);
+], ProductionController.prototype, "finalise", null);
 __decorate([
     (0, roles_decorator_1.Roles)(...INVENTORY_OPS),
     (0, common_1.Post)('fulfilment/from-stock'),
@@ -323,6 +407,32 @@ __decorate([
     __metadata("design:paramtypes", [production_dto_1.AllocateFromStockDto, Object]),
     __metadata("design:returntype", void 0)
 ], ProductionController.prototype, "fromStock", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...READ_ROLES),
+    (0, common_1.Get)('fulfilment/processed-stock'),
+    __param(0, (0, common_1.Query)('productId')),
+    __param(1, (0, common_1.Query)('locationId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "fulfilmentStock", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...READ_ROLES),
+    (0, common_1.Get)('fulfilment/matching-containers'),
+    __param(0, (0, common_1.Query)('productId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "matchingContainers", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...INVENTORY_OPS),
+    (0, common_1.Post)('fulfilment/allocate'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [production_dto_1.FulfilmentAllocateDto, Object]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "fulfilmentAllocate", null);
 __decorate([
     (0, roles_decorator_1.Roles)(...READ_ROLES),
     (0, common_1.Get)('processed-lots'),
@@ -390,10 +500,112 @@ __decorate([
 ], ProductionController.prototype, "receiveTransfer", null);
 __decorate([
     (0, roles_decorator_1.Roles)(...READ_ROLES),
-    (0, common_1.Get)('dashboard'),
+    (0, common_1.Get)('job-work/workers'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
+], ProductionController.prototype, "jobWorkers", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...INVENTORY_OPS),
+    (0, common_1.Post)('job-work/workers'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [production_dto_1.CreateJobWorkerDto]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "createJobWorker", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...READ_ROLES),
+    (0, common_1.Get)('job-work'),
+    __param(0, (0, common_1.Query)('status')),
+    __param(1, (0, common_1.Query)('productId')),
+    __param(2, (0, common_1.Query)('jobWorkerId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "listJobWork", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...PRODUCTION_OPS),
+    (0, common_1.Post)('job-work'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [production_dto_1.CreateJobWorkDto, Object]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "createJobWork", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...READ_ROLES),
+    (0, common_1.Get)('job-work/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "getJobWork", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...INVENTORY_OPS),
+    (0, common_1.Post)('job-work/:id/outward'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, production_dto_1.JobWorkOutwardDto, Object]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "jobWorkOutward", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...INVENTORY_OPS),
+    (0, common_1.Post)('job-work/:id/inward'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, production_dto_1.JobWorkInwardDto, Object]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "jobWorkInward", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...PRODUCTION_OPS),
+    (0, common_1.Post)('job-work/:id/process-result'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, production_dto_1.JobWorkProcessResultDto, Object]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "jobWorkProcessResult", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...PRODUCTION_OPS),
+    (0, common_1.Post)('job-work/:id/close'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, production_dto_1.CloseJobWorkDto, Object]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "closeJobWork", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN),
+    (0, common_1.Post)('job-work/:id/reopen'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, production_dto_1.CloseJobWorkDto, Object]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "reopenJobWork", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...PRODUCTION_OPS),
+    (0, common_1.Post)('job-work/:id/re-sortex'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, production_dto_1.StartReSortexDto, Object]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "reSortex", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...READ_ROLES),
+    (0, common_1.Get)('dashboard'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
 ], ProductionController.prototype, "dashboard", null);
 __decorate([
     (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.PRODUCTION_TEAM),
@@ -409,6 +621,7 @@ exports.ProductionController = ProductionController = __decorate([
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Controller)('production'),
-    __metadata("design:paramtypes", [production_service_1.ProductionService])
+    __metadata("design:paramtypes", [production_service_1.ProductionService,
+        job_work_service_1.JobWorkService])
 ], ProductionController);
 //# sourceMappingURL=production.controller.js.map

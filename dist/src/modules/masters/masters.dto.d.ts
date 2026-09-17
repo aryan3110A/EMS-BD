@@ -38,6 +38,11 @@ export declare class CreateProductDto {
     allowsSortex?: boolean;
     samplingNormallyApplicable?: boolean;
 }
+export declare class UpdateProductDto {
+    allowsFullProcess?: boolean;
+    allowsSortex?: boolean;
+    samplingNormallyApplicable?: boolean;
+}
 export declare class CreateProductVariantDto {
     productId: string;
     name: string;

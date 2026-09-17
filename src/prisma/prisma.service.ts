@@ -17,3 +17,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     await this.$disconnect();
   }
 }
+
+/** Ensures IDE/tsc always treat PrismaService as the full generated client. */
+export interface PrismaService extends PrismaClient {}

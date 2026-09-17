@@ -12,6 +12,7 @@ import {
   CreatePackagingSizeDto,
   CreateCountryDto,
   CreatePortDto,
+  UpdateProductDto,
 } from './masters.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -77,6 +78,11 @@ export class MastersController {
   @Post('products')
   createProduct(@Body() dto: CreateProductDto) {
     return this.mastersService.createProduct(dto);
+  }
+
+  @Patch('products/:id')
+  updateProduct(@Param('id') id: string, @Body() dto: UpdateProductDto) {
+    return this.mastersService.updateProduct(id, dto);
   }
 
   @Post('product-variants')

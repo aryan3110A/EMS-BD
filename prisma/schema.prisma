@@ -54,6 +54,10 @@ model User {
   plantTransfersReceived PlantTransfer[] @relation("TransferReceivedBy")
   productionAuditLogs ProductionAuditLog[] @relation("ProductionAuditChangedBy")
   inventoryLedgerEntries InventoryLedgerEntry[] @relation("LedgerCreatedBy")
+  jobWorksCreated     JobWork[]            @relation("JobWorkCreatedBy")
+  jobWorkOutwardsCreated JobWorkOutward[]  @relation("JobWorkOutwardCreatedBy")
+  jobWorkInwardsReceived JobWorkInward[]   @relation("JobWorkInwardReceivedBy")
+  jobWorksClosed      JobWork[]            @relation("JobWorkClosedBy")
 
   @@index([officeId])
   @@index([role])
@@ -121,8 +125,8 @@ model Product {
   category                   String?
   defaultSpecification       String?
   standardContainerMt        Float    @default(28)
-  defaultUnit                String   @default("MT")
-  allowsFullProcess          Boolean  @default(true)
+  defaultUnit                String   @default("KG")
+  allowsFullProcess          Boolean  @default(false)
   allowsSortex               Boolean  @default(true)
   samplingNormallyApplicable Boolean  @default(false)
   isActive                   Boolean  @default(true)
@@ -141,6 +145,8 @@ model Product {
   sampleRecords      SampleRecord[]
   rejectedLots       SampleRejectedLot[]
   plantTransfers     PlantTransfer[]
+  wastageLots        WastageLot[]
+  jobWorks           JobWork[]
 }
 
 model ProductVariant {
@@ -688,6 +694,10 @@ model InventoryLocation {
   rejectedLots       SampleRejectedLot[]
   transfersFrom      PlantTransfer[]        @relation("TransferFrom")
   transfersTo        PlantTransfer[]        @relation("TransferTo")
+  wastageLots        WastageLot[]
+  jobWorksAsSource   JobWork[]              @relation("JobWorkSourceLocation")
+  jobWorkOutwards    JobWorkOutward[]
+  jobWorkInwards     JobWorkInward[]
 
   @@index([isActive])
 }
@@ -717,6 +727,9 @@ model WastageType {
 
   cleaningEntries CleaningWastageEntry[]
   hullingEntries  HullingWastageEntry[]
+  wastageLots     WastageLot[]
+  jobWorkInwardLines JobWorkInwardLine[]
+  jobWorkWastageDispositions JobWorkWastageDisposition[]
 
   @@index([stage, isActive])
 }
@@ -730,7 +743,7 @@ model RawMaterialInward {
   productId        String
   numberOfBags     Int      @default(0)
   weightKg         Float
-  inputUnit        String   @default("MT")
+  inputUnit        String   @default("KG")
   price            Float?
   inwardTypeId     String
   otherTypeDesc    String?
@@ -821,7 +834,13 @@ model ProductionRun {
   wastageAlert         Boolean   @default(false)
   cleaningFinalizedAt  DateTime?
   hullingFinalizedAt   DateTime?
+  finalisedAt          DateTime?
   remarks              String?
+  productionSource     String    @default("IN_HOUSE")
+  jobWorkId            String?
+  parentWastageLotId   String?
+  sampleRejectedLotId  String?
+  reprocessingCycle    Int       @default(0)
   createdById          String
   cancelledAt          DateTime?
   cancelReason         String?
@@ -832,6 +851,8 @@ model ProductionRun {
   plant      InventoryLocation   @relation(fields: [plantId], references: [id])
   product    Product             @relation(fields: [productId], references: [id])
   createdBy  User                @relation("ProductionRunCreatedBy", fields: [createdById], references: [id])
+  jobWork    JobWork?            @relation(fields: [jobWorkId], references: [id])
+  parentWastageLot WastageLot?   @relation("WastageReprocessRun", fields: [parentWastageLotId], references: [id])
   inputs     ProductionInput[]
   cleaning   CleaningWastageEntry[]
   hulling    HullingWastageEntry[]
@@ -840,12 +861,15 @@ model ProductionRun {
   sampleRecords SampleRecord[]
   rejectedLots SampleRejectedLot[]
   transfers  PlantTransfer[]
+  wastageLots WastageLot[]       @relation("WastageFromRun")
+  wastageDispositions ProductionWastageDisposition[]
 
   @@index([status])
   @@index([plantId])
   @@index([productId])
   @@index([startDate])
   @@index([wastageAlert])
+  @@index([jobWorkId])
 }
 
 model ProductionInput {
@@ -858,8 +882,9 @@ model ProductionInput {
   stockCategory   String   @default("NORMAL_RAW_MATERIAL")
   rejectedLotId   String?
   processedLotId  String?
+  wastageLotId    String?
   quantityKg      Float
-  inputUnit       String   @default("MT")
+  inputUnit       String   @default("KG")
   isAdditional    Boolean  @default(false)
   remarks         String?
   addedById       String
@@ -870,9 +895,11 @@ model ProductionInput {
   inward        RawMaterialInward? @relation(fields: [inwardId], references: [id])
   rejectedLot   SampleRejectedLot? @relation(fields: [rejectedLotId], references: [id])
   processedLot  ProcessedOutputLot? @relation(fields: [processedLotId], references: [id])
+  wastageLot    WastageLot?        @relation(fields: [wastageLotId], references: [id])
   addedBy       User               @relation("ProductionInputAddedBy", fields: [addedById], references: [id])
 
   @@index([productionRunId])
+  @@index([wastageLotId])
 }
 
 model CleaningWastageEntry {
@@ -881,6 +908,7 @@ model CleaningWastageEntry {
   wastageTypeId   String
   quantityKg      Float
   inputUnit       String   @default("KG")
+  disposition     String?
   remarks         String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -900,6 +928,7 @@ model HullingWastageEntry {
   directQtyKg     Float?
   quantityKg      Float
   inputUnit       String   @default("KG")
+  disposition     String?
   remarks         String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -910,24 +939,48 @@ model HullingWastageEntry {
   @@unique([productionRunId, wastageTypeId])
 }
 
-model ProcessedOutputLot {
-  id                String   @id @default(cuid())
-  lotNumber         String   @unique
-  productionRunId   String
-  productId         String
-  plantId           String
-  processType       String
-  quantityKg        Float
-  availableKg       Float
-  reservedKg        Float    @default(0)
-  status            String   @default("AVAILABLE")
-  completionDate    DateTime
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+model ProductionWastageDisposition {
+  id              String   @id @default(cuid())
+  productionRunId String
+  wastageTypeId   String
+  stage           String
+  quantityKg      Float
+  action          String
+  wastageLotId    String?
+  createdAt       DateTime @default(now())
 
-  productionRun ProductionRun        @relation(fields: [productionRunId], references: [id], onDelete: Cascade)
+  productionRun ProductionRun @relation(fields: [productionRunId], references: [id], onDelete: Cascade)
+  wastageLot    WastageLot?   @relation(fields: [wastageLotId], references: [id])
+
+  @@unique([productionRunId, wastageTypeId])
+  @@index([productionRunId])
+}
+
+model ProcessedOutputLot {
+  id                   String   @id @default(cuid())
+  lotNumber            String   @unique
+  productionRunId      String?
+  productId            String
+  plantId              String
+  processType          String
+  quantityKg           Float
+  availableKg          Float
+  reservedKg           Float    @default(0)
+  status               String   @default("AVAILABLE")
+  completionDate       DateTime
+  productionSource     String   @default("IN_HOUSE")
+  jobWorkId            String?
+  parentWastageLotId   String?
+  sampleRejectedLotId  String?
+  reprocessingCycle    Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  productionRun ProductionRun?       @relation(fields: [productionRunId], references: [id], onDelete: Cascade)
   product       Product              @relation(fields: [productId], references: [id])
   plant         InventoryLocation    @relation(fields: [plantId], references: [id])
+  jobWork       JobWork?             @relation(fields: [jobWorkId], references: [id])
+  parentWastageLot WastageLot?       @relation("ProcessedFromWastage", fields: [parentWastageLotId], references: [id])
   allocations   ContainerAllocation[]
   sampleRecords SampleRecord[]
   inputsReuse   ProductionInput[]
@@ -935,6 +988,47 @@ model ProcessedOutputLot {
 
   @@index([productId, plantId, status])
   @@index([productionRunId])
+  @@index([jobWorkId])
+  @@index([productionSource])
+}
+
+model WastageLot {
+  id                     String   @id @default(cuid())
+  lotNumber              String   @unique
+  productId              String
+  wastageTypeId          String
+  locationId             String
+  quantityKg             Float
+  availableKg            Float
+  reprocessedKg          Float    @default(0)
+  discardedKg            Float    @default(0)
+  productionRunId        String?
+  jobWorkId              String?
+  parentWastageLotId     String?
+  originalProductionRunId String?
+  processType            String?
+  reprocessingCycle      Int      @default(1)
+  status                 String   @default("AVAILABLE")
+  productionDate         DateTime @default(now())
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  product       Product           @relation(fields: [productId], references: [id])
+  wastageType   WastageType       @relation(fields: [wastageTypeId], references: [id])
+  location      InventoryLocation @relation(fields: [locationId], references: [id])
+  productionRun ProductionRun?    @relation("WastageFromRun", fields: [productionRunId], references: [id])
+  jobWork       JobWork?          @relation(fields: [jobWorkId], references: [id])
+  parentWastageLot WastageLot?    @relation("WastageLineage", fields: [parentWastageLotId], references: [id])
+  childWastageLots WastageLot[]   @relation("WastageLineage")
+  reprocessRuns ProductionRun[]   @relation("WastageReprocessRun")
+  processedLots ProcessedOutputLot[] @relation("ProcessedFromWastage")
+  productionInputs ProductionInput[]
+  dispositions  ProductionWastageDisposition[]
+
+  @@index([productId, locationId, status])
+  @@index([wastageTypeId])
+  @@index([productionRunId])
+  @@index([jobWorkId])
 }
 
 model ContainerAllocation {
@@ -1036,7 +1130,7 @@ model PlantTransfer {
   rejectedLotId     String?
   productionRunId   String?
   quantityKg        Float
-  inputUnit         String    @default("MT")
+  inputUnit         String    @default("KG")
   remarks           String?
   status            String    @default("DRAFT")
   createdById       String
@@ -1059,6 +1153,137 @@ model PlantTransfer {
   @@index([status])
   @@index([sourceLocationId])
   @@index([destLocationId])
+}
+
+model JobWorker {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jobWorks JobWork[]
+
+  @@index([isActive])
+}
+
+model JobWork {
+  id                 String    @id @default(cuid())
+  jobWorkNumber      String    @unique
+  jobWorkerId        String
+  sourceLocationId   String
+  productId          String
+  processType        String
+  status             String    @default("DRAFT")
+  startDate          DateTime
+  closedAt           DateTime?
+  closedById         String?
+  closeVarianceKg    Float?
+  closeVarianceReason String?
+  remarks            String?
+  totalSentKg        Float     @default(0)
+  totalProcessedInputKg Float  @default(0)
+  netProcessedOutputKg Float   @default(0)
+  totalWastageKg     Float     @default(0)
+  wastageAlert       Boolean   @default(false)
+  processResultEnteredAt DateTime?
+  createdById        String
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  jobWorker      JobWorker          @relation(fields: [jobWorkerId], references: [id])
+  sourceLocation InventoryLocation  @relation("JobWorkSourceLocation", fields: [sourceLocationId], references: [id])
+  product        Product            @relation(fields: [productId], references: [id])
+  createdBy      User               @relation("JobWorkCreatedBy", fields: [createdById], references: [id])
+  closedBy       User?              @relation("JobWorkClosedBy", fields: [closedById], references: [id])
+  outwards       JobWorkOutward[]
+  inwards        JobWorkInward[]
+  wastageDispositions JobWorkWastageDisposition[]
+  processedLots  ProcessedOutputLot[]
+  wastageLots    WastageLot[]
+  reSortexRuns   ProductionRun[]
+
+  @@index([status])
+  @@index([productId])
+  @@index([jobWorkerId])
+  @@index([startDate])
+}
+
+model JobWorkOutward {
+  id              String   @id @default(cuid())
+  outwardNumber   String   @unique
+  jobWorkId       String
+  outwardDate     DateTime
+  sourceLocationId String
+  productId       String
+  quantityKg      Float
+  numberOfBags    Int?
+  truckNumber     String?
+  challanNumber   String?
+  remarks         String?
+  createdById     String
+  createdAt       DateTime @default(now())
+
+  jobWork        JobWork            @relation(fields: [jobWorkId], references: [id], onDelete: Cascade)
+  sourceLocation InventoryLocation  @relation(fields: [sourceLocationId], references: [id])
+  createdBy      User               @relation("JobWorkOutwardCreatedBy", fields: [createdById], references: [id])
+
+  @@index([jobWorkId])
+}
+
+model JobWorkInward {
+  id                String   @id @default(cuid())
+  inwardNumber      String   @unique
+  jobWorkId         String
+  receiptDate       DateTime
+  receivingLocationId String
+  truckNumber       String?
+  challanNumber     String?
+  remarks           String?
+  receivedById      String
+  createdAt         DateTime @default(now())
+
+  jobWork           JobWork           @relation(fields: [jobWorkId], references: [id], onDelete: Cascade)
+  receivingLocation InventoryLocation @relation(fields: [receivingLocationId], references: [id])
+  receivedBy        User              @relation("JobWorkInwardReceivedBy", fields: [receivedById], references: [id])
+  lines             JobWorkInwardLine[]
+
+  @@index([jobWorkId])
+}
+
+model JobWorkInwardLine {
+  id              String  @id @default(cuid())
+  inwardId        String
+  returnCategory  String
+  wastageTypeId   String?
+  productId       String
+  quantityKg      Float
+  numberOfBags    Int?
+  remarks         String?
+
+  inward      JobWorkInward @relation(fields: [inwardId], references: [id], onDelete: Cascade)
+  wastageType WastageType?  @relation(fields: [wastageTypeId], references: [id])
+
+  @@index([inwardId])
+  @@index([returnCategory])
+}
+
+model JobWorkWastageDisposition {
+  id            String @id @default(cuid())
+  jobWorkId     String
+  wastageTypeId String
+  stage         String
+  quantityKg    Float
+  disposition   String
+
+  jobWork     JobWork     @relation(fields: [jobWorkId], references: [id], onDelete: Cascade)
+  wastageType WastageType @relation(fields: [wastageTypeId], references: [id])
+
+  @@unique([jobWorkId, wastageTypeId])
 }
 
 model ProductionAuditLog {

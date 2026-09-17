@@ -1,5 +1,5 @@
 import { MastersService } from './masters.service';
-import { UpdateBuyerDto, UpdatePortDto, CreateSalespersonDto, CreateBuyerDto, CreateProductDto, CreateProductVariantDto, CreatePackagingTypeDto, CreatePackagingSizeDto, CreateCountryDto, CreatePortDto } from './masters.dto';
+import { UpdateBuyerDto, UpdatePortDto, CreateSalespersonDto, CreateBuyerDto, CreateProductDto, CreateProductVariantDto, CreatePackagingTypeDto, CreatePackagingSizeDto, CreateCountryDto, CreatePortDto, UpdateProductDto } from './masters.dto';
 import type { JwtPayload } from '../../common/decorators/current-user.decorator';
 export declare class MastersController {
     private mastersService;
@@ -172,6 +172,32 @@ export declare class MastersController {
         allowsSortex: boolean;
         samplingNormallyApplicable: boolean;
     }) | null>;
+    updateProduct(id: string, dto: UpdateProductDto): Promise<{
+        variants: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            processingType: string | null;
+        }[];
+    } & {
+        id: string;
+        code: string;
+        name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        category: string | null;
+        defaultSpecification: string | null;
+        standardContainerMt: number;
+        defaultUnit: string;
+        allowsFullProcess: boolean;
+        allowsSortex: boolean;
+        samplingNormallyApplicable: boolean;
+    }>;
     createProductVariant(dto: CreateProductVariantDto): Promise<({
         variants: {
             id: string;

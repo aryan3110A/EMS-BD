@@ -7,6 +7,7 @@ import {
   CreateProductDto,
   CreateProductVariantDto,
   CreateSalespersonDto,
+  UpdateProductDto,
 } from './masters.dto';
 
 function slugCode(prefix: string, name: string) {
@@ -315,7 +316,7 @@ export class MastersService {
         name: dto.name.trim(),
         category: dto.category || 'Seeds & Spices',
         defaultSpecification: dto.defaultSpecification || null,
-        allowsFullProcess: dto.allowsFullProcess ?? true,
+        allowsFullProcess: dto.allowsFullProcess ?? false,
         allowsSortex: dto.allowsSortex ?? true,
         samplingNormallyApplicable: dto.samplingNormallyApplicable ?? false,
       },
@@ -332,6 +333,22 @@ export class MastersService {
 
     return this.prisma.product.findUnique({
       where: { id: product.id },
+      include: { variants: { where: { isActive: true }, orderBy: { name: 'asc' } } },
+    });
+  }
+
+  async updateProduct(id: string, dto: UpdateProductDto) {
+    const existing = await this.prisma.product.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Product not found');
+    return this.prisma.product.update({
+      where: { id },
+      data: {
+        ...(dto.allowsFullProcess !== undefined ? { allowsFullProcess: dto.allowsFullProcess } : {}),
+        ...(dto.allowsSortex !== undefined ? { allowsSortex: dto.allowsSortex } : {}),
+        ...(dto.samplingNormallyApplicable !== undefined
+          ? { samplingNormallyApplicable: dto.samplingNormallyApplicable }
+          : {}),
+      },
       include: { variants: { where: { isActive: true }, orderBy: { name: 'asc' } } },
     });
   }

@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreatePortDto = exports.CreateCountryDto = exports.CreatePackagingSizeDto = exports.CreatePackagingTypeDto = exports.CreateProductVariantDto = exports.CreateProductDto = exports.CreateBuyerDto = exports.CreateOfficeDto = exports.CreateSalespersonDto = exports.UpdatePortDto = exports.UpdateBuyerDto = void 0;
+exports.CreatePortDto = exports.CreateCountryDto = exports.CreatePackagingSizeDto = exports.CreatePackagingTypeDto = exports.CreateProductVariantDto = exports.UpdateProductDto = exports.CreateProductDto = exports.CreateBuyerDto = exports.CreateOfficeDto = exports.CreateSalespersonDto = exports.UpdatePortDto = exports.UpdateBuyerDto = void 0;
 const class_validator_1 = require("class-validator");
 const enums_1 = require("../../common/constants/enums");
 const euTypes = Object.values(enums_1.EuClassification);
@@ -194,6 +194,27 @@ __decorate([
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], CreateProductDto.prototype, "samplingNormallyApplicable", void 0);
+class UpdateProductDto {
+    allowsFullProcess;
+    allowsSortex;
+    samplingNormallyApplicable;
+}
+exports.UpdateProductDto = UpdateProductDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], UpdateProductDto.prototype, "allowsFullProcess", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], UpdateProductDto.prototype, "allowsSortex", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], UpdateProductDto.prototype, "samplingNormallyApplicable", void 0);
 class CreateProductVariantDto {
     productId;
     name;

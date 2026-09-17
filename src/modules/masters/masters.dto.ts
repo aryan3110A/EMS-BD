@@ -122,6 +122,20 @@ export class CreateProductDto {
   samplingNormallyApplicable?: boolean;
 }
 
+export class UpdateProductDto {
+  @IsOptional()
+  @IsBoolean()
+  allowsFullProcess?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  allowsSortex?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  samplingNormallyApplicable?: boolean;
+}
+
 export class CreateProductVariantDto {
   @IsString()
   productId: string;

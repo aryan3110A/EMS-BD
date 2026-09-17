@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateTransferDto = exports.SampleResultDto = exports.AllocateFromStockDto = exports.StoreProcessedDto = exports.AllocateContainerDto = exports.HullingResultDto = exports.CleaningResultDto = exports.WastageLineDto = exports.AddInputDto = exports.StartProductionDto = exports.InwardQueryDto = exports.CreateInwardDto = exports.CreateSupplierDto = void 0;
+exports.CreateTransferDto = exports.SampleResultDto = exports.StartReSortexDto = exports.CloseJobWorkDto = exports.JobWorkProcessResultDto = exports.JobWorkInwardDto = exports.JobWorkInwardLineDto = exports.JobWorkOutwardDto = exports.CreateJobWorkDto = exports.CreateJobWorkerDto = exports.AllocateFromStockDto = exports.StoreProcessedDto = exports.AllocateContainerDto = exports.HullingResultDto = exports.CleaningResultDto = exports.WastageLineDto = exports.AddInputDto = exports.FulfilmentAllocateDto = exports.FinaliseProductionDto = exports.WastageDispositionLineDto = exports.StartProductionDto = exports.InwardQueryDto = exports.CreateInwardDto = exports.CreateSupplierDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 class CreateSupplierDto {
@@ -81,6 +81,7 @@ __decorate([
     __metadata("design:type", Number)
 ], CreateInwardDto.prototype, "weight", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateInwardDto.prototype, "unit", void 0);
@@ -167,6 +168,8 @@ class StartProductionDto {
     stockCategory;
     rejectedLotId;
     processedLotId;
+    wastageLotId;
+    jobWorkId;
     quantity;
     unit;
     startDate;
@@ -210,11 +213,22 @@ __decorate([
     __metadata("design:type", String)
 ], StartProductionDto.prototype, "processedLotId", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], StartProductionDto.prototype, "wastageLotId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], StartProductionDto.prototype, "jobWorkId", void 0);
+__decorate([
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.Min)(0.001),
     __metadata("design:type", Number)
 ], StartProductionDto.prototype, "quantity", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], StartProductionDto.prototype, "unit", void 0);
@@ -227,6 +241,70 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], StartProductionDto.prototype, "remarks", void 0);
+class WastageDispositionLineDto {
+    wastageTypeId;
+    action;
+}
+exports.WastageDispositionLineDto = WastageDispositionLineDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], WastageDispositionLineDto.prototype, "wastageTypeId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], WastageDispositionLineDto.prototype, "action", void 0);
+class FinaliseProductionDto {
+    dispositions;
+}
+exports.FinaliseProductionDto = FinaliseProductionDto;
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => WastageDispositionLineDto),
+    __metadata("design:type", Array)
+], FinaliseProductionDto.prototype, "dispositions", void 0);
+class FulfilmentAllocateDto {
+    productId;
+    locationId;
+    contractId;
+    containerId;
+    containerProductId;
+    quantityKg;
+    remarks;
+}
+exports.FulfilmentAllocateDto = FulfilmentAllocateDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], FulfilmentAllocateDto.prototype, "productId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], FulfilmentAllocateDto.prototype, "locationId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], FulfilmentAllocateDto.prototype, "contractId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], FulfilmentAllocateDto.prototype, "containerId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], FulfilmentAllocateDto.prototype, "containerProductId", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0.001),
+    __metadata("design:type", Number)
+], FulfilmentAllocateDto.prototype, "quantityKg", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], FulfilmentAllocateDto.prototype, "remarks", void 0);
 class AddInputDto {
     inputDate;
     supplierId;
@@ -236,6 +314,7 @@ class AddInputDto {
     processedLotId;
     quantity;
     unit;
+    wastageLotId;
     remarks;
 }
 exports.AddInputDto = AddInputDto;
@@ -273,9 +352,15 @@ __decorate([
     __metadata("design:type", Number)
 ], AddInputDto.prototype, "quantity", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], AddInputDto.prototype, "unit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], AddInputDto.prototype, "wastageLotId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
@@ -405,11 +490,13 @@ class AllocateFromStockDto {
     containerId;
     containerProductId;
     productId;
+    locationId;
     quantity;
     unit;
 }
 exports.AllocateFromStockDto = AllocateFromStockDto;
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], AllocateFromStockDto.prototype, "processedLotId", void 0);
@@ -431,14 +518,272 @@ __decorate([
     __metadata("design:type", String)
 ], AllocateFromStockDto.prototype, "productId", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], AllocateFromStockDto.prototype, "locationId", void 0);
+__decorate([
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.Min)(0.001),
     __metadata("design:type", Number)
 ], AllocateFromStockDto.prototype, "quantity", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], AllocateFromStockDto.prototype, "unit", void 0);
+class CreateJobWorkerDto {
+    name;
+    code;
+    phone;
+}
+exports.CreateJobWorkerDto = CreateJobWorkerDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateJobWorkerDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateJobWorkerDto.prototype, "code", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateJobWorkerDto.prototype, "phone", void 0);
+class CreateJobWorkDto {
+    jobWorkerId;
+    sourceLocationId;
+    productId;
+    processType;
+    startDate;
+    remarks;
+}
+exports.CreateJobWorkDto = CreateJobWorkDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateJobWorkDto.prototype, "jobWorkerId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateJobWorkDto.prototype, "sourceLocationId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateJobWorkDto.prototype, "productId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateJobWorkDto.prototype, "processType", void 0);
+__decorate([
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], CreateJobWorkDto.prototype, "startDate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateJobWorkDto.prototype, "remarks", void 0);
+class JobWorkOutwardDto {
+    outwardDate;
+    sourceLocationId;
+    quantity;
+    unit;
+    numberOfBags;
+    truckNumber;
+    challanNumber;
+    remarks;
+}
+exports.JobWorkOutwardDto = JobWorkOutwardDto;
+__decorate([
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], JobWorkOutwardDto.prototype, "outwardDate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], JobWorkOutwardDto.prototype, "sourceLocationId", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0.001),
+    __metadata("design:type", Number)
+], JobWorkOutwardDto.prototype, "quantity", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], JobWorkOutwardDto.prototype, "unit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], JobWorkOutwardDto.prototype, "numberOfBags", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], JobWorkOutwardDto.prototype, "truckNumber", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], JobWorkOutwardDto.prototype, "challanNumber", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], JobWorkOutwardDto.prototype, "remarks", void 0);
+class JobWorkInwardLineDto {
+    returnCategory;
+    wastageTypeId;
+    quantity;
+    unit;
+    numberOfBags;
+    remarks;
+}
+exports.JobWorkInwardLineDto = JobWorkInwardLineDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], JobWorkInwardLineDto.prototype, "returnCategory", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], JobWorkInwardLineDto.prototype, "wastageTypeId", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0.001),
+    __metadata("design:type", Number)
+], JobWorkInwardLineDto.prototype, "quantity", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], JobWorkInwardLineDto.prototype, "unit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], JobWorkInwardLineDto.prototype, "numberOfBags", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], JobWorkInwardLineDto.prototype, "remarks", void 0);
+class JobWorkInwardDto {
+    receiptDate;
+    receivingLocationId;
+    truckNumber;
+    challanNumber;
+    remarks;
+    lines;
+}
+exports.JobWorkInwardDto = JobWorkInwardDto;
+__decorate([
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], JobWorkInwardDto.prototype, "receiptDate", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], JobWorkInwardDto.prototype, "receivingLocationId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], JobWorkInwardDto.prototype, "truckNumber", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], JobWorkInwardDto.prototype, "challanNumber", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], JobWorkInwardDto.prototype, "remarks", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => JobWorkInwardLineDto),
+    __metadata("design:type", Array)
+], JobWorkInwardDto.prototype, "lines", void 0);
+class JobWorkProcessResultDto {
+    totalProcessedInputKg;
+    cleaningLines;
+    hullingLines;
+    dispositions;
+}
+exports.JobWorkProcessResultDto = JobWorkProcessResultDto;
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    __metadata("design:type", Number)
+], JobWorkProcessResultDto.prototype, "totalProcessedInputKg", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => WastageLineDto),
+    __metadata("design:type", Array)
+], JobWorkProcessResultDto.prototype, "cleaningLines", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => WastageLineDto),
+    __metadata("design:type", Array)
+], JobWorkProcessResultDto.prototype, "hullingLines", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => WastageDispositionLineDto),
+    __metadata("design:type", Array)
+], JobWorkProcessResultDto.prototype, "dispositions", void 0);
+class CloseJobWorkDto {
+    varianceKg;
+    varianceReason;
+}
+exports.CloseJobWorkDto = CloseJobWorkDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CloseJobWorkDto.prototype, "varianceKg", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CloseJobWorkDto.prototype, "varianceReason", void 0);
+class StartReSortexDto {
+    quantityKg;
+    plantId;
+    startDate;
+    remarks;
+}
+exports.StartReSortexDto = StartReSortexDto;
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0.001),
+    __metadata("design:type", Number)
+], StartReSortexDto.prototype, "quantityKg", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], StartReSortexDto.prototype, "plantId", void 0);
+__decorate([
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], StartReSortexDto.prototype, "startDate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], StartReSortexDto.prototype, "remarks", void 0);
 class SampleResultDto {
     status;
     result;

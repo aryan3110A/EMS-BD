@@ -300,7 +300,10 @@ async function main() {
     data: { isActive: false },
   });
 
-  // Production module masters
+  // Production module masters — Full Process only for Sesame
+  await prisma.product.updateMany({
+    data: { allowsFullProcess: false, defaultUnit: 'KG' },
+  });
   for (const code of ['HSS', 'NSS', 'BSS']) {
     await prisma.product.updateMany({
       where: { code },
@@ -309,7 +312,7 @@ async function main() {
         allowsSortex: true,
         samplingNormallyApplicable: code === 'HSS',
         category: 'SESAME',
-        defaultUnit: 'MT',
+        defaultUnit: 'KG',
       },
     });
   }
@@ -327,9 +330,10 @@ async function main() {
     create: { key: WASTAGE_ALERT_THRESHOLD_KEY, value: String(DEFAULT_WASTAGE_ALERT_PCT) },
   });
   for (const loc of [
-    { code: 'INHOUSE', name: 'In-House Store/Godown' },
+    { code: 'INHOUSE', name: 'In-House / Godown' },
     { code: 'BHRAMANWADA', name: 'Bhramanwada Plant' },
     { code: 'NEDRA', name: 'Nedra Plant' },
+    { code: 'OUTSIDE', name: 'Outside Warehouse' },
   ]) {
     await prisma.inventoryLocation.upsert({
       where: { code: loc.code },
@@ -377,6 +381,12 @@ async function main() {
     where: { code: 'SUP-UNJHA' },
     update: { name: 'Unjha Local Market' },
     create: { code: 'SUP-UNJHA', name: 'Unjha Local Market' },
+  });
+
+  await prisma.jobWorker.upsert({
+    where: { code: 'JW-PARTY-1' },
+    update: { name: 'Demo Job Worker', isActive: true },
+    create: { code: 'JW-PARTY-1', name: 'Demo Job Worker', phone: '9999999999' },
   });
 
   const paper = await prisma.packagingType.upsert({

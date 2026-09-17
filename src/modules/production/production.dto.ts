@@ -49,8 +49,9 @@ export class CreateInwardDto {
   @Min(0.001)
   weight: number;
 
+  @IsOptional()
   @IsString()
-  unit: string;
+  unit?: string;
 
   @IsOptional()
   @IsNumber()
@@ -134,15 +135,65 @@ export class StartProductionDto {
   @IsString()
   processedLotId?: string;
 
+  @IsOptional()
+  @IsString()
+  wastageLotId?: string;
+
+  @IsOptional()
+  @IsString()
+  jobWorkId?: string;
+
   @IsNumber()
   @Min(0.001)
   quantity: number;
 
+  @IsOptional()
   @IsString()
-  unit: string;
+  unit?: string;
 
   @IsDateString()
   startDate: string;
+
+  @IsOptional()
+  @IsString()
+  remarks?: string;
+}
+
+export class WastageDispositionLineDto {
+  @IsString()
+  wastageTypeId: string;
+
+  @IsString()
+  action: string; // STORE | DISCARD
+}
+
+export class FinaliseProductionDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => WastageDispositionLineDto)
+  dispositions: WastageDispositionLineDto[];
+}
+
+export class FulfilmentAllocateDto {
+  @IsString()
+  productId: string;
+
+  @IsString()
+  locationId: string;
+
+  @IsString()
+  contractId: string;
+
+  @IsString()
+  containerId: string;
+
+  @IsOptional()
+  @IsString()
+  containerProductId?: string;
+
+  @IsNumber()
+  @Min(0.001)
+  quantityKg: number;
 
   @IsOptional()
   @IsString()
@@ -176,8 +227,13 @@ export class AddInputDto {
   @Min(0.001)
   quantity: number;
 
+  @IsOptional()
   @IsString()
-  unit: string;
+  unit?: string;
+
+  @IsOptional()
+  @IsString()
+  wastageLotId?: string;
 
   @IsOptional()
   @IsString()
@@ -264,8 +320,9 @@ export class StoreProcessedDto {
 }
 
 export class AllocateFromStockDto {
+  @IsOptional()
   @IsString()
-  processedLotId: string;
+  processedLotId?: string;
 
   @IsString()
   contractId: string;
@@ -280,12 +337,184 @@ export class AllocateFromStockDto {
   @IsString()
   productId: string;
 
+  @IsOptional()
+  @IsString()
+  locationId?: string;
+
   @IsNumber()
   @Min(0.001)
   quantity: number;
 
+  @IsOptional()
   @IsString()
-  unit: string;
+  unit?: string;
+}
+
+/** Job Work DTOs */
+export class CreateJobWorkerDto {
+  @IsString()
+  name: string;
+
+  @IsOptional()
+  @IsString()
+  code?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+}
+
+export class CreateJobWorkDto {
+  @IsString()
+  jobWorkerId: string;
+
+  @IsString()
+  sourceLocationId: string;
+
+  @IsString()
+  productId: string;
+
+  @IsString()
+  processType: string;
+
+  @IsDateString()
+  startDate: string;
+
+  @IsOptional()
+  @IsString()
+  remarks?: string;
+}
+
+export class JobWorkOutwardDto {
+  @IsDateString()
+  outwardDate: string;
+
+  @IsOptional()
+  @IsString()
+  sourceLocationId?: string;
+
+  @IsNumber()
+  @Min(0.001)
+  quantity: number;
+
+  @IsOptional()
+  @IsString()
+  unit?: string;
+
+  @IsOptional()
+  @IsNumber()
+  numberOfBags?: number;
+
+  @IsOptional()
+  @IsString()
+  truckNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  challanNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  remarks?: string;
+}
+
+export class JobWorkInwardLineDto {
+  @IsString()
+  returnCategory: string;
+
+  @IsOptional()
+  @IsString()
+  wastageTypeId?: string;
+
+  @IsNumber()
+  @Min(0.001)
+  quantity: number;
+
+  @IsOptional()
+  @IsString()
+  unit?: string;
+
+  @IsOptional()
+  @IsNumber()
+  numberOfBags?: number;
+
+  @IsOptional()
+  @IsString()
+  remarks?: string;
+}
+
+export class JobWorkInwardDto {
+  @IsDateString()
+  receiptDate: string;
+
+  @IsString()
+  receivingLocationId: string;
+
+  @IsOptional()
+  @IsString()
+  truckNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  challanNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  remarks?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => JobWorkInwardLineDto)
+  lines: JobWorkInwardLineDto[];
+}
+
+export class JobWorkProcessResultDto {
+  @IsNumber()
+  @Min(0)
+  totalProcessedInputKg: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => WastageLineDto)
+  cleaningLines: WastageLineDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => WastageLineDto)
+  hullingLines?: WastageLineDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => WastageDispositionLineDto)
+  dispositions: WastageDispositionLineDto[];
+}
+
+export class CloseJobWorkDto {
+  @IsOptional()
+  @IsNumber()
+  varianceKg?: number;
+
+  @IsOptional()
+  @IsString()
+  varianceReason?: string;
+}
+
+export class StartReSortexDto {
+  @IsNumber()
+  @Min(0.001)
+  quantityKg: number;
+
+  @IsOptional()
+  @IsString()
+  plantId?: string;
+
+  @IsDateString()
+  startDate: string;
+
+  @IsOptional()
+  @IsString()
+  remarks?: string;
 }
 
 export class SampleResultDto {

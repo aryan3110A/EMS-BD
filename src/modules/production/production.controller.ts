@@ -6,19 +6,27 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { JwtPayload } from '../../common/decorators/current-user.decorator';
 import { UserRole } from '../../common/constants/enums';
 import { ProductionService } from './production.service';
+import { JobWorkService } from './job-work.service';
 import {
   AddInputDto,
-  AllocateContainerDto,
   AllocateFromStockDto,
   CleaningResultDto,
+  CloseJobWorkDto,
   CreateInwardDto,
+  CreateJobWorkDto,
+  CreateJobWorkerDto,
   CreateSupplierDto,
   CreateTransferDto,
+  FinaliseProductionDto,
+  FulfilmentAllocateDto,
   HullingResultDto,
   InwardQueryDto,
+  JobWorkInwardDto,
+  JobWorkOutwardDto,
+  JobWorkProcessResultDto,
   SampleResultDto,
   StartProductionDto,
-  StoreProcessedDto,
+  StartReSortexDto,
 } from './production.dto';
 
 const PROD_ROLES = [
@@ -28,7 +36,6 @@ const PROD_ROLES = [
   UserRole.INVENTORY_TEAM,
 ] as const;
 
-/** Runs / cleaning / hulling / sampling — Production ops (not inventory-only) */
 const PRODUCTION_OPS = [
   UserRole.SUPER_ADMIN,
   UserRole.OFFICE_ADMIN,
@@ -54,9 +61,11 @@ const READ_ROLES = [
 @UseGuards(JwtAuthGuard)
 @Controller('production')
 export class ProductionController {
-  constructor(private production: ProductionService) {}
+  constructor(
+    private production: ProductionService,
+    private jobWork: JobWorkService,
+  ) {}
 
-  // Masters
   @Roles(...READ_ROLES)
   @Get('masters/locations')
   locations() {
@@ -93,7 +102,6 @@ export class ProductionController {
     return this.production.listWastageTypes(stage);
   }
 
-  // Inward
   @Roles(...INVENTORY_OPS)
   @Post('inwards')
   createInward(@Body() dto: CreateInwardDto, @CurrentUser() user: JwtPayload) {
@@ -106,7 +114,6 @@ export class ProductionController {
     return this.production.listInwards(query);
   }
 
-  // Inventory
   @Roles(...READ_ROLES)
   @Get('inventory/balances')
   balances(
@@ -118,19 +125,45 @@ export class ProductionController {
   }
 
   @Roles(...READ_ROLES)
+  @Get('inventory/by-product')
+  inventoryByProduct(@Query('locationId') locationId?: string) {
+    return this.production.getInventoryByProduct(locationId);
+  }
+
+  @Roles(...READ_ROLES)
+  @Get('inventory/products/:id/detail')
+  inventoryProductDetail(@Param('id') id: string, @Query('locationId') locationId?: string) {
+    return this.production.getInventoryProductDetail(id, locationId);
+  }
+
+  @Roles(...READ_ROLES)
   @Get('inventory/ledger')
   ledger(@Query('productId') productId?: string) {
     return this.production.getLedger({ productId });
   }
 
-  // Pending contracts
+  @Roles(...READ_ROLES)
+  @Get('wastage-lots')
+  wastageLots(@Query('productId') productId?: string, @Query('locationId') locationId?: string) {
+    return this.production.listWastageLots({ productId, locationId });
+  }
+
+  @Roles(...PRODUCTION_OPS)
+  @Post('wastage-lots/:id/discard')
+  discardWastage(
+    @Param('id') id: string,
+    @Body() body: { reason?: string },
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.production.discardWastageLot(id, user, body?.reason);
+  }
+
   @Roles(...READ_ROLES)
   @Get('pending-contracts')
   pendingContracts() {
     return this.production.getPendingContracts();
   }
 
-  // Runs
   @Roles(...READ_ROLES)
   @Get('runs')
   listRuns() {
@@ -178,15 +211,13 @@ export class ProductionController {
   }
 
   @Roles(...PRODUCTION_OPS)
-  @Post('runs/:id/allocate')
-  allocate(@Param('id') id: string, @Body() dto: AllocateContainerDto, @CurrentUser() user: JwtPayload) {
-    return this.production.allocateToContainer(id, dto, user);
-  }
-
-  @Roles(...PRODUCTION_OPS)
-  @Post('runs/:id/store-processed')
-  storeProcessed(@Param('id') id: string, @Body() dto: StoreProcessedDto, @CurrentUser() user: JwtPayload) {
-    return this.production.storeRemainingProcessed(id, dto, user);
+  @Post('runs/:id/finalise')
+  finalise(
+    @Param('id') id: string,
+    @Body() dto: FinaliseProductionDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.production.finaliseProduction(id, dto, user);
   }
 
   @Roles(...INVENTORY_OPS)
@@ -196,12 +227,29 @@ export class ProductionController {
   }
 
   @Roles(...READ_ROLES)
+  @Get('fulfilment/processed-stock')
+  fulfilmentStock(@Query('productId') productId?: string, @Query('locationId') locationId?: string) {
+    return this.production.getProcessedStockForFulfilment(productId, locationId);
+  }
+
+  @Roles(...READ_ROLES)
+  @Get('fulfilment/matching-containers')
+  matchingContainers(@Query('productId') productId: string) {
+    return this.production.getMatchingContainersForProduct(productId);
+  }
+
+  @Roles(...INVENTORY_OPS)
+  @Post('fulfilment/allocate')
+  fulfilmentAllocate(@Body() dto: FulfilmentAllocateDto, @CurrentUser() user: JwtPayload) {
+    return this.production.allocateFulfilmentFifo(dto, user);
+  }
+
+  @Roles(...READ_ROLES)
   @Get('processed-lots')
   processedLots() {
     return this.production.listProcessedLots();
   }
 
-  // Sampling
   @Roles(...READ_ROLES)
   @Get('sampling')
   samples() {
@@ -220,7 +268,6 @@ export class ProductionController {
     return this.production.listRejectedLots();
   }
 
-  // Transfers
   @Roles(...READ_ROLES)
   @Get('transfers')
   transfers() {
@@ -245,11 +292,109 @@ export class ProductionController {
     return this.production.receiveTransfer(id, user);
   }
 
-  // Dashboard / audit
+  // ── Job Work ─────────────────────────────────────────────
+  @Roles(...READ_ROLES)
+  @Get('job-work/workers')
+  jobWorkers() {
+    return this.jobWork.listWorkers();
+  }
+
+  @Roles(...INVENTORY_OPS)
+  @Post('job-work/workers')
+  createJobWorker(@Body() dto: CreateJobWorkerDto) {
+    return this.jobWork.createWorker(dto);
+  }
+
+  @Roles(...READ_ROLES)
+  @Get('job-work')
+  listJobWork(
+    @Query('status') status?: string,
+    @Query('productId') productId?: string,
+    @Query('jobWorkerId') jobWorkerId?: string,
+  ) {
+    return this.jobWork.list({ status, productId, jobWorkerId });
+  }
+
+  @Roles(...PRODUCTION_OPS)
+  @Post('job-work')
+  createJobWork(@Body() dto: CreateJobWorkDto, @CurrentUser() user: JwtPayload) {
+    return this.jobWork.create(dto, user);
+  }
+
+  @Roles(...READ_ROLES)
+  @Get('job-work/:id')
+  getJobWork(@Param('id') id: string) {
+    return this.jobWork.getOne(id);
+  }
+
+  @Roles(...INVENTORY_OPS)
+  @Post('job-work/:id/outward')
+  jobWorkOutward(
+    @Param('id') id: string,
+    @Body() dto: JobWorkOutwardDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.jobWork.addOutward(id, dto, user);
+  }
+
+  @Roles(...INVENTORY_OPS)
+  @Post('job-work/:id/inward')
+  jobWorkInward(
+    @Param('id') id: string,
+    @Body() dto: JobWorkInwardDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.jobWork.addInward(id, dto, user);
+  }
+
+  @Roles(...PRODUCTION_OPS)
+  @Post('job-work/:id/process-result')
+  jobWorkProcessResult(
+    @Param('id') id: string,
+    @Body() dto: JobWorkProcessResultDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.jobWork.submitProcessResult(id, dto, user);
+  }
+
+  @Roles(...PRODUCTION_OPS)
+  @Post('job-work/:id/close')
+  closeJobWork(
+    @Param('id') id: string,
+    @Body() dto: CloseJobWorkDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.jobWork.close(id, dto, user);
+  }
+
+  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN)
+  @Post('job-work/:id/reopen')
+  reopenJobWork(
+    @Param('id') id: string,
+    @Body() dto: CloseJobWorkDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.jobWork.reopen(id, dto, user);
+  }
+
+  @Roles(...PRODUCTION_OPS)
+  @Post('job-work/:id/re-sortex')
+  reSortex(
+    @Param('id') id: string,
+    @Body() dto: StartReSortexDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.jobWork.startReSortex(id, dto, user);
+  }
+
   @Roles(...READ_ROLES)
   @Get('dashboard')
-  dashboard() {
-    return this.production.getOwnerDashboard();
+  async dashboard() {
+    const [base, jw] = await Promise.all([
+      this.production.getOwnerDashboard(),
+      this.jobWork.dashboardStats(),
+    ]);
+    return { ...base, jobWork: jw };
   }
 
   @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.PRODUCTION_TEAM)

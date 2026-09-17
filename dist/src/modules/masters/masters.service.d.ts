@@ -1,5 +1,5 @@
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateBuyerDto, CreatePackagingSizeDto, CreatePackagingTypeDto, CreateProductDto, CreateProductVariantDto, CreateSalespersonDto } from './masters.dto';
+import { CreateBuyerDto, CreatePackagingSizeDto, CreatePackagingTypeDto, CreateProductDto, CreateProductVariantDto, CreateSalespersonDto, UpdateProductDto } from './masters.dto';
 export declare class MastersService {
     private prisma;
     constructor(prisma: PrismaService);
@@ -360,6 +360,32 @@ export declare class MastersService {
         allowsSortex: boolean;
         samplingNormallyApplicable: boolean;
     }) | null>;
+    updateProduct(id: string, dto: UpdateProductDto): Promise<{
+        variants: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            processingType: string | null;
+        }[];
+    } & {
+        id: string;
+        code: string;
+        name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        category: string | null;
+        defaultSpecification: string | null;
+        standardContainerMt: number;
+        defaultUnit: string;
+        allowsFullProcess: boolean;
+        allowsSortex: boolean;
+        samplingNormallyApplicable: boolean;
+    }>;
     createProductVariant(dto: CreateProductVariantDto): Promise<({
         variants: {
             id: string;

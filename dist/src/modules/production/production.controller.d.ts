@@ -1,9 +1,11 @@
 import type { JwtPayload } from '../../common/decorators/current-user.decorator';
 import { ProductionService } from './production.service';
-import { AddInputDto, AllocateContainerDto, AllocateFromStockDto, CleaningResultDto, CreateInwardDto, CreateSupplierDto, CreateTransferDto, HullingResultDto, InwardQueryDto, SampleResultDto, StartProductionDto, StoreProcessedDto } from './production.dto';
+import { JobWorkService } from './job-work.service';
+import { AddInputDto, AllocateFromStockDto, CleaningResultDto, CloseJobWorkDto, CreateInwardDto, CreateJobWorkDto, CreateJobWorkerDto, CreateSupplierDto, CreateTransferDto, FinaliseProductionDto, FulfilmentAllocateDto, HullingResultDto, InwardQueryDto, JobWorkInwardDto, JobWorkOutwardDto, JobWorkProcessResultDto, SampleResultDto, StartProductionDto, StartReSortexDto } from './production.dto';
 export declare class ProductionController {
     private production;
-    constructor(production: ProductionService);
+    private jobWork;
+    constructor(production: ProductionService, jobWork: JobWorkService);
     locations(): import(".prisma/client").Prisma.PrismaPromise<{
         id: string;
         code: string;
@@ -224,6 +226,84 @@ export declare class ProductionController {
         stockCategory: string;
         locationId: string;
     })[]>;
+    inventoryByProduct(locationId?: string): Promise<{
+        totalKg: number;
+        rawKg: number;
+        wipKg: number;
+        processedKg: number;
+        wastageKg: number;
+        rejectedKg: number;
+        transitKg: number;
+        productId: string;
+        productCode: string;
+        productName: string;
+    }[]>;
+    inventoryProductDetail(id: string, locationId?: string): Promise<{
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        locations: {
+            locationId: string;
+            locationName: string;
+            rawKg: number;
+            wipKg: number;
+            processedKg: number;
+            wastageKg: number;
+            rejectedKg: number;
+            totalKg: number;
+        }[];
+        wastageByType: Record<string, number>;
+        ledger: ({
+            createdBy: {
+                id: string;
+                name: string;
+            } | null;
+            sourceLocation: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
+            destLocation: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
+        } & {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            createdById: string | null;
+            txnNumber: string;
+            txnType: string;
+            stockCategory: string;
+            sourceLocationId: string | null;
+            destLocationId: string | null;
+            quantityInKg: number;
+            quantityOutKg: number;
+            balanceKg: number | null;
+            referenceType: string | null;
+            referenceId: string | null;
+        })[];
+    }>;
     ledger(productId?: string): import(".prisma/client").Prisma.PrismaPromise<({
         product: {
             id: string;
@@ -277,6 +357,73 @@ export declare class ProductionController {
         referenceType: string | null;
         referenceId: string | null;
     })[]>;
+    wastageLots(productId?: string, locationId?: string): import(".prisma/client").Prisma.PrismaPromise<({
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        wastageType: {
+            id: string;
+            code: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            stage: string;
+            nameEn: string;
+            nameLocal: string | null;
+            sortOrder: number;
+        };
+        productionRun: {
+            productionNumber: string;
+        } | null;
+        jobWork: {
+            jobWorkNumber: string;
+        } | null;
+        location: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        status: string;
+        lotNumber: string;
+        wastageTypeId: string;
+        productionRunId: string | null;
+        quantityKg: number;
+        processType: string | null;
+        jobWorkId: string | null;
+        parentWastageLotId: string | null;
+        reprocessingCycle: number;
+        availableKg: number;
+        locationId: string;
+        reprocessedKg: number;
+        discardedKg: number;
+        originalProductionRunId: string | null;
+        productionDate: Date;
+    })[]>;
+    discardWastage(id: string, body: {
+        reason?: string;
+    }, user: JwtPayload): Promise<{
+        ok: boolean;
+    }>;
     pendingContracts(): Promise<any[]>;
     listRuns(): import(".prisma/client").Prisma.PrismaPromise<({
         product: {
@@ -331,11 +478,50 @@ export declare class ProductionController {
         wastageAlert: boolean;
         cleaningFinalizedAt: Date | null;
         hullingFinalizedAt: Date | null;
+        finalisedAt: Date | null;
+        productionSource: string;
+        jobWorkId: string | null;
+        parentWastageLotId: string | null;
+        sampleRejectedLotId: string | null;
+        reprocessingCycle: number;
         cancelledAt: Date | null;
         cancelReason: string | null;
         cancelledById: string | null;
     })[]>;
     startRun(dto: StartProductionDto, user: JwtPayload): Promise<{
+        wastageLots: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            wastageTypeId: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            processType: string | null;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            locationId: string;
+            reprocessedKg: number;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
+        })[];
         product: {
             id: string;
             code: string;
@@ -372,10 +558,11 @@ export declare class ProductionController {
             createdAt: Date;
             updatedAt: Date;
             remarks: string | null;
+            wastageTypeId: string;
             productionRunId: string;
             quantityKg: number;
-            wastageTypeId: string;
             inputUnit: string;
+            disposition: string | null;
         })[];
         plant: {
             id: string;
@@ -397,6 +584,39 @@ export declare class ProductionController {
                 phone: string | null;
                 address: string | null;
             } | null;
+            wastageLot: ({
+                wastageType: {
+                    id: string;
+                    code: string;
+                    isActive: boolean;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    stage: string;
+                    nameEn: string;
+                    nameLocal: string | null;
+                    sortOrder: number;
+                };
+            } & {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                status: string;
+                lotNumber: string;
+                wastageTypeId: string;
+                productionRunId: string | null;
+                quantityKg: number;
+                processType: string | null;
+                jobWorkId: string | null;
+                parentWastageLotId: string | null;
+                reprocessingCycle: number;
+                availableKg: number;
+                locationId: string;
+                reprocessedKg: number;
+                discardedKg: number;
+                originalProductionRunId: string | null;
+                productionDate: Date;
+            }) | null;
             inward: {
                 id: string;
                 createdAt: Date;
@@ -431,6 +651,7 @@ export declare class ProductionController {
             supplierId: string | null;
             inwardId: string | null;
             rejectedLotId: string | null;
+            wastageLotId: string | null;
             inputDate: Date;
             inputUnit: string;
             isAdditional: boolean;
@@ -453,10 +674,11 @@ export declare class ProductionController {
             updatedAt: Date;
             remarks: string | null;
             numberOfBags: number | null;
+            wastageTypeId: string;
             productionRunId: string;
             quantityKg: number;
-            wastageTypeId: string;
             inputUnit: string;
+            disposition: string | null;
             weightPerBagKg: number | null;
             directQtyKg: number | null;
         })[];
@@ -467,11 +689,16 @@ export declare class ProductionController {
             productId: string;
             status: string;
             lotNumber: string;
-            productionRunId: string;
+            productionRunId: string | null;
             quantityKg: number;
             plantId: string;
             processType: string;
             completionDate: Date;
+            productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            sampleRejectedLotId: string | null;
+            reprocessingCycle: number;
             availableKg: number;
             reservedKg: number;
         }[];
@@ -489,6 +716,16 @@ export declare class ProductionController {
             quantityKg: number;
             allocationDate: Date;
             allocatedById: string;
+        }[];
+        wastageDispositions: {
+            id: string;
+            createdAt: Date;
+            stage: string;
+            wastageTypeId: string;
+            action: string;
+            productionRunId: string;
+            quantityKg: number;
+            wastageLotId: string | null;
         }[];
     } & {
         id: string;
@@ -515,11 +752,50 @@ export declare class ProductionController {
         wastageAlert: boolean;
         cleaningFinalizedAt: Date | null;
         hullingFinalizedAt: Date | null;
+        finalisedAt: Date | null;
+        productionSource: string;
+        jobWorkId: string | null;
+        parentWastageLotId: string | null;
+        sampleRejectedLotId: string | null;
+        reprocessingCycle: number;
         cancelledAt: Date | null;
         cancelReason: string | null;
         cancelledById: string | null;
     }>;
     getRun(id: string): Promise<{
+        wastageLots: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            wastageTypeId: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            processType: string | null;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            locationId: string;
+            reprocessedKg: number;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
+        })[];
         product: {
             id: string;
             code: string;
@@ -556,10 +832,11 @@ export declare class ProductionController {
             createdAt: Date;
             updatedAt: Date;
             remarks: string | null;
+            wastageTypeId: string;
             productionRunId: string;
             quantityKg: number;
-            wastageTypeId: string;
             inputUnit: string;
+            disposition: string | null;
         })[];
         plant: {
             id: string;
@@ -581,6 +858,39 @@ export declare class ProductionController {
                 phone: string | null;
                 address: string | null;
             } | null;
+            wastageLot: ({
+                wastageType: {
+                    id: string;
+                    code: string;
+                    isActive: boolean;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    stage: string;
+                    nameEn: string;
+                    nameLocal: string | null;
+                    sortOrder: number;
+                };
+            } & {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                status: string;
+                lotNumber: string;
+                wastageTypeId: string;
+                productionRunId: string | null;
+                quantityKg: number;
+                processType: string | null;
+                jobWorkId: string | null;
+                parentWastageLotId: string | null;
+                reprocessingCycle: number;
+                availableKg: number;
+                locationId: string;
+                reprocessedKg: number;
+                discardedKg: number;
+                originalProductionRunId: string | null;
+                productionDate: Date;
+            }) | null;
             inward: {
                 id: string;
                 createdAt: Date;
@@ -615,6 +925,7 @@ export declare class ProductionController {
             supplierId: string | null;
             inwardId: string | null;
             rejectedLotId: string | null;
+            wastageLotId: string | null;
             inputDate: Date;
             inputUnit: string;
             isAdditional: boolean;
@@ -637,10 +948,11 @@ export declare class ProductionController {
             updatedAt: Date;
             remarks: string | null;
             numberOfBags: number | null;
+            wastageTypeId: string;
             productionRunId: string;
             quantityKg: number;
-            wastageTypeId: string;
             inputUnit: string;
+            disposition: string | null;
             weightPerBagKg: number | null;
             directQtyKg: number | null;
         })[];
@@ -651,11 +963,16 @@ export declare class ProductionController {
             productId: string;
             status: string;
             lotNumber: string;
-            productionRunId: string;
+            productionRunId: string | null;
             quantityKg: number;
             plantId: string;
             processType: string;
             completionDate: Date;
+            productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            sampleRejectedLotId: string | null;
+            reprocessingCycle: number;
             availableKg: number;
             reservedKg: number;
         }[];
@@ -673,6 +990,16 @@ export declare class ProductionController {
             quantityKg: number;
             allocationDate: Date;
             allocatedById: string;
+        }[];
+        wastageDispositions: {
+            id: string;
+            createdAt: Date;
+            stage: string;
+            wastageTypeId: string;
+            action: string;
+            productionRunId: string;
+            quantityKg: number;
+            wastageLotId: string | null;
         }[];
     } & {
         id: string;
@@ -699,11 +1026,50 @@ export declare class ProductionController {
         wastageAlert: boolean;
         cleaningFinalizedAt: Date | null;
         hullingFinalizedAt: Date | null;
+        finalisedAt: Date | null;
+        productionSource: string;
+        jobWorkId: string | null;
+        parentWastageLotId: string | null;
+        sampleRejectedLotId: string | null;
+        reprocessingCycle: number;
         cancelledAt: Date | null;
         cancelReason: string | null;
         cancelledById: string | null;
     }>;
     addInput(id: string, dto: AddInputDto, user: JwtPayload): Promise<{
+        wastageLots: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            wastageTypeId: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            processType: string | null;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            locationId: string;
+            reprocessedKg: number;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
+        })[];
         product: {
             id: string;
             code: string;
@@ -740,10 +1106,11 @@ export declare class ProductionController {
             createdAt: Date;
             updatedAt: Date;
             remarks: string | null;
+            wastageTypeId: string;
             productionRunId: string;
             quantityKg: number;
-            wastageTypeId: string;
             inputUnit: string;
+            disposition: string | null;
         })[];
         plant: {
             id: string;
@@ -765,6 +1132,39 @@ export declare class ProductionController {
                 phone: string | null;
                 address: string | null;
             } | null;
+            wastageLot: ({
+                wastageType: {
+                    id: string;
+                    code: string;
+                    isActive: boolean;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    stage: string;
+                    nameEn: string;
+                    nameLocal: string | null;
+                    sortOrder: number;
+                };
+            } & {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                status: string;
+                lotNumber: string;
+                wastageTypeId: string;
+                productionRunId: string | null;
+                quantityKg: number;
+                processType: string | null;
+                jobWorkId: string | null;
+                parentWastageLotId: string | null;
+                reprocessingCycle: number;
+                availableKg: number;
+                locationId: string;
+                reprocessedKg: number;
+                discardedKg: number;
+                originalProductionRunId: string | null;
+                productionDate: Date;
+            }) | null;
             inward: {
                 id: string;
                 createdAt: Date;
@@ -799,6 +1199,7 @@ export declare class ProductionController {
             supplierId: string | null;
             inwardId: string | null;
             rejectedLotId: string | null;
+            wastageLotId: string | null;
             inputDate: Date;
             inputUnit: string;
             isAdditional: boolean;
@@ -821,10 +1222,11 @@ export declare class ProductionController {
             updatedAt: Date;
             remarks: string | null;
             numberOfBags: number | null;
+            wastageTypeId: string;
             productionRunId: string;
             quantityKg: number;
-            wastageTypeId: string;
             inputUnit: string;
+            disposition: string | null;
             weightPerBagKg: number | null;
             directQtyKg: number | null;
         })[];
@@ -835,11 +1237,16 @@ export declare class ProductionController {
             productId: string;
             status: string;
             lotNumber: string;
-            productionRunId: string;
+            productionRunId: string | null;
             quantityKg: number;
             plantId: string;
             processType: string;
             completionDate: Date;
+            productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            sampleRejectedLotId: string | null;
+            reprocessingCycle: number;
             availableKg: number;
             reservedKg: number;
         }[];
@@ -857,6 +1264,16 @@ export declare class ProductionController {
             quantityKg: number;
             allocationDate: Date;
             allocatedById: string;
+        }[];
+        wastageDispositions: {
+            id: string;
+            createdAt: Date;
+            stage: string;
+            wastageTypeId: string;
+            action: string;
+            productionRunId: string;
+            quantityKg: number;
+            wastageLotId: string | null;
         }[];
     } & {
         id: string;
@@ -883,6 +1300,12 @@ export declare class ProductionController {
         wastageAlert: boolean;
         cleaningFinalizedAt: Date | null;
         hullingFinalizedAt: Date | null;
+        finalisedAt: Date | null;
+        productionSource: string;
+        jobWorkId: string | null;
+        parentWastageLotId: string | null;
+        sampleRejectedLotId: string | null;
+        reprocessingCycle: number;
         cancelledAt: Date | null;
         cancelReason: string | null;
         cancelledById: string | null;
@@ -890,6 +1313,39 @@ export declare class ProductionController {
     reopenCleaning(id: string, body: {
         reason?: string;
     }, user: JwtPayload): Promise<{
+        wastageLots: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            wastageTypeId: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            processType: string | null;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            locationId: string;
+            reprocessedKg: number;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
+        })[];
         product: {
             id: string;
             code: string;
@@ -926,10 +1382,11 @@ export declare class ProductionController {
             createdAt: Date;
             updatedAt: Date;
             remarks: string | null;
+            wastageTypeId: string;
             productionRunId: string;
             quantityKg: number;
-            wastageTypeId: string;
             inputUnit: string;
+            disposition: string | null;
         })[];
         plant: {
             id: string;
@@ -951,6 +1408,39 @@ export declare class ProductionController {
                 phone: string | null;
                 address: string | null;
             } | null;
+            wastageLot: ({
+                wastageType: {
+                    id: string;
+                    code: string;
+                    isActive: boolean;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    stage: string;
+                    nameEn: string;
+                    nameLocal: string | null;
+                    sortOrder: number;
+                };
+            } & {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                status: string;
+                lotNumber: string;
+                wastageTypeId: string;
+                productionRunId: string | null;
+                quantityKg: number;
+                processType: string | null;
+                jobWorkId: string | null;
+                parentWastageLotId: string | null;
+                reprocessingCycle: number;
+                availableKg: number;
+                locationId: string;
+                reprocessedKg: number;
+                discardedKg: number;
+                originalProductionRunId: string | null;
+                productionDate: Date;
+            }) | null;
             inward: {
                 id: string;
                 createdAt: Date;
@@ -985,6 +1475,7 @@ export declare class ProductionController {
             supplierId: string | null;
             inwardId: string | null;
             rejectedLotId: string | null;
+            wastageLotId: string | null;
             inputDate: Date;
             inputUnit: string;
             isAdditional: boolean;
@@ -1007,10 +1498,11 @@ export declare class ProductionController {
             updatedAt: Date;
             remarks: string | null;
             numberOfBags: number | null;
+            wastageTypeId: string;
             productionRunId: string;
             quantityKg: number;
-            wastageTypeId: string;
             inputUnit: string;
+            disposition: string | null;
             weightPerBagKg: number | null;
             directQtyKg: number | null;
         })[];
@@ -1021,11 +1513,16 @@ export declare class ProductionController {
             productId: string;
             status: string;
             lotNumber: string;
-            productionRunId: string;
+            productionRunId: string | null;
             quantityKg: number;
             plantId: string;
             processType: string;
             completionDate: Date;
+            productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            sampleRejectedLotId: string | null;
+            reprocessingCycle: number;
             availableKg: number;
             reservedKg: number;
         }[];
@@ -1043,6 +1540,16 @@ export declare class ProductionController {
             quantityKg: number;
             allocationDate: Date;
             allocatedById: string;
+        }[];
+        wastageDispositions: {
+            id: string;
+            createdAt: Date;
+            stage: string;
+            wastageTypeId: string;
+            action: string;
+            productionRunId: string;
+            quantityKg: number;
+            wastageLotId: string | null;
         }[];
     } & {
         id: string;
@@ -1069,11 +1576,50 @@ export declare class ProductionController {
         wastageAlert: boolean;
         cleaningFinalizedAt: Date | null;
         hullingFinalizedAt: Date | null;
+        finalisedAt: Date | null;
+        productionSource: string;
+        jobWorkId: string | null;
+        parentWastageLotId: string | null;
+        sampleRejectedLotId: string | null;
+        reprocessingCycle: number;
         cancelledAt: Date | null;
         cancelReason: string | null;
         cancelledById: string | null;
     }>;
     cleaning(id: string, dto: CleaningResultDto, user: JwtPayload): Promise<{
+        wastageLots: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            wastageTypeId: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            processType: string | null;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            locationId: string;
+            reprocessedKg: number;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
+        })[];
         product: {
             id: string;
             code: string;
@@ -1110,10 +1656,11 @@ export declare class ProductionController {
             createdAt: Date;
             updatedAt: Date;
             remarks: string | null;
+            wastageTypeId: string;
             productionRunId: string;
             quantityKg: number;
-            wastageTypeId: string;
             inputUnit: string;
+            disposition: string | null;
         })[];
         plant: {
             id: string;
@@ -1135,6 +1682,39 @@ export declare class ProductionController {
                 phone: string | null;
                 address: string | null;
             } | null;
+            wastageLot: ({
+                wastageType: {
+                    id: string;
+                    code: string;
+                    isActive: boolean;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    stage: string;
+                    nameEn: string;
+                    nameLocal: string | null;
+                    sortOrder: number;
+                };
+            } & {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                status: string;
+                lotNumber: string;
+                wastageTypeId: string;
+                productionRunId: string | null;
+                quantityKg: number;
+                processType: string | null;
+                jobWorkId: string | null;
+                parentWastageLotId: string | null;
+                reprocessingCycle: number;
+                availableKg: number;
+                locationId: string;
+                reprocessedKg: number;
+                discardedKg: number;
+                originalProductionRunId: string | null;
+                productionDate: Date;
+            }) | null;
             inward: {
                 id: string;
                 createdAt: Date;
@@ -1169,6 +1749,7 @@ export declare class ProductionController {
             supplierId: string | null;
             inwardId: string | null;
             rejectedLotId: string | null;
+            wastageLotId: string | null;
             inputDate: Date;
             inputUnit: string;
             isAdditional: boolean;
@@ -1191,10 +1772,11 @@ export declare class ProductionController {
             updatedAt: Date;
             remarks: string | null;
             numberOfBags: number | null;
+            wastageTypeId: string;
             productionRunId: string;
             quantityKg: number;
-            wastageTypeId: string;
             inputUnit: string;
+            disposition: string | null;
             weightPerBagKg: number | null;
             directQtyKg: number | null;
         })[];
@@ -1205,11 +1787,16 @@ export declare class ProductionController {
             productId: string;
             status: string;
             lotNumber: string;
-            productionRunId: string;
+            productionRunId: string | null;
             quantityKg: number;
             plantId: string;
             processType: string;
             completionDate: Date;
+            productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            sampleRejectedLotId: string | null;
+            reprocessingCycle: number;
             availableKg: number;
             reservedKg: number;
         }[];
@@ -1227,6 +1814,16 @@ export declare class ProductionController {
             quantityKg: number;
             allocationDate: Date;
             allocatedById: string;
+        }[];
+        wastageDispositions: {
+            id: string;
+            createdAt: Date;
+            stage: string;
+            wastageTypeId: string;
+            action: string;
+            productionRunId: string;
+            quantityKg: number;
+            wastageLotId: string | null;
         }[];
     } & {
         id: string;
@@ -1253,11 +1850,50 @@ export declare class ProductionController {
         wastageAlert: boolean;
         cleaningFinalizedAt: Date | null;
         hullingFinalizedAt: Date | null;
+        finalisedAt: Date | null;
+        productionSource: string;
+        jobWorkId: string | null;
+        parentWastageLotId: string | null;
+        sampleRejectedLotId: string | null;
+        reprocessingCycle: number;
         cancelledAt: Date | null;
         cancelReason: string | null;
         cancelledById: string | null;
     }>;
     hulling(id: string, dto: HullingResultDto, user: JwtPayload): Promise<{
+        wastageLots: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            wastageTypeId: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            processType: string | null;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            locationId: string;
+            reprocessedKg: number;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
+        })[];
         product: {
             id: string;
             code: string;
@@ -1294,10 +1930,11 @@ export declare class ProductionController {
             createdAt: Date;
             updatedAt: Date;
             remarks: string | null;
+            wastageTypeId: string;
             productionRunId: string;
             quantityKg: number;
-            wastageTypeId: string;
             inputUnit: string;
+            disposition: string | null;
         })[];
         plant: {
             id: string;
@@ -1319,6 +1956,39 @@ export declare class ProductionController {
                 phone: string | null;
                 address: string | null;
             } | null;
+            wastageLot: ({
+                wastageType: {
+                    id: string;
+                    code: string;
+                    isActive: boolean;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    stage: string;
+                    nameEn: string;
+                    nameLocal: string | null;
+                    sortOrder: number;
+                };
+            } & {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                status: string;
+                lotNumber: string;
+                wastageTypeId: string;
+                productionRunId: string | null;
+                quantityKg: number;
+                processType: string | null;
+                jobWorkId: string | null;
+                parentWastageLotId: string | null;
+                reprocessingCycle: number;
+                availableKg: number;
+                locationId: string;
+                reprocessedKg: number;
+                discardedKg: number;
+                originalProductionRunId: string | null;
+                productionDate: Date;
+            }) | null;
             inward: {
                 id: string;
                 createdAt: Date;
@@ -1353,6 +2023,7 @@ export declare class ProductionController {
             supplierId: string | null;
             inwardId: string | null;
             rejectedLotId: string | null;
+            wastageLotId: string | null;
             inputDate: Date;
             inputUnit: string;
             isAdditional: boolean;
@@ -1375,10 +2046,11 @@ export declare class ProductionController {
             updatedAt: Date;
             remarks: string | null;
             numberOfBags: number | null;
+            wastageTypeId: string;
             productionRunId: string;
             quantityKg: number;
-            wastageTypeId: string;
             inputUnit: string;
+            disposition: string | null;
             weightPerBagKg: number | null;
             directQtyKg: number | null;
         })[];
@@ -1389,11 +2061,16 @@ export declare class ProductionController {
             productId: string;
             status: string;
             lotNumber: string;
-            productionRunId: string;
+            productionRunId: string | null;
             quantityKg: number;
             plantId: string;
             processType: string;
             completionDate: Date;
+            productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            sampleRejectedLotId: string | null;
+            reprocessingCycle: number;
             availableKg: number;
             reservedKg: number;
         }[];
@@ -1411,6 +2088,16 @@ export declare class ProductionController {
             quantityKg: number;
             allocationDate: Date;
             allocatedById: string;
+        }[];
+        wastageDispositions: {
+            id: string;
+            createdAt: Date;
+            stage: string;
+            wastageTypeId: string;
+            action: string;
+            productionRunId: string;
+            quantityKg: number;
+            wastageLotId: string | null;
         }[];
     } & {
         id: string;
@@ -1437,11 +2124,50 @@ export declare class ProductionController {
         wastageAlert: boolean;
         cleaningFinalizedAt: Date | null;
         hullingFinalizedAt: Date | null;
+        finalisedAt: Date | null;
+        productionSource: string;
+        jobWorkId: string | null;
+        parentWastageLotId: string | null;
+        sampleRejectedLotId: string | null;
+        reprocessingCycle: number;
         cancelledAt: Date | null;
         cancelReason: string | null;
         cancelledById: string | null;
     }>;
-    allocate(id: string, dto: AllocateContainerDto, user: JwtPayload): Promise<{
+    finalise(id: string, dto: FinaliseProductionDto, user: JwtPayload): Promise<{
+        wastageLots: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            wastageTypeId: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            processType: string | null;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            locationId: string;
+            reprocessedKg: number;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
+        })[];
         product: {
             id: string;
             code: string;
@@ -1478,10 +2204,11 @@ export declare class ProductionController {
             createdAt: Date;
             updatedAt: Date;
             remarks: string | null;
+            wastageTypeId: string;
             productionRunId: string;
             quantityKg: number;
-            wastageTypeId: string;
             inputUnit: string;
+            disposition: string | null;
         })[];
         plant: {
             id: string;
@@ -1503,6 +2230,39 @@ export declare class ProductionController {
                 phone: string | null;
                 address: string | null;
             } | null;
+            wastageLot: ({
+                wastageType: {
+                    id: string;
+                    code: string;
+                    isActive: boolean;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    stage: string;
+                    nameEn: string;
+                    nameLocal: string | null;
+                    sortOrder: number;
+                };
+            } & {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                status: string;
+                lotNumber: string;
+                wastageTypeId: string;
+                productionRunId: string | null;
+                quantityKg: number;
+                processType: string | null;
+                jobWorkId: string | null;
+                parentWastageLotId: string | null;
+                reprocessingCycle: number;
+                availableKg: number;
+                locationId: string;
+                reprocessedKg: number;
+                discardedKg: number;
+                originalProductionRunId: string | null;
+                productionDate: Date;
+            }) | null;
             inward: {
                 id: string;
                 createdAt: Date;
@@ -1537,6 +2297,7 @@ export declare class ProductionController {
             supplierId: string | null;
             inwardId: string | null;
             rejectedLotId: string | null;
+            wastageLotId: string | null;
             inputDate: Date;
             inputUnit: string;
             isAdditional: boolean;
@@ -1559,10 +2320,11 @@ export declare class ProductionController {
             updatedAt: Date;
             remarks: string | null;
             numberOfBags: number | null;
+            wastageTypeId: string;
             productionRunId: string;
             quantityKg: number;
-            wastageTypeId: string;
             inputUnit: string;
+            disposition: string | null;
             weightPerBagKg: number | null;
             directQtyKg: number | null;
         })[];
@@ -1573,11 +2335,16 @@ export declare class ProductionController {
             productId: string;
             status: string;
             lotNumber: string;
-            productionRunId: string;
+            productionRunId: string | null;
             quantityKg: number;
             plantId: string;
             processType: string;
             completionDate: Date;
+            productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            sampleRejectedLotId: string | null;
+            reprocessingCycle: number;
             availableKg: number;
             reservedKg: number;
         }[];
@@ -1595,6 +2362,16 @@ export declare class ProductionController {
             quantityKg: number;
             allocationDate: Date;
             allocatedById: string;
+        }[];
+        wastageDispositions: {
+            id: string;
+            createdAt: Date;
+            stage: string;
+            wastageTypeId: string;
+            action: string;
+            productionRunId: string;
+            quantityKg: number;
+            wastageLotId: string | null;
         }[];
     } & {
         id: string;
@@ -1621,196 +2398,79 @@ export declare class ProductionController {
         wastageAlert: boolean;
         cleaningFinalizedAt: Date | null;
         hullingFinalizedAt: Date | null;
-        cancelledAt: Date | null;
-        cancelReason: string | null;
-        cancelledById: string | null;
-    }>;
-    storeProcessed(id: string, dto: StoreProcessedDto, user: JwtPayload): Promise<{
-        product: {
-            id: string;
-            code: string;
-            name: string;
-            isActive: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            category: string | null;
-            defaultSpecification: string | null;
-            standardContainerMt: number;
-            defaultUnit: string;
-            allowsFullProcess: boolean;
-            allowsSortex: boolean;
-            samplingNormallyApplicable: boolean;
-        };
-        createdBy: {
-            id: string;
-            name: string;
-        };
-        cleaning: ({
-            wastageType: {
-                id: string;
-                code: string;
-                isActive: boolean;
-                createdAt: Date;
-                updatedAt: Date;
-                stage: string;
-                nameEn: string;
-                nameLocal: string | null;
-                sortOrder: number;
-            };
-        } & {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            remarks: string | null;
-            productionRunId: string;
-            quantityKg: number;
-            wastageTypeId: string;
-            inputUnit: string;
-        })[];
-        plant: {
-            id: string;
-            code: string;
-            name: string;
-            isActive: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-        };
-        inputs: ({
-            supplier: {
-                id: string;
-                code: string;
-                name: string;
-                isActive: boolean;
-                createdAt: Date;
-                updatedAt: Date;
-                email: string | null;
-                phone: string | null;
-                address: string | null;
-            } | null;
-            inward: {
-                id: string;
-                createdAt: Date;
-                updatedAt: Date;
-                productId: string;
-                weightKg: number;
-                remarks: string | null;
-                numberOfBags: number;
-                status: string;
-                createdById: string;
-                updatedById: string | null;
-                locationId: string;
-                supplierId: string;
-                inwardDate: Date;
-                truckNumber: string;
-                price: number | null;
-                inwardTypeId: string;
-                otherTypeDesc: string | null;
-                inwardNumber: string;
-                inputUnit: string;
-            } | null;
-        } & {
-            id: string;
-            createdAt: Date;
-            productId: string;
-            remarks: string | null;
-            productionRunId: string;
-            processedLotId: string | null;
-            quantityKg: number;
-            addedById: string;
-            stockCategory: string;
-            supplierId: string | null;
-            inwardId: string | null;
-            rejectedLotId: string | null;
-            inputDate: Date;
-            inputUnit: string;
-            isAdditional: boolean;
-        })[];
-        hulling: ({
-            wastageType: {
-                id: string;
-                code: string;
-                isActive: boolean;
-                createdAt: Date;
-                updatedAt: Date;
-                stage: string;
-                nameEn: string;
-                nameLocal: string | null;
-                sortOrder: number;
-            };
-        } & {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            remarks: string | null;
-            numberOfBags: number | null;
-            productionRunId: string;
-            quantityKg: number;
-            wastageTypeId: string;
-            inputUnit: string;
-            weightPerBagKg: number | null;
-            directQtyKg: number | null;
-        })[];
-        outputLots: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            productId: string;
-            status: string;
-            lotNumber: string;
-            productionRunId: string;
-            quantityKg: number;
-            plantId: string;
-            processType: string;
-            completionDate: Date;
-            availableKg: number;
-            reservedKg: number;
-        }[];
-        allocations: {
-            id: string;
-            createdAt: Date;
-            productId: string;
-            remarks: string | null;
-            status: string;
-            contractId: string;
-            containerId: string;
-            productionRunId: string | null;
-            processedLotId: string | null;
-            containerProductId: string | null;
-            quantityKg: number;
-            allocationDate: Date;
-            allocatedById: string;
-        }[];
-    } & {
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        productId: string;
-        remarks: string | null;
-        status: string;
-        createdById: string;
-        startDate: Date;
-        productionNumber: string;
-        plantId: string;
-        processType: string;
-        completionDate: Date | null;
-        daysSpanned: number | null;
-        totalInputKg: number;
-        cleaningWastageKg: number;
-        hullingInputKg: number;
-        hullingWastageKg: number;
-        hullingWastagePct: number | null;
-        netOutputKg: number;
-        allocatedKg: number;
-        storedProcessedKg: number;
-        wastageAlert: boolean;
-        cleaningFinalizedAt: Date | null;
-        hullingFinalizedAt: Date | null;
+        finalisedAt: Date | null;
+        productionSource: string;
+        jobWorkId: string | null;
+        parentWastageLotId: string | null;
+        sampleRejectedLotId: string | null;
+        reprocessingCycle: number;
         cancelledAt: Date | null;
         cancelReason: string | null;
         cancelledById: string | null;
     }>;
     fromStock(dto: AllocateFromStockDto, user: JwtPayload): Promise<{
         ok: boolean;
+        allocatedKg: number;
+        consumedLots: {
+            lotId: string;
+            lotNumber: string;
+            quantityKg: number;
+        }[];
+    } | {
+        ok: boolean;
+    }>;
+    fulfilmentStock(productId?: string, locationId?: string): Promise<{
+        productId: string | undefined;
+        totalAvailableKg: number;
+        byLocation: {
+            availableKg: number;
+            locationId: string;
+            locationName: string;
+        }[];
+        lots: {
+            id: string;
+            lotNumber: string;
+            availableKg: number;
+            quantityKg: number;
+            reservedKg: number;
+            plantId: string;
+            plant: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+            product: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                category: string | null;
+                defaultSpecification: string | null;
+                standardContainerMt: number;
+                defaultUnit: string;
+                allowsFullProcess: boolean;
+                allowsSortex: boolean;
+                samplingNormallyApplicable: boolean;
+            };
+            productionNumber: string | undefined;
+            completionDate: Date;
+            productionSource: string;
+        }[];
+    }>;
+    matchingContainers(productId: string): Promise<any[]>;
+    fulfilmentAllocate(dto: FulfilmentAllocateDto, user: JwtPayload): Promise<{
+        ok: boolean;
+        allocatedKg: number;
+        consumedLots: {
+            lotId: string;
+            lotNumber: string;
+            quantityKg: number;
+        }[];
     }>;
     processedLots(): import(".prisma/client").Prisma.PrismaPromise<({
         product: {
@@ -1831,7 +2491,7 @@ export declare class ProductionController {
         productionRun: {
             productionNumber: string;
             processType: string;
-        };
+        } | null;
         plant: {
             id: string;
             code: string;
@@ -1847,11 +2507,16 @@ export declare class ProductionController {
         productId: string;
         status: string;
         lotNumber: string;
-        productionRunId: string;
+        productionRunId: string | null;
         quantityKg: number;
         plantId: string;
         processType: string;
         completionDate: Date;
+        productionSource: string;
+        jobWorkId: string | null;
+        parentWastageLotId: string | null;
+        sampleRejectedLotId: string | null;
+        reprocessingCycle: number;
         availableKg: number;
         reservedKg: number;
     })[]>;
@@ -2216,7 +2881,1664 @@ export declare class ProductionController {
         receivedById: string | null;
         linkedInwardId: string | null;
     }) | null>;
+    jobWorkers(): import(".prisma/client").Prisma.PrismaPromise<{
+        id: string;
+        code: string;
+        name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        email: string | null;
+        phone: string | null;
+        address: string | null;
+    }[]>;
+    createJobWorker(dto: CreateJobWorkerDto): Promise<{
+        id: string;
+        code: string;
+        name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        email: string | null;
+        phone: string | null;
+        address: string | null;
+    }>;
+    listJobWork(status?: string, productId?: string, jobWorkerId?: string): import(".prisma/client").Prisma.PrismaPromise<({
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        inwards: ({
+            lines: ({
+                wastageType: {
+                    id: string;
+                    code: string;
+                    isActive: boolean;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    stage: string;
+                    nameEn: string;
+                    nameLocal: string | null;
+                    sortOrder: number;
+                } | null;
+            } & {
+                id: string;
+                productId: string;
+                remarks: string | null;
+                numberOfBags: number | null;
+                wastageTypeId: string | null;
+                quantityKg: number;
+                inwardId: string;
+                returnCategory: string;
+            })[];
+            receivingLocation: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            remarks: string | null;
+            jobWorkId: string;
+            truckNumber: string | null;
+            inwardNumber: string;
+            challanNumber: string | null;
+            receiptDate: Date;
+            receivingLocationId: string;
+            receivedById: string;
+        })[];
+        jobWorker: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            phone: string | null;
+            address: string | null;
+        };
+        wastageDispositions: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            stage: string;
+            wastageTypeId: string;
+            quantityKg: number;
+            jobWorkId: string;
+            disposition: string;
+        })[];
+        sourceLocation: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        outwards: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            numberOfBags: number | null;
+            createdById: string;
+            quantityKg: number;
+            jobWorkId: string;
+            sourceLocationId: string;
+            truckNumber: string | null;
+            outwardDate: Date;
+            challanNumber: string | null;
+            outwardNumber: string;
+        }[];
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        createdById: string;
+        startDate: Date;
+        processType: string;
+        wastageAlert: boolean;
+        sourceLocationId: string;
+        jobWorkerId: string;
+        totalProcessedInputKg: number;
+        jobWorkNumber: string;
+        closedAt: Date | null;
+        closedById: string | null;
+        closeVarianceKg: number | null;
+        closeVarianceReason: string | null;
+        totalSentKg: number;
+        netProcessedOutputKg: number;
+        totalWastageKg: number;
+        processResultEnteredAt: Date | null;
+    })[]>;
+    createJobWork(dto: CreateJobWorkDto, user: JwtPayload): Promise<{
+        reconciliation: {
+            totalSentKg: any;
+            totalProcessedInputKg: any;
+            processedOutputExpectedKg: any;
+            processedOutputReceivedKg: any;
+            wastageExpectedReturnKg: any;
+            wastageReceivedKg: any;
+            wastageDiscardedKg: any;
+            unprocessedReturnedKg: any;
+            quantityStillOutsideKg: number;
+            reconciliationDifferenceKg: number;
+            flagged: boolean;
+        };
+        processedLots: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            plantId: string;
+            processType: string;
+            completionDate: Date;
+            productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            sampleRejectedLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            reservedKg: number;
+        }[];
+        wastageLots: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            wastageTypeId: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            processType: string | null;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            locationId: string;
+            reprocessedKg: number;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
+        })[];
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        inwards: ({
+            lines: ({
+                wastageType: {
+                    id: string;
+                    code: string;
+                    isActive: boolean;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    stage: string;
+                    nameEn: string;
+                    nameLocal: string | null;
+                    sortOrder: number;
+                } | null;
+            } & {
+                id: string;
+                productId: string;
+                remarks: string | null;
+                numberOfBags: number | null;
+                wastageTypeId: string | null;
+                quantityKg: number;
+                inwardId: string;
+                returnCategory: string;
+            })[];
+            receivingLocation: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            remarks: string | null;
+            jobWorkId: string;
+            truckNumber: string | null;
+            inwardNumber: string;
+            challanNumber: string | null;
+            receiptDate: Date;
+            receivingLocationId: string;
+            receivedById: string;
+        })[];
+        jobWorker: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            phone: string | null;
+            address: string | null;
+        };
+        wastageDispositions: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            stage: string;
+            wastageTypeId: string;
+            quantityKg: number;
+            jobWorkId: string;
+            disposition: string;
+        })[];
+        sourceLocation: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        outwards: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            numberOfBags: number | null;
+            createdById: string;
+            quantityKg: number;
+            jobWorkId: string;
+            sourceLocationId: string;
+            truckNumber: string | null;
+            outwardDate: Date;
+            challanNumber: string | null;
+            outwardNumber: string;
+        }[];
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        createdById: string;
+        startDate: Date;
+        processType: string;
+        wastageAlert: boolean;
+        sourceLocationId: string;
+        jobWorkerId: string;
+        totalProcessedInputKg: number;
+        jobWorkNumber: string;
+        closedAt: Date | null;
+        closedById: string | null;
+        closeVarianceKg: number | null;
+        closeVarianceReason: string | null;
+        totalSentKg: number;
+        netProcessedOutputKg: number;
+        totalWastageKg: number;
+        processResultEnteredAt: Date | null;
+    }>;
+    getJobWork(id: string): Promise<{
+        reconciliation: {
+            totalSentKg: any;
+            totalProcessedInputKg: any;
+            processedOutputExpectedKg: any;
+            processedOutputReceivedKg: any;
+            wastageExpectedReturnKg: any;
+            wastageReceivedKg: any;
+            wastageDiscardedKg: any;
+            unprocessedReturnedKg: any;
+            quantityStillOutsideKg: number;
+            reconciliationDifferenceKg: number;
+            flagged: boolean;
+        };
+        processedLots: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            plantId: string;
+            processType: string;
+            completionDate: Date;
+            productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            sampleRejectedLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            reservedKg: number;
+        }[];
+        wastageLots: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            wastageTypeId: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            processType: string | null;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            locationId: string;
+            reprocessedKg: number;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
+        })[];
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        inwards: ({
+            lines: ({
+                wastageType: {
+                    id: string;
+                    code: string;
+                    isActive: boolean;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    stage: string;
+                    nameEn: string;
+                    nameLocal: string | null;
+                    sortOrder: number;
+                } | null;
+            } & {
+                id: string;
+                productId: string;
+                remarks: string | null;
+                numberOfBags: number | null;
+                wastageTypeId: string | null;
+                quantityKg: number;
+                inwardId: string;
+                returnCategory: string;
+            })[];
+            receivingLocation: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            remarks: string | null;
+            jobWorkId: string;
+            truckNumber: string | null;
+            inwardNumber: string;
+            challanNumber: string | null;
+            receiptDate: Date;
+            receivingLocationId: string;
+            receivedById: string;
+        })[];
+        jobWorker: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            phone: string | null;
+            address: string | null;
+        };
+        wastageDispositions: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            stage: string;
+            wastageTypeId: string;
+            quantityKg: number;
+            jobWorkId: string;
+            disposition: string;
+        })[];
+        sourceLocation: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        outwards: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            numberOfBags: number | null;
+            createdById: string;
+            quantityKg: number;
+            jobWorkId: string;
+            sourceLocationId: string;
+            truckNumber: string | null;
+            outwardDate: Date;
+            challanNumber: string | null;
+            outwardNumber: string;
+        }[];
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        createdById: string;
+        startDate: Date;
+        processType: string;
+        wastageAlert: boolean;
+        sourceLocationId: string;
+        jobWorkerId: string;
+        totalProcessedInputKg: number;
+        jobWorkNumber: string;
+        closedAt: Date | null;
+        closedById: string | null;
+        closeVarianceKg: number | null;
+        closeVarianceReason: string | null;
+        totalSentKg: number;
+        netProcessedOutputKg: number;
+        totalWastageKg: number;
+        processResultEnteredAt: Date | null;
+    }>;
+    jobWorkOutward(id: string, dto: JobWorkOutwardDto, user: JwtPayload): Promise<{
+        reconciliation: {
+            totalSentKg: any;
+            totalProcessedInputKg: any;
+            processedOutputExpectedKg: any;
+            processedOutputReceivedKg: any;
+            wastageExpectedReturnKg: any;
+            wastageReceivedKg: any;
+            wastageDiscardedKg: any;
+            unprocessedReturnedKg: any;
+            quantityStillOutsideKg: number;
+            reconciliationDifferenceKg: number;
+            flagged: boolean;
+        };
+        processedLots: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            plantId: string;
+            processType: string;
+            completionDate: Date;
+            productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            sampleRejectedLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            reservedKg: number;
+        }[];
+        wastageLots: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            wastageTypeId: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            processType: string | null;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            locationId: string;
+            reprocessedKg: number;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
+        })[];
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        inwards: ({
+            lines: ({
+                wastageType: {
+                    id: string;
+                    code: string;
+                    isActive: boolean;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    stage: string;
+                    nameEn: string;
+                    nameLocal: string | null;
+                    sortOrder: number;
+                } | null;
+            } & {
+                id: string;
+                productId: string;
+                remarks: string | null;
+                numberOfBags: number | null;
+                wastageTypeId: string | null;
+                quantityKg: number;
+                inwardId: string;
+                returnCategory: string;
+            })[];
+            receivingLocation: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            remarks: string | null;
+            jobWorkId: string;
+            truckNumber: string | null;
+            inwardNumber: string;
+            challanNumber: string | null;
+            receiptDate: Date;
+            receivingLocationId: string;
+            receivedById: string;
+        })[];
+        jobWorker: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            phone: string | null;
+            address: string | null;
+        };
+        wastageDispositions: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            stage: string;
+            wastageTypeId: string;
+            quantityKg: number;
+            jobWorkId: string;
+            disposition: string;
+        })[];
+        sourceLocation: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        outwards: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            numberOfBags: number | null;
+            createdById: string;
+            quantityKg: number;
+            jobWorkId: string;
+            sourceLocationId: string;
+            truckNumber: string | null;
+            outwardDate: Date;
+            challanNumber: string | null;
+            outwardNumber: string;
+        }[];
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        createdById: string;
+        startDate: Date;
+        processType: string;
+        wastageAlert: boolean;
+        sourceLocationId: string;
+        jobWorkerId: string;
+        totalProcessedInputKg: number;
+        jobWorkNumber: string;
+        closedAt: Date | null;
+        closedById: string | null;
+        closeVarianceKg: number | null;
+        closeVarianceReason: string | null;
+        totalSentKg: number;
+        netProcessedOutputKg: number;
+        totalWastageKg: number;
+        processResultEnteredAt: Date | null;
+    }>;
+    jobWorkInward(id: string, dto: JobWorkInwardDto, user: JwtPayload): Promise<{
+        reconciliation: {
+            totalSentKg: any;
+            totalProcessedInputKg: any;
+            processedOutputExpectedKg: any;
+            processedOutputReceivedKg: any;
+            wastageExpectedReturnKg: any;
+            wastageReceivedKg: any;
+            wastageDiscardedKg: any;
+            unprocessedReturnedKg: any;
+            quantityStillOutsideKg: number;
+            reconciliationDifferenceKg: number;
+            flagged: boolean;
+        };
+        processedLots: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            plantId: string;
+            processType: string;
+            completionDate: Date;
+            productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            sampleRejectedLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            reservedKg: number;
+        }[];
+        wastageLots: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            wastageTypeId: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            processType: string | null;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            locationId: string;
+            reprocessedKg: number;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
+        })[];
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        inwards: ({
+            lines: ({
+                wastageType: {
+                    id: string;
+                    code: string;
+                    isActive: boolean;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    stage: string;
+                    nameEn: string;
+                    nameLocal: string | null;
+                    sortOrder: number;
+                } | null;
+            } & {
+                id: string;
+                productId: string;
+                remarks: string | null;
+                numberOfBags: number | null;
+                wastageTypeId: string | null;
+                quantityKg: number;
+                inwardId: string;
+                returnCategory: string;
+            })[];
+            receivingLocation: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            remarks: string | null;
+            jobWorkId: string;
+            truckNumber: string | null;
+            inwardNumber: string;
+            challanNumber: string | null;
+            receiptDate: Date;
+            receivingLocationId: string;
+            receivedById: string;
+        })[];
+        jobWorker: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            phone: string | null;
+            address: string | null;
+        };
+        wastageDispositions: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            stage: string;
+            wastageTypeId: string;
+            quantityKg: number;
+            jobWorkId: string;
+            disposition: string;
+        })[];
+        sourceLocation: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        outwards: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            numberOfBags: number | null;
+            createdById: string;
+            quantityKg: number;
+            jobWorkId: string;
+            sourceLocationId: string;
+            truckNumber: string | null;
+            outwardDate: Date;
+            challanNumber: string | null;
+            outwardNumber: string;
+        }[];
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        createdById: string;
+        startDate: Date;
+        processType: string;
+        wastageAlert: boolean;
+        sourceLocationId: string;
+        jobWorkerId: string;
+        totalProcessedInputKg: number;
+        jobWorkNumber: string;
+        closedAt: Date | null;
+        closedById: string | null;
+        closeVarianceKg: number | null;
+        closeVarianceReason: string | null;
+        totalSentKg: number;
+        netProcessedOutputKg: number;
+        totalWastageKg: number;
+        processResultEnteredAt: Date | null;
+    }>;
+    jobWorkProcessResult(id: string, dto: JobWorkProcessResultDto, user: JwtPayload): Promise<{
+        reconciliation: {
+            totalSentKg: any;
+            totalProcessedInputKg: any;
+            processedOutputExpectedKg: any;
+            processedOutputReceivedKg: any;
+            wastageExpectedReturnKg: any;
+            wastageReceivedKg: any;
+            wastageDiscardedKg: any;
+            unprocessedReturnedKg: any;
+            quantityStillOutsideKg: number;
+            reconciliationDifferenceKg: number;
+            flagged: boolean;
+        };
+        processedLots: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            plantId: string;
+            processType: string;
+            completionDate: Date;
+            productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            sampleRejectedLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            reservedKg: number;
+        }[];
+        wastageLots: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            wastageTypeId: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            processType: string | null;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            locationId: string;
+            reprocessedKg: number;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
+        })[];
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        inwards: ({
+            lines: ({
+                wastageType: {
+                    id: string;
+                    code: string;
+                    isActive: boolean;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    stage: string;
+                    nameEn: string;
+                    nameLocal: string | null;
+                    sortOrder: number;
+                } | null;
+            } & {
+                id: string;
+                productId: string;
+                remarks: string | null;
+                numberOfBags: number | null;
+                wastageTypeId: string | null;
+                quantityKg: number;
+                inwardId: string;
+                returnCategory: string;
+            })[];
+            receivingLocation: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            remarks: string | null;
+            jobWorkId: string;
+            truckNumber: string | null;
+            inwardNumber: string;
+            challanNumber: string | null;
+            receiptDate: Date;
+            receivingLocationId: string;
+            receivedById: string;
+        })[];
+        jobWorker: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            phone: string | null;
+            address: string | null;
+        };
+        wastageDispositions: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            stage: string;
+            wastageTypeId: string;
+            quantityKg: number;
+            jobWorkId: string;
+            disposition: string;
+        })[];
+        sourceLocation: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        outwards: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            numberOfBags: number | null;
+            createdById: string;
+            quantityKg: number;
+            jobWorkId: string;
+            sourceLocationId: string;
+            truckNumber: string | null;
+            outwardDate: Date;
+            challanNumber: string | null;
+            outwardNumber: string;
+        }[];
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        createdById: string;
+        startDate: Date;
+        processType: string;
+        wastageAlert: boolean;
+        sourceLocationId: string;
+        jobWorkerId: string;
+        totalProcessedInputKg: number;
+        jobWorkNumber: string;
+        closedAt: Date | null;
+        closedById: string | null;
+        closeVarianceKg: number | null;
+        closeVarianceReason: string | null;
+        totalSentKg: number;
+        netProcessedOutputKg: number;
+        totalWastageKg: number;
+        processResultEnteredAt: Date | null;
+    }>;
+    closeJobWork(id: string, dto: CloseJobWorkDto, user: JwtPayload): Promise<{
+        reconciliation: {
+            totalSentKg: any;
+            totalProcessedInputKg: any;
+            processedOutputExpectedKg: any;
+            processedOutputReceivedKg: any;
+            wastageExpectedReturnKg: any;
+            wastageReceivedKg: any;
+            wastageDiscardedKg: any;
+            unprocessedReturnedKg: any;
+            quantityStillOutsideKg: number;
+            reconciliationDifferenceKg: number;
+            flagged: boolean;
+        };
+        processedLots: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            plantId: string;
+            processType: string;
+            completionDate: Date;
+            productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            sampleRejectedLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            reservedKg: number;
+        }[];
+        wastageLots: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            wastageTypeId: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            processType: string | null;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            locationId: string;
+            reprocessedKg: number;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
+        })[];
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        inwards: ({
+            lines: ({
+                wastageType: {
+                    id: string;
+                    code: string;
+                    isActive: boolean;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    stage: string;
+                    nameEn: string;
+                    nameLocal: string | null;
+                    sortOrder: number;
+                } | null;
+            } & {
+                id: string;
+                productId: string;
+                remarks: string | null;
+                numberOfBags: number | null;
+                wastageTypeId: string | null;
+                quantityKg: number;
+                inwardId: string;
+                returnCategory: string;
+            })[];
+            receivingLocation: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            remarks: string | null;
+            jobWorkId: string;
+            truckNumber: string | null;
+            inwardNumber: string;
+            challanNumber: string | null;
+            receiptDate: Date;
+            receivingLocationId: string;
+            receivedById: string;
+        })[];
+        jobWorker: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            phone: string | null;
+            address: string | null;
+        };
+        wastageDispositions: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            stage: string;
+            wastageTypeId: string;
+            quantityKg: number;
+            jobWorkId: string;
+            disposition: string;
+        })[];
+        sourceLocation: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        outwards: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            numberOfBags: number | null;
+            createdById: string;
+            quantityKg: number;
+            jobWorkId: string;
+            sourceLocationId: string;
+            truckNumber: string | null;
+            outwardDate: Date;
+            challanNumber: string | null;
+            outwardNumber: string;
+        }[];
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        createdById: string;
+        startDate: Date;
+        processType: string;
+        wastageAlert: boolean;
+        sourceLocationId: string;
+        jobWorkerId: string;
+        totalProcessedInputKg: number;
+        jobWorkNumber: string;
+        closedAt: Date | null;
+        closedById: string | null;
+        closeVarianceKg: number | null;
+        closeVarianceReason: string | null;
+        totalSentKg: number;
+        netProcessedOutputKg: number;
+        totalWastageKg: number;
+        processResultEnteredAt: Date | null;
+    }>;
+    reopenJobWork(id: string, dto: CloseJobWorkDto, user: JwtPayload): Promise<{
+        reconciliation: {
+            totalSentKg: any;
+            totalProcessedInputKg: any;
+            processedOutputExpectedKg: any;
+            processedOutputReceivedKg: any;
+            wastageExpectedReturnKg: any;
+            wastageReceivedKg: any;
+            wastageDiscardedKg: any;
+            unprocessedReturnedKg: any;
+            quantityStillOutsideKg: number;
+            reconciliationDifferenceKg: number;
+            flagged: boolean;
+        };
+        processedLots: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            plantId: string;
+            processType: string;
+            completionDate: Date;
+            productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            sampleRejectedLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            reservedKg: number;
+        }[];
+        wastageLots: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productId: string;
+            status: string;
+            lotNumber: string;
+            wastageTypeId: string;
+            productionRunId: string | null;
+            quantityKg: number;
+            processType: string | null;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            availableKg: number;
+            locationId: string;
+            reprocessedKg: number;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
+        })[];
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        inwards: ({
+            lines: ({
+                wastageType: {
+                    id: string;
+                    code: string;
+                    isActive: boolean;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    stage: string;
+                    nameEn: string;
+                    nameLocal: string | null;
+                    sortOrder: number;
+                } | null;
+            } & {
+                id: string;
+                productId: string;
+                remarks: string | null;
+                numberOfBags: number | null;
+                wastageTypeId: string | null;
+                quantityKg: number;
+                inwardId: string;
+                returnCategory: string;
+            })[];
+            receivingLocation: {
+                id: string;
+                code: string;
+                name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            remarks: string | null;
+            jobWorkId: string;
+            truckNumber: string | null;
+            inwardNumber: string;
+            challanNumber: string | null;
+            receiptDate: Date;
+            receivingLocationId: string;
+            receivedById: string;
+        })[];
+        jobWorker: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string | null;
+            phone: string | null;
+            address: string | null;
+        };
+        wastageDispositions: ({
+            wastageType: {
+                id: string;
+                code: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
+                stage: string;
+                nameEn: string;
+                nameLocal: string | null;
+                sortOrder: number;
+            };
+        } & {
+            id: string;
+            stage: string;
+            wastageTypeId: string;
+            quantityKg: number;
+            jobWorkId: string;
+            disposition: string;
+        })[];
+        sourceLocation: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        outwards: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            numberOfBags: number | null;
+            createdById: string;
+            quantityKg: number;
+            jobWorkId: string;
+            sourceLocationId: string;
+            truckNumber: string | null;
+            outwardDate: Date;
+            challanNumber: string | null;
+            outwardNumber: string;
+        }[];
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        createdById: string;
+        startDate: Date;
+        processType: string;
+        wastageAlert: boolean;
+        sourceLocationId: string;
+        jobWorkerId: string;
+        totalProcessedInputKg: number;
+        jobWorkNumber: string;
+        closedAt: Date | null;
+        closedById: string | null;
+        closeVarianceKg: number | null;
+        closeVarianceReason: string | null;
+        totalSentKg: number;
+        netProcessedOutputKg: number;
+        totalWastageKg: number;
+        processResultEnteredAt: Date | null;
+    }>;
+    reSortex(id: string, dto: StartReSortexDto, user: JwtPayload): Promise<({
+        product: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            category: string | null;
+            defaultSpecification: string | null;
+            standardContainerMt: number;
+            defaultUnit: string;
+            allowsFullProcess: boolean;
+            allowsSortex: boolean;
+            samplingNormallyApplicable: boolean;
+        };
+        plant: {
+            id: string;
+            code: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        inputs: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            productionRunId: string;
+            processedLotId: string | null;
+            quantityKg: number;
+            addedById: string;
+            stockCategory: string;
+            supplierId: string | null;
+            inwardId: string | null;
+            rejectedLotId: string | null;
+            wastageLotId: string | null;
+            inputDate: Date;
+            inputUnit: string;
+            isAdditional: boolean;
+        }[];
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        remarks: string | null;
+        status: string;
+        createdById: string;
+        startDate: Date;
+        productionNumber: string;
+        plantId: string;
+        processType: string;
+        completionDate: Date | null;
+        daysSpanned: number | null;
+        totalInputKg: number;
+        cleaningWastageKg: number;
+        hullingInputKg: number;
+        hullingWastageKg: number;
+        hullingWastagePct: number | null;
+        netOutputKg: number;
+        allocatedKg: number;
+        storedProcessedKg: number;
+        wastageAlert: boolean;
+        cleaningFinalizedAt: Date | null;
+        hullingFinalizedAt: Date | null;
+        finalisedAt: Date | null;
+        productionSource: string;
+        jobWorkId: string | null;
+        parentWastageLotId: string | null;
+        sampleRejectedLotId: string | null;
+        reprocessingCycle: number;
+        cancelledAt: Date | null;
+        cancelReason: string | null;
+        cancelledById: string | null;
+    }) | null>;
     dashboard(): Promise<{
+        jobWork: {
+            activeJobWorks: number;
+            materialWithJobWorkersKg: number;
+            jobWorkProcessedThisMonthKg: number;
+            jobWorkMaterialReceivedKg: number;
+            jobWorkPendingReturnKg: number;
+        };
         inventory: {
             byCategory: Record<string, number>;
             byLocation: Record<string, number>;
@@ -2230,6 +4552,8 @@ export declare class ProductionController {
             totalWip: number;
             totalRejected: number;
             totalInTransit: number;
+            totalWastageInventory: number;
+            processedAvailableForFulfilment: number;
         };
         wastageAlerts: ({
             product: {
@@ -2284,14 +4608,33 @@ export declare class ProductionController {
             wastageAlert: boolean;
             cleaningFinalizedAt: Date | null;
             hullingFinalizedAt: Date | null;
+            finalisedAt: Date | null;
+            productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
+            sampleRejectedLotId: string | null;
+            reprocessingCycle: number;
             cancelledAt: Date | null;
             cancelReason: string | null;
             cancelledById: string | null;
         })[];
+        wastageInventory: {
+            totalAvailableKg: number;
+            byType: {
+                wastageTypeId: string;
+                name: string;
+                availableKg: number;
+            }[];
+        };
+        productionSourceThisMonth: {
+            source: string;
+            quantityKg: number;
+        }[];
         sampling: {
             status: string;
             count: number;
         }[];
+        samplingRequiredCount: number;
         transfers: {
             status: string;
             count: number;

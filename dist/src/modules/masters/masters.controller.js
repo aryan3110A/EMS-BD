@@ -57,6 +57,9 @@ let MastersController = class MastersController {
     createProduct(dto) {
         return this.mastersService.createProduct(dto);
     }
+    updateProduct(id, dto) {
+        return this.mastersService.updateProduct(id, dto);
+    }
     createProductVariant(dto) {
         return this.mastersService.createProductVariant(dto);
     }
@@ -146,6 +149,14 @@ __decorate([
     __metadata("design:paramtypes", [masters_dto_1.CreateProductDto]),
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "createProduct", null);
+__decorate([
+    (0, common_1.Patch)('products/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, masters_dto_1.UpdateProductDto]),
+    __metadata("design:returntype", void 0)
+], MastersController.prototype, "updateProduct", null);
 __decorate([
     (0, common_1.Post)('product-variants'),
     __param(0, (0, common_1.Body)()),

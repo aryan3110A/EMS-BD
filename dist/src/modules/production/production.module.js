@@ -12,6 +12,7 @@ const prisma_module_1 = require("../../prisma/prisma.module");
 const notification_service_1 = require("../../common/services/notification.service");
 const production_controller_1 = require("./production.controller");
 const production_service_1 = require("./production.service");
+const job_work_service_1 = require("./job-work.service");
 const inventory_ledger_service_1 = require("./inventory-ledger.service");
 const production_audit_service_1 = require("./production-audit.service");
 let ProductionModule = class ProductionModule {
@@ -21,8 +22,14 @@ exports.ProductionModule = ProductionModule = __decorate([
     (0, common_1.Module)({
         imports: [prisma_module_1.PrismaModule],
         controllers: [production_controller_1.ProductionController],
-        providers: [production_service_1.ProductionService, inventory_ledger_service_1.InventoryLedgerService, production_audit_service_1.ProductionAuditService, notification_service_1.NotificationService],
-        exports: [production_service_1.ProductionService, inventory_ledger_service_1.InventoryLedgerService],
+        providers: [
+            production_service_1.ProductionService,
+            job_work_service_1.JobWorkService,
+            inventory_ledger_service_1.InventoryLedgerService,
+            production_audit_service_1.ProductionAuditService,
+            notification_service_1.NotificationService,
+        ],
+        exports: [production_service_1.ProductionService, job_work_service_1.JobWorkService, inventory_ledger_service_1.InventoryLedgerService],
     })
 ], ProductionModule);
 //# sourceMappingURL=production.module.js.map
