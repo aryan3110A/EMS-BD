@@ -37,58 +37,71 @@ const dotenv = __importStar(require("dotenv"));
 dotenv.config();
 const API = process.env.API_URL || 'http://127.0.0.1:3001/api/v1';
 async function req(path, opts = {}) {
-    const headers = { 'Content-Type': 'application/json', ...opts.headers };
+    const headers = {
+        'Content-Type': 'application/json',
+        ...opts.headers,
+    };
     if (opts.token)
         headers.Authorization = `Bearer ${opts.token}`;
     const res = await fetch(`${API}${path}`, { ...opts, headers });
     const body = await res.json().catch(() => ({}));
-    if (!res.ok)
-        throw new Error(`${opts.method || 'GET'} ${path} → ${res.status} ${JSON.stringify(body)}`);
-    return body;
+    return { ok: res.ok, status: res.status, body };
 }
 async function main() {
     const login = await req('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email: 'production@ems.com', password: 'admin123' }),
     });
-    const token = login.accessToken;
+    if (!login.ok)
+        throw new Error(`login ${login.status} ${JSON.stringify(login.body)}`);
+    const token = login.body.accessToken;
     const runs = await req('/production/runs', { token });
-    const run = (runs || []).find((r) => r.productionNumber === 'PR-2026-00014');
-    if (!run)
-        throw new Error('PR-2026-00014 not found');
-    const detail = await req(`/production/runs/${run.id}`, { token });
-    console.log(`status=${detail.status} input=${detail.totalInputKg} net=${detail.netOutputKg}`);
-    if (detail.status === 'COMPLETED') {
+    if (!runs.ok)
+        throw new Error(`runs ${runs.status}`);
+    const run = (runs.body || []).find((r) => r.productionNumber === 'PR-2026-00014');
+    if (!run) {
+        console.log('PR-2026-00014 not found');
+        process.exit(1);
+    }
+    console.log(`Found ${run.productionNumber} status=${run.status} id=${run.id}`);
+    if (run.status === 'COMPLETED') {
         console.log('Already COMPLETED');
         return;
     }
+    const detail = await req(`/production/runs/${run.id}`, { token });
+    if (!detail.ok)
+        throw new Error(`detail ${detail.status} ${JSON.stringify(detail.body)}`);
+    const d = detail.body;
     const lines = [
-        ...(detail.cleaning || []).filter((c) => c.quantityKg > 0.001).map((c) => ({
+        ...(d.cleaning || []).filter((c) => c.quantityKg > 0.001).map((c) => ({
             wastageTypeId: c.wastageTypeId,
             action: 'STORE',
+            stage: 'CLEANING',
+            qty: c.quantityKg,
         })),
-        ...(detail.hulling || []).filter((h) => h.quantityKg > 0.001).map((h) => ({
+        ...(d.hulling || []).filter((h) => h.quantityKg > 0.001).map((h) => ({
             wastageTypeId: h.wastageTypeId,
             action: 'DISCARD',
+            stage: 'HULLING',
+            qty: h.quantityKg,
         })),
     ];
-    const seen = new Set();
-    const dispositions = lines.filter((d) => {
-        if (seen.has(d.wastageTypeId))
-            return false;
-        seen.add(d.wastageTypeId);
-        return true;
-    });
-    console.log(`dispositions=${dispositions.length}`);
-    const done = await req(`/production/runs/${run.id}/finalise`, {
+    const dispositions = lines.map((l) => ({ wastageTypeId: l.wastageTypeId, action: l.action }));
+    console.log('Dispositions', JSON.stringify(lines));
+    const fin = await req(`/production/runs/${run.id}/finalise`, {
         method: 'POST',
         token,
         body: JSON.stringify({ dispositions }),
     });
-    console.log(`finalise status=${done.status} storedProcessedKg=${done.storedProcessedKg ?? done.netOutputKg}`);
+    if (!fin.ok) {
+        console.error('FINALISE FAIL', fin.status, JSON.stringify(fin.body));
+        process.exit(1);
+    }
+    const after = await req(`/production/runs/${run.id}`, { token });
+    console.log(`After status=${after.body.status} net=${after.body.netOutputKg} stored=${after.body.storedProcessedKg}`);
 }
 main().catch((e) => {
     console.error(e);
     process.exit(1);
 });
-//# sourceMappingURL=finalise-pr-00014.js.map
+//# sourceMappingURL=finalise-pr-14.js.map
