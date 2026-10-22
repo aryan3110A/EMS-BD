@@ -2703,9 +2703,9 @@ export declare class ProductionService {
         productionRunId: string | null;
         plantId: string;
         transferredKg: number;
-        sampleRecordId: string | null;
         failureDate: Date;
         failureRemarks: string | null;
+        sampleRecordId: string | null;
     })[]>;
     listTransfers(): Prisma.PrismaPromise<({
         product: {

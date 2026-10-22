@@ -1036,6 +1036,124 @@ let ContractsService = class ContractsService {
         }, this.txOptions);
         return this.findOne(id, user);
     }
+    async deleteContract(id, user) {
+        const allowedRoles = [
+            enums_1.UserRole.SUPER_ADMIN,
+            enums_1.UserRole.OFFICE_ADMIN,
+            enums_1.UserRole.CONTRACT_TEAM,
+            enums_1.UserRole.SUPER_SALES,
+        ];
+        if (!allowedRoles.includes(user.role)) {
+            throw new common_1.ForbiddenException('Only sales team and admin can delete contracts');
+        }
+        const contract = await this.prisma.contract.findUnique({
+            where: { id },
+            include: {
+                containers: {
+                    select: {
+                        id: true,
+                        containerIndex: true,
+                        containerStatus: true,
+                    },
+                },
+            },
+        });
+        if (!contract) {
+            throw new common_1.NotFoundException('Contract not found');
+        }
+        const officeId = this.scopeOffice(user);
+        if (officeId && contract.officeId !== officeId) {
+            throw new common_1.ForbiddenException('Cannot delete contract from another office');
+        }
+        const dispatchedStatuses = [
+            enums_1.ContainerStatus.DISPATCHED_FROM_FACTORY,
+            enums_1.ContainerStatus.REACHED_PORT,
+            enums_1.ContainerStatus.SHIPPED,
+            enums_1.ContainerStatus.COMPLETED,
+        ];
+        const hasDispatched = contract.containers.some((c) => dispatchedStatuses.includes(c.containerStatus));
+        if (hasDispatched && user.role !== enums_1.UserRole.SUPER_ADMIN) {
+            throw new common_1.BadRequestException('Contract contains dispatched or completed container(s) and cannot be deleted');
+        }
+        await this.prisma.$transaction(async (tx) => {
+            const allocations = await tx.containerAllocation.findMany({
+                where: { contractId: id },
+            });
+            for (const alloc of allocations) {
+                if (alloc.processedLotId && alloc.quantityKg > 0) {
+                    const lot = await tx.processedOutputLot.findUnique({
+                        where: { id: alloc.processedLotId },
+                    });
+                    if (lot) {
+                        const newReserved = Math.max(0, (lot.reservedKg || 0) - alloc.quantityKg);
+                        const newAvailable = (lot.availableKg || 0) + alloc.quantityKg;
+                        await tx.processedOutputLot.update({
+                            where: { id: lot.id },
+                            data: {
+                                reservedKg: newReserved,
+                                availableKg: newAvailable,
+                            },
+                        });
+                    }
+                }
+            }
+            await tx.sampleRejectedLot.updateMany({
+                where: { contractId: id },
+                data: { contractId: null, containerId: null },
+            });
+            await tx.sampleRecord.deleteMany({
+                where: { contractId: id },
+            });
+            await tx.containerAllocation.deleteMany({
+                where: { contractId: id },
+            });
+            const containerIds = contract.containers.map((c) => c.id);
+            if (containerIds.length > 0) {
+                await tx.contractContainerProduct.deleteMany({
+                    where: { containerId: { in: containerIds } },
+                });
+                await tx.containerCommercialAmendment.deleteMany({
+                    where: { containerId: { in: containerIds } },
+                });
+                await tx.containerStatusHistory.deleteMany({
+                    where: { containerId: { in: containerIds } },
+                });
+                await tx.contractContainer.deleteMany({
+                    where: { id: { in: containerIds } },
+                });
+            }
+            await tx.shipmentLot.deleteMany({ where: { contractId: id } });
+            await tx.contractSalesAttribution.deleteMany({ where: { contractId: id } });
+            await tx.contractAmendment.deleteMany({ where: { contractId: id } });
+            await tx.containerCommercialAmendment.deleteMany({ where: { contractId: id } });
+            await tx.contractAuditLog.deleteMany({ where: { contractId: id } });
+            await tx.contractStatusHistory.deleteMany({ where: { contractId: id } });
+            await tx.contractDocument.deleteMany({ where: { contractId: id } });
+            await tx.notification.deleteMany({ where: { contractId: id } });
+            await tx.contract.delete({
+                where: { id },
+            });
+            await tx.auditLog.create({
+                data: {
+                    userId: user.sub,
+                    module: 'CONTRACT',
+                    action: 'DELETE',
+                    recordId: id,
+                    previousValue: JSON.stringify({
+                        contractNumber: contract.contractNumber,
+                        buyerId: contract.buyerId,
+                        totalMt: contract.totalMt,
+                        status: contract.status,
+                    }),
+                    reason: `Contract ${contract.contractNumber} deleted by ${user.name || user.email} (${user.role})`,
+                },
+            });
+        }, this.txOptions);
+        return {
+            success: true,
+            message: `Contract ${contract.contractNumber} deleted successfully`,
+        };
+    }
     async getDashboardStats(user, query = {}) {
         const officeId = this.scopeOffice(user);
         const fromDate = query.startDate ? new Date(query.startDate) : new Date();

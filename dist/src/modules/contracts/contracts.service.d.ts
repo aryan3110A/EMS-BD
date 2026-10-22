@@ -4235,6 +4235,10 @@ export declare class ContractsService {
         commercialRemarks: string | null;
         createdById: string;
     }>;
+    deleteContract(id: string, user: JwtPayload): Promise<{
+        success: boolean;
+        message: string;
+    }>;
     getDashboardStats(user: JwtPayload, query?: DashboardQueryDto): Promise<{
         total: number;
         draft: number;

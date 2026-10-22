@@ -2684,9 +2684,9 @@ export declare class ProductionController {
         productionRunId: string | null;
         plantId: string;
         transferredKg: number;
-        sampleRecordId: string | null;
         failureDate: Date;
         failureRemarks: string | null;
+        sampleRecordId: string | null;
     })[]>;
     transfers(): import(".prisma/client").Prisma.PrismaPromise<({
         product: {

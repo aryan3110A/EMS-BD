@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ContractsService } from './contracts.service';
 import {
@@ -130,5 +130,14 @@ export class ContractsController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.contractsService.cancelContract(id, dto, user);
+  }
+
+  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.CONTRACT_TEAM, UserRole.SUPER_SALES)
+  @Delete(':id')
+  deleteContract(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.contractsService.deleteContract(id, user);
   }
 }

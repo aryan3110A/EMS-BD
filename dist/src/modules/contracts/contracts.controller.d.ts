@@ -5495,4 +5495,8 @@ export declare class ContractsController {
         commercialRemarks: string | null;
         createdById: string;
     }>;
+    deleteContract(id: string, user: JwtPayload): Promise<{
+        success: boolean;
+        message: string;
+    }>;
 }
