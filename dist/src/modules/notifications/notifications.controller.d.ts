@@ -8,11 +8,11 @@ export declare class NotificationsController {
     list(user: JwtPayload): import(".prisma/client").Prisma.PrismaPromise<{
         id: string;
         createdAt: Date;
-        newValue: string | null;
-        userId: string | null;
         contractId: string | null;
         containerId: string | null;
+        newValue: string | null;
         changedById: string | null;
+        userId: string | null;
         targetRole: string | null;
         type: string;
         message: string;
@@ -23,11 +23,11 @@ export declare class NotificationsController {
     markRead(id: string): import(".prisma/client").Prisma.Prisma__NotificationClient<{
         id: string;
         createdAt: Date;
-        newValue: string | null;
-        userId: string | null;
         contractId: string | null;
         containerId: string | null;
+        newValue: string | null;
         changedById: string | null;
+        userId: string | null;
         targetRole: string | null;
         type: string;
         message: string;

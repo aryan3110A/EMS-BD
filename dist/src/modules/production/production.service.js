@@ -28,8 +28,16 @@ let ProductionService = class ProductionService {
         this.audit = audit;
         this.notifications = notifications;
     }
-    tx(fn) {
-        return this.prisma.$transaction(fn, { maxWait: 15000, timeout: 60000 });
+    async tx(fn) {
+        try {
+            return await this.prisma.$transaction(fn, { maxWait: 20000, timeout: 60000 });
+        }
+        catch (err) {
+            if (err?.code === 'P1017' || err?.message?.includes('closed the connection')) {
+                return await this.prisma.$transaction(fn, { maxWait: 20000, timeout: 60000 });
+            }
+            throw err;
+        }
     }
     async nextNumber(prefix, model, client = this.prisma) {
         const year = new Date().getFullYear();
@@ -122,6 +130,20 @@ let ProductionService = class ProductionService {
         });
     }
     async createInward(dto, user) {
+        const dbUser = await this.prisma.user.findUnique({
+            where: { id: user.sub },
+            include: { office: true },
+        });
+        const userPlant = user.plantCode || user.plant || dbUser?.email || '';
+        const isNedraUser = /nedra/i.test(userPlant) || /nedra/i.test(dbUser?.email || '');
+        if (isNedraUser) {
+            const nedraLoc = await this.prisma.inventoryLocation.findFirst({
+                where: { code: 'NEDRA', isActive: true },
+            });
+            if (nedraLoc && dto.locationId !== nedraLoc.id) {
+                throw new common_1.ForbiddenException('Nedra accounts cannot create inward entries at other locations.');
+            }
+        }
         const type = await this.prisma.inwardType.findUnique({ where: { id: dto.inwardTypeId } });
         if (!type)
             throw new common_1.NotFoundException('Inward type not found');
@@ -251,6 +273,8 @@ let ProductionService = class ProductionService {
                     include: {
                         product: { select: { id: true, code: true, name: true } },
                         products: { include: { product: { select: { id: true, code: true, name: true } } } },
+                        packagingType: { select: { id: true, name: true } },
+                        packagingSize: { select: { id: true, label: true } },
                     },
                     orderBy: { containerIndex: 'asc' },
                 },
@@ -307,6 +331,9 @@ let ProductionService = class ProductionService {
                     containerStatus: ct.containerStatus,
                     expectedShipmentDate: ct.expectedShipmentDate,
                     quantityMt: ct.quantityMt,
+                    packagingType: ct.packagingType?.name || null,
+                    packagingSize: ct.packagingSize?.label || null,
+                    packingDescription: ct.packingDescription || null,
                     productLines: lines,
                     pendingKg,
                     pendingMt: pendingKg / 1000,
@@ -422,7 +449,10 @@ let ProductionService = class ProductionService {
         };
     }
     async startRun(dto, user) {
-        if (dto.processType === production_constants_1.ProcessType.FULL_PROCESS &&
+        const isHullingSortex = dto.processType === production_constants_1.ProcessType.HULLING_SORTEX || dto.processType === production_constants_1.ProcessType.FULL_PROCESS;
+        const isSortexOnly = dto.processType === production_constants_1.ProcessType.SORTEX;
+        const isCleaningOnly = dto.processType === production_constants_1.ProcessType.CLEANING;
+        if (isHullingSortex &&
             (dto.stockCategory === production_constants_1.InputStockCategory.SAMPLE_REJECTED_STOCK ||
                 dto.stockCategory === production_constants_1.InputStockCategory.WASTAGE_INVENTORY)) {
             throw new common_1.BadRequestException('Sample-rejected / wastage stock can only be used in Sortex');
@@ -430,10 +460,13 @@ let ProductionService = class ProductionService {
         const product = await this.prisma.product.findUnique({ where: { id: dto.productId } });
         if (!product?.isActive)
             throw new common_1.BadRequestException('Product not found or inactive');
-        if (dto.processType === production_constants_1.ProcessType.FULL_PROCESS && product.allowsFullProcess === false) {
-            throw new common_1.BadRequestException('Full Process is currently available only for Sesame Seed products.');
+        if (isHullingSortex) {
+            const isNaturalSesame = product.code === 'NSS' || /natural\s+sesame/i.test(product.name);
+            if (!isNaturalSesame) {
+                throw new common_1.BadRequestException('Hulling + Sortex process is only permitted for Natural Sesame Seeds.');
+            }
         }
-        if (dto.processType === production_constants_1.ProcessType.SORTEX && product.allowsSortex === false) {
+        if (isSortexOnly && product.allowsSortex === false) {
             throw new common_1.BadRequestException(`${product.name} is not allowed for Sortex`);
         }
         const qtyKg = (0, production_constants_1.toKg)(dto.quantity, dto.unit || 'KG');
@@ -740,10 +773,22 @@ let ProductionService = class ProductionService {
         if (totalWastage > run.totalInputKg + 0.001) {
             throw new common_1.BadRequestException('Cleaning wastage cannot exceed input quantity');
         }
-        const forwarded = Math.round((run.totalInputKg - totalWastage) * 1000) / 1000;
-        if (forwarded < 0)
-            throw new common_1.BadRequestException('Net quantity cannot be negative');
-        const isSortex = run.processType === production_constants_1.ProcessType.SORTEX;
+        let actualCleaned = dto.actualCleanedOutputKg != null
+            ? Math.round(dto.actualCleanedOutputKg * 1000) / 1000
+            : Math.round((run.totalInputKg - totalWastage) * 1000) / 1000;
+        if (actualCleaned < 0)
+            throw new common_1.BadRequestException('Actual cleaned output cannot be negative');
+        if (actualCleaned > run.totalInputKg + 0.001) {
+            throw new common_1.BadRequestException('Actual cleaned output cannot exceed input quantity without an adjustment workflow');
+        }
+        const isCleaningOnly = run.processType === production_constants_1.ProcessType.CLEANING;
+        const isSortexOrHulling = run.processType === production_constants_1.ProcessType.SORTEX || run.processType === production_constants_1.ProcessType.HULLING_SORTEX || run.processType === production_constants_1.ProcessType.FULL_PROCESS;
+        let wastageAlert = false;
+        if (isCleaningOnly && run.totalInputKg > 0) {
+            const diffKg = run.totalInputKg - actualCleaned;
+            const diffPct = (diffKg / run.totalInputKg) * 100;
+            wastageAlert = diffPct > 15.0;
+        }
         await this.tx(async (tx) => {
             await tx.cleaningWastageEntry.deleteMany({ where: { productionRunId: runId } });
             for (const line of dto.lines) {
@@ -760,13 +805,14 @@ let ProductionService = class ProductionService {
                     },
                 });
             }
-            if (isSortex) {
+            if (isCleaningOnly) {
                 await tx.productionRun.update({
                     where: { id: runId },
                     data: {
                         cleaningWastageKg: totalWastage,
                         hullingInputKg: 0,
-                        netOutputKg: forwarded,
+                        netOutputKg: actualCleaned,
+                        wastageAlert,
                         cleaningFinalizedAt: new Date(),
                         status: production_constants_1.ProductionRunStatus.AWAITING_FINALISATION,
                     },
@@ -777,12 +823,12 @@ let ProductionService = class ProductionService {
                     where: { id: runId },
                     data: {
                         cleaningWastageKg: totalWastage,
-                        hullingInputKg: forwarded,
+                        hullingInputKg: actualCleaned,
                         cleaningFinalizedAt: new Date(),
                         status: production_constants_1.ProductionRunStatus.HULLING_IN_PROGRESS,
                     },
                 });
-                if (forwarded > 0) {
+                if (actualCleaned > 0) {
                     await this.ledger.postTxn(tx, {
                         txnType: production_constants_1.LedgerTxnType.TRANSFER_TO_HULLING,
                         productId: run.productId,
@@ -790,8 +836,8 @@ let ProductionService = class ProductionService {
                         locationId: run.plantId,
                         fromCategory: production_constants_1.StockCategory.WIP_CLEANING,
                         toCategory: production_constants_1.StockCategory.WIP_HULLING,
-                        quantityOutKg: forwarded,
-                        quantityInKg: forwarded,
+                        quantityOutKg: actualCleaned,
+                        quantityInKg: actualCleaned,
                         referenceType: 'PRODUCTION_RUN',
                         referenceId: runId,
                         createdById: user.sub,
@@ -805,19 +851,19 @@ let ProductionService = class ProductionService {
             recordNumber: run.productionNumber,
             action: 'CLEANING_FINALIZED',
             changedById: user.sub,
-            newValue: JSON.stringify({ totalWastage, forwarded, isSortex }),
+            newValue: JSON.stringify({ totalWastage, actualCleaned, isCleaningOnly }),
         });
         return this.getRun(runId);
     }
     async submitHulling(runId, dto, user) {
         const run = await this.getRun(runId);
-        if (run.processType === production_constants_1.ProcessType.SORTEX) {
-            throw new common_1.BadRequestException('Sortex runs do not have a Hulling stage');
+        if (run.processType === production_constants_1.ProcessType.CLEANING) {
+            throw new common_1.BadRequestException('Cleaning-only runs do not have a Stage 2');
         }
         if (!run.cleaningFinalizedAt)
-            throw new common_1.BadRequestException('Complete cleaning before hulling');
+            throw new common_1.BadRequestException('Complete cleaning before stage 2');
         if (run.hullingFinalizedAt)
-            throw new common_1.BadRequestException('Hulling already finalized');
+            throw new common_1.BadRequestException('Stage 2 already finalized');
         let totalWastage = 0;
         const resolved = [];
         for (const line of dto.lines) {
@@ -844,12 +890,23 @@ let ProductionService = class ProductionService {
         }
         totalWastage = Math.round(totalWastage * 1000) / 1000;
         if (totalWastage > run.hullingInputKg + 0.001) {
-            throw new common_1.BadRequestException('Hulling wastage cannot exceed hulling input');
+            throw new common_1.BadRequestException('Stage 2 wastage cannot exceed stage 2 input');
         }
-        const net = Math.round((run.hullingInputKg - totalWastage) * 1000) / 1000;
-        const pct = run.hullingInputKg > 0 ? Math.round((totalWastage / run.hullingInputKg) * 10000) / 100 : 0;
-        const threshold = await this.wastageThreshold();
-        const alert = pct > threshold;
+        const net = dto.actualProcessedOutputKg != null
+            ? Math.round(dto.actualProcessedOutputKg * 1000) / 1000
+            : Math.round((run.hullingInputKg - totalWastage) * 1000) / 1000;
+        if (net < 0)
+            throw new common_1.BadRequestException('Actual processed output cannot be negative');
+        if (net > run.hullingInputKg + 0.001) {
+            throw new common_1.BadRequestException('Actual processed output cannot exceed stage 2 input quantity');
+        }
+        let alert = false;
+        let pct = 0;
+        if (run.totalInputKg > 0) {
+            const overallDiffKg = run.totalInputKg - net;
+            pct = Math.round((overallDiffKg / run.totalInputKg) * 10000) / 100;
+            alert = pct > 15.0;
+        }
         await this.tx(async (tx) => {
             await tx.hullingWastageEntry.deleteMany({ where: { productionRunId: runId } });
             for (const line of resolved) {
@@ -880,9 +937,9 @@ let ProductionService = class ProductionService {
         });
         await this.audit.log({
             module: 'PRODUCTION',
-            recordType: 'Hulling',
+            recordType: 'Stage2',
             recordNumber: run.productionNumber,
-            action: 'HULLING_FINALIZED',
+            action: 'STAGE2_FINALIZED',
             changedById: user.sub,
             newValue: JSON.stringify({ totalWastage, net, pct, alert }),
         });
@@ -893,13 +950,13 @@ let ProductionService = class ProductionService {
         if (run.status === production_constants_1.ProductionRunStatus.COMPLETED) {
             throw new common_1.BadRequestException('Production already finalised');
         }
-        if (run.processType === production_constants_1.ProcessType.SORTEX) {
+        if (run.processType === production_constants_1.ProcessType.CLEANING) {
             if (!run.cleaningFinalizedAt)
                 throw new common_1.BadRequestException('Complete cleaning before finalisation');
         }
         else {
             if (!run.hullingFinalizedAt)
-                throw new common_1.BadRequestException('Complete hulling before finalisation');
+                throw new common_1.BadRequestException('Complete Stage 2 before finalisation');
         }
         const cleaning = await this.prisma.cleaningWastageEntry.findMany({ where: { productionRunId: runId } });
         const hulling = await this.prisma.hullingWastageEntry.findMany({ where: { productionRunId: runId } });
@@ -907,24 +964,50 @@ let ProductionService = class ProductionService {
             ...cleaning.map((c) => ({ wastageTypeId: c.wastageTypeId, quantityKg: c.quantityKg, stage: production_constants_1.WastageStage.CLEANING })),
             ...hulling.map((h) => ({ wastageTypeId: h.wastageTypeId, quantityKg: h.quantityKg, stage: production_constants_1.WastageStage.HULLING })),
         ].filter((l) => l.quantityKg > 0.001);
-        for (const line of wastageLines) {
-            const d = dto.dispositions.find((x) => x.wastageTypeId === line.wastageTypeId);
-            if (!d || ![production_constants_1.WastageDisposition.STORE, production_constants_1.WastageDisposition.DISCARD].includes(d.action)) {
-                throw new common_1.BadRequestException(`Store/Discard disposition required for every non-zero wastage type (missing: ${line.wastageTypeId})`);
-            }
-        }
+        const effectiveDispositions = wastageLines.map((line) => {
+            const d = (dto.dispositions || []).find((x) => x.wastageTypeId === line.wastageTypeId);
+            return {
+                wastageTypeId: line.wastageTypeId,
+                action: d?.action === production_constants_1.WastageDisposition.DISCARD ? production_constants_1.WastageDisposition.DISCARD : production_constants_1.WastageDisposition.STORE,
+                stage: line.stage,
+                quantityKg: line.quantityKg,
+            };
+        });
         const net = run.netOutputKg || 0;
         const totalWastage = Math.round((wastageLines.reduce((s, l) => s + l.quantityKg, 0)) * 1000) / 1000;
         const lotNumber = await this.nextNumber('OUT', 'lot');
-        const fromWip = run.processType === production_constants_1.ProcessType.SORTEX ? production_constants_1.StockCategory.WIP_CLEANING : production_constants_1.StockCategory.WIP_HULLING;
-        const wipForLine = (stage) => run.processType === production_constants_1.ProcessType.SORTEX || stage === production_constants_1.WastageStage.CLEANING
+        let outputProductId = run.productId;
+        const isHullingSortex = run.processType === production_constants_1.ProcessType.HULLING_SORTEX || run.processType === production_constants_1.ProcessType.FULL_PROCESS;
+        if (isHullingSortex) {
+            const inputProd = await this.prisma.product.findUnique({ where: { id: run.productId } });
+            if (inputProd && (inputProd.code === 'NSS' || /natural\s+sesame/i.test(inputProd.name))) {
+                const hssProduct = await this.prisma.product.findFirst({
+                    where: { OR: [{ code: 'HSS' }, { name: { contains: 'Hulled Sesame', mode: 'insensitive' } }], isActive: true },
+                });
+                if (hssProduct) {
+                    outputProductId = hssProduct.id;
+                }
+            }
+        }
+        const directAllocs = dto.directAllocations || [];
+        let directAllocTotalKg = 0;
+        for (const alloc of directAllocs) {
+            directAllocTotalKg += alloc.quantityKg;
+        }
+        directAllocTotalKg = Math.round(directAllocTotalKg * 1000) / 1000;
+        if (directAllocTotalKg > net + 0.001) {
+            throw new common_1.BadRequestException(`Total direct allocation (${directAllocTotalKg} KG) cannot exceed finished output (${net} KG)`);
+        }
+        const remainingStoreKg = Math.round((net - directAllocTotalKg) * 1000) / 1000;
+        const fromWip = run.processType === production_constants_1.ProcessType.CLEANING ? production_constants_1.StockCategory.WIP_CLEANING : production_constants_1.StockCategory.WIP_HULLING;
+        const wipForLine = (stage) => run.processType === production_constants_1.ProcessType.CLEANING || stage === production_constants_1.WastageStage.CLEANING
             ? production_constants_1.StockCategory.WIP_CLEANING
             : production_constants_1.StockCategory.WIP_HULLING;
         await this.tx(async (tx) => {
             await tx.productionWastageDisposition.deleteMany({ where: { productionRunId: runId } });
             const nextWlNumber = await this.createNumberAllocator('WL', 'wastage', tx);
-            for (const line of wastageLines) {
-                const action = dto.dispositions.find((x) => x.wastageTypeId === line.wastageTypeId).action;
+            for (const line of effectiveDispositions) {
+                const action = line.action;
                 const lineWip = wipForLine(line.stage);
                 let wastageLotId = null;
                 if (action === production_constants_1.WastageDisposition.STORE) {
@@ -1007,16 +1090,17 @@ let ProductionService = class ProductionService {
                     });
                 }
             }
+            let createdProcessedLot = null;
             if (net > 0.001) {
-                await tx.processedOutputLot.create({
+                createdProcessedLot = await tx.processedOutputLot.create({
                     data: {
                         lotNumber,
                         productionRunId: runId,
-                        productId: run.productId,
+                        productId: outputProductId,
                         plantId: run.plantId,
                         processType: run.processType,
                         quantityKg: net,
-                        availableKg: net,
+                        availableKg: remainingStoreKg,
                         completionDate: new Date(),
                         status: 'AVAILABLE',
                         productionSource: run.productionSource || production_constants_1.ProductionSource.IN_HOUSE,
@@ -1028,7 +1112,9 @@ let ProductionService = class ProductionService {
                 });
                 await this.ledger.postTxn(tx, {
                     txnType: production_constants_1.LedgerTxnType.PROCESSED_OUTPUT,
-                    productId: run.productId,
+                    productId: outputProductId,
+                    fromProductId: run.productId,
+                    toProductId: outputProductId,
                     stockCategory: fromWip,
                     locationId: run.plantId,
                     fromCategory: fromWip,
@@ -1039,6 +1125,48 @@ let ProductionService = class ProductionService {
                     referenceId: runId,
                     createdById: user.sub,
                 });
+                for (const alloc of directAllocs) {
+                    const container = await tx.contractContainer.findUnique({
+                        where: { id: alloc.containerId },
+                        include: { contract: true },
+                    });
+                    if (!container)
+                        throw new common_1.NotFoundException(`Container ${alloc.containerId} not found`);
+                    if (container.contractId !== alloc.contractId) {
+                        throw new common_1.BadRequestException('Contract and container mismatch');
+                    }
+                    if (container.productId !== outputProductId && container.contract.productId !== outputProductId) {
+                        throw new common_1.BadRequestException(`Direct fulfillment product mismatch: container requires product ${container.productId}, finished output is ${outputProductId}`);
+                    }
+                    await tx.containerAllocation.create({
+                        data: {
+                            productionRunId: runId,
+                            processedLotId: createdProcessedLot.id,
+                            contractId: alloc.contractId,
+                            containerId: alloc.containerId,
+                            containerProductId: alloc.containerProductId || null,
+                            productId: outputProductId,
+                            quantityKg: alloc.quantityKg,
+                            remarks: alloc.remarks || 'Direct fulfillment at production finalization',
+                            allocatedById: user.sub,
+                            status: 'ACTIVE',
+                        },
+                    });
+                    await this.ledger.postTxn(tx, {
+                        txnType: production_constants_1.LedgerTxnType.CONTAINER_ALLOCATION,
+                        productId: outputProductId,
+                        stockCategory: production_constants_1.StockCategory.PROCESSED_AVAILABLE,
+                        locationId: run.plantId,
+                        fromCategory: production_constants_1.StockCategory.PROCESSED_AVAILABLE,
+                        toCategory: production_constants_1.StockCategory.PROCESSED_RESERVED,
+                        quantityOutKg: alloc.quantityKg,
+                        quantityInKg: alloc.quantityKg,
+                        referenceType: 'CONTAINER_ALLOCATION',
+                        referenceId: alloc.containerId,
+                        createdById: user.sub,
+                    });
+                    await this.refreshContainerStatus(tx, alloc.contractId, alloc.containerId, user.sub);
+                }
             }
             if (run.parentWastageLotId) {
                 const parent = await tx.wastageLot.findUnique({ where: { id: run.parentWastageLotId } });
@@ -1052,7 +1180,8 @@ let ProductionService = class ProductionService {
             await tx.productionRun.update({
                 where: { id: runId },
                 data: {
-                    storedProcessedKg: net,
+                    storedProcessedKg: remainingStoreKg,
+                    allocatedKg: directAllocTotalKg,
                     finalisedAt: new Date(),
                     completionDate: new Date(),
                     daysSpanned: Math.floor((Date.now() - new Date(run.startDate).getTime()) / 86400000) + 1,
@@ -1066,7 +1195,13 @@ let ProductionService = class ProductionService {
             recordNumber: run.productionNumber,
             action: 'FINALISED',
             changedById: user.sub,
-            newValue: JSON.stringify({ net, totalWastage, dispositions: dto.dispositions }),
+            newValue: JSON.stringify({
+                net,
+                storedKg: remainingStoreKg,
+                directAllocTotalKg,
+                outputProductId,
+                dispositions: effectiveDispositions,
+            }),
         });
         return this.getRun(runId);
     }
@@ -1317,6 +1452,9 @@ let ProductionService = class ProductionService {
                     containerId: ct.id,
                     containerIndex: ct.containerIndex,
                     expectedShipmentDate: ct.expectedShipmentDate,
+                    packagingType: ct.packagingType,
+                    packagingSize: ct.packagingSize,
+                    packingDescription: ct.packingDescription,
                     productLines: lines.map((l) => ({
                         id: l.id,
                         productId: l.productId,
@@ -1472,6 +1610,175 @@ let ProductionService = class ProductionService {
             newValue: String(qty),
         });
         return { ok: true };
+    }
+    async mergeWastageLots(dto, user) {
+        if (!dto.sourceLotIds || dto.sourceLotIds.length < 2) {
+            throw new common_1.BadRequestException('At least 2 wastage lots are required to merge');
+        }
+        const sourceLots = await this.prisma.wastageLot.findMany({
+            where: { id: { in: dto.sourceLotIds } },
+            include: { product: true, location: true, wastageType: true },
+        });
+        if (sourceLots.length !== dto.sourceLotIds.length) {
+            throw new common_1.NotFoundException('One or more selected wastage lots could not be found');
+        }
+        const primaryProductId = sourceLots[0].productId;
+        const sameProduct = sourceLots.every((l) => l.productId === primaryProductId);
+        if (!sameProduct) {
+            throw new common_1.BadRequestException('Cannot merge wastage lots across different products. All selected lots must have the same exact product ID.');
+        }
+        const primaryLocationId = sourceLots[0].locationId;
+        const sameLocation = sourceLots.every((l) => l.locationId === primaryLocationId);
+        if (!sameLocation) {
+            throw new common_1.BadRequestException('Cannot merge wastage lots located in different plants. Stock must first be transferred to the same location.');
+        }
+        for (const lot of sourceLots) {
+            if (lot.availableKg <= 0.001 || lot.status === production_constants_1.WastageLotStatus.DISCARDED || lot.status === production_constants_1.WastageLotStatus.CLOSED) {
+                throw new common_1.BadRequestException(`Lot ${lot.lotNumber} has no available stock to merge.`);
+            }
+        }
+        const mergedQtyKg = Math.round(sourceLots.reduce((s, l) => s + l.availableKg, 0) * 1000) / 1000;
+        const customName = dto.mergedLotName?.trim() || 'Merge Wastage';
+        let mergedWastageType = await this.prisma.wastageType.findFirst({
+            where: { OR: [{ code: 'MERGED' }, { nameEn: { contains: 'Merged', mode: 'insensitive' } }], isActive: true },
+        });
+        if (!mergedWastageType) {
+            mergedWastageType = sourceLots[0].wastageType;
+        }
+        const newMergedLotNumber = await this.nextNumber('MWL', 'wastage');
+        const created = await this.tx(async (tx) => {
+            for (const lot of sourceLots) {
+                await tx.wastageLot.update({
+                    where: { id: lot.id },
+                    data: {
+                        availableKg: 0,
+                        status: production_constants_1.WastageLotStatus.CLOSED,
+                    },
+                });
+            }
+            const mergedLot = await tx.wastageLot.create({
+                data: {
+                    lotNumber: newMergedLotNumber,
+                    productId: primaryProductId,
+                    wastageTypeId: mergedWastageType.id,
+                    locationId: primaryLocationId,
+                    quantityKg: mergedQtyKg,
+                    availableKg: mergedQtyKg,
+                    status: production_constants_1.WastageLotStatus.AVAILABLE,
+                    parentWastageLotId: sourceLots[0].id,
+                    originalProductionRunId: sourceLots[0].originalProductionRunId || sourceLots[0].productionRunId,
+                    reprocessingCycle: Math.max(...sourceLots.map((l) => l.reprocessingCycle || 1)),
+                    productionDate: new Date(),
+                },
+            });
+            return mergedLot;
+        });
+        await this.audit.log({
+            module: 'WASTAGE',
+            recordType: 'WastageLot',
+            recordNumber: newMergedLotNumber,
+            action: 'MERGED',
+            changedById: user.sub,
+            newValue: JSON.stringify({
+                mergedLotId: created.id,
+                mergedLotName: customName,
+                totalQuantityKg: mergedQtyKg,
+                sourceLotNumbers: sourceLots.map((l) => l.lotNumber),
+            }),
+        });
+        return created;
+    }
+    async recordWastageOutward(dto, user) {
+        const lot = await this.prisma.wastageLot.findUnique({
+            where: { id: dto.wastageLotId },
+            include: { product: true, location: true },
+        });
+        if (!lot)
+            throw new common_1.NotFoundException('Wastage lot not found');
+        const qtyKg = Math.round(dto.quantityKg * 1000) / 1000;
+        if (qtyKg <= 0.001)
+            throw new common_1.BadRequestException('Outward quantity must be greater than zero');
+        if (qtyKg > lot.availableKg + 0.001) {
+            throw new common_1.BadRequestException(`Cannot outward ${qtyKg} KG. Only ${lot.availableKg} KG available in lot ${lot.lotNumber}.`);
+        }
+        const trucks = dto.numberOfTrucks ?? 1;
+        await this.tx(async (tx) => {
+            const remaining = Math.round((lot.availableKg - qtyKg) * 1000) / 1000;
+            await tx.wastageLot.update({
+                where: { id: lot.id },
+                data: {
+                    availableKg: remaining,
+                    status: remaining <= 0.001 ? production_constants_1.WastageLotStatus.CLOSED : production_constants_1.WastageLotStatus.PARTIALLY_REPROCESSED,
+                },
+            });
+            await this.ledger.postTxn(tx, {
+                txnType: production_constants_1.LedgerTxnType.WASTAGE_DISCARD,
+                productId: lot.productId,
+                stockCategory: production_constants_1.StockCategory.WASTAGE_INVENTORY,
+                sourceLocationId: lot.locationId,
+                quantityOutKg: qtyKg,
+                referenceType: 'WASTAGE_OUTWARD',
+                referenceId: lot.id,
+                remarks: `Outward ${qtyKg} KG (${trucks} truck(s)) to ${dto.destination || 'External'}. ${dto.remarks || ''}`.trim(),
+                createdById: user.sub,
+            });
+        });
+        await this.audit.log({
+            module: 'WASTAGE',
+            recordType: 'WastageOutward',
+            recordNumber: lot.lotNumber,
+            action: 'OUTWARD',
+            changedById: user.sub,
+            newValue: JSON.stringify({
+                lotNumber: lot.lotNumber,
+                product: lot.product.name,
+                plant: lot.location.name,
+                quantityKg: qtyKg,
+                numberOfTrucks: trucks,
+                truckNumber: dto.truckNumber,
+                destination: dto.destination,
+                outwardDate: dto.outwardDate,
+            }),
+        });
+        return { ok: true, lotNumber: lot.lotNumber, outwardKg: qtyKg, numberOfTrucks: trucks };
+    }
+    async getWastageTruckReport(year) {
+        const selectedYear = year || new Date().getFullYear();
+        const startOfYear = new Date(selectedYear, 0, 1);
+        const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+        const logs = await this.prisma.productionAuditLog.findMany({
+            where: {
+                module: 'WASTAGE',
+                recordType: 'WastageOutward',
+                action: 'OUTWARD',
+                createdAt: { gte: startOfYear, lte: endOfYear },
+            },
+            orderBy: { createdAt: 'asc' },
+        });
+        const monthlyCounts = {};
+        for (let m = 0; m < 12; m++)
+            monthlyCounts[m] = 0;
+        let totalTrucks = 0;
+        for (const log of logs) {
+            try {
+                const parsed = JSON.parse(log.newValue || '{}');
+                const trucks = Number(parsed.numberOfTrucks) || 1;
+                const d = new Date(parsed.outwardDate || log.createdAt);
+                const m = d.getMonth();
+                monthlyCounts[m] = (monthlyCounts[m] || 0) + trucks;
+                totalTrucks += trucks;
+            }
+            catch { }
+        }
+        const monthNames = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December',
+        ];
+        const monthly = monthNames.map((name, idx) => ({
+            month: name,
+            trucksOutward: monthlyCounts[idx] || 0,
+        }));
+        return { year: selectedYear, totalTrucks, monthly };
     }
     async getInventoryByProduct(locationId) {
         const balances = await this.prisma.inventoryBalance.findMany({
@@ -1944,6 +2251,17 @@ let ProductionService = class ProductionService {
             action: 'CREATED',
             changedById: user.sub,
         });
+        await this.notifications.notifyChange({
+            type: 'INCOMING_TRANSFER',
+            message: `Incoming Transfer from ${row.sourceLocation?.name || 'plant'} — ${qtyKg} KG ${row.product?.name || 'material'}`,
+            changedById: user.sub,
+            targetRoles: [
+                enums_1.UserRole.SUPER_ADMIN,
+                enums_1.UserRole.OFFICE_ADMIN,
+                enums_1.UserRole.PRODUCTION_TEAM,
+                enums_1.UserRole.INVENTORY_TEAM,
+            ],
+        });
         return row;
     }
     async dispatchTransfer(id, user) {
@@ -2060,46 +2378,44 @@ let ProductionService = class ProductionService {
                     receivedById: user.sub,
                 },
             });
-            if (t.stockCategory === production_constants_1.StockCategory.RAW_MATERIAL) {
-                const type = (await tx.inwardType.findFirst({ where: { code: 'DOMESTIC', isActive: true } })) ||
-                    (await tx.inwardType.findFirst({ where: { isActive: true } }));
-                const supplier = (await tx.supplier.findFirst({ where: { isActive: true } })) ||
-                    (await tx.supplier.create({ data: { name: 'Plant Transfer', code: 'TRF-PARTY' } }));
-                if (type && supplier) {
-                    const year = new Date().getFullYear();
-                    const prefix = `INW-${year}-`;
-                    const latest = await tx.rawMaterialInward.findFirst({
-                        where: { inwardNumber: { startsWith: prefix } },
-                        orderBy: { inwardNumber: 'desc' },
-                    });
-                    let next = 1;
-                    if (latest) {
-                        const n = parseInt(latest.inwardNumber.split('-').pop() || '0', 10);
-                        if (!isNaN(n))
-                            next = n + 1;
-                    }
-                    const inwardNumber = `${prefix}${String(next).padStart(5, '0')}`;
-                    const inward = await tx.rawMaterialInward.create({
-                        data: {
-                            inwardNumber,
-                            supplierId: supplier.id,
-                            inwardDate: new Date(),
-                            truckNumber: `TRF-${t.transferNumber}`,
-                            productId: t.productId,
-                            numberOfBags: 0,
-                            weightKg: t.quantityKg,
-                            inputUnit: 'KG',
-                            inwardTypeId: type.id,
-                            locationId: t.destLocationId,
-                            remarks: `Auto-linked from plant transfer ${t.transferNumber}`,
-                            createdById: user.sub,
-                        },
-                    });
-                    await tx.plantTransfer.update({
-                        where: { id },
-                        data: { linkedInwardId: inward.id },
-                    });
+            const type = (await tx.inwardType.findFirst({ where: { code: 'DOMESTIC', isActive: true } })) ||
+                (await tx.inwardType.findFirst({ where: { isActive: true } }));
+            const supplier = (await tx.supplier.findFirst({ where: { isActive: true } })) ||
+                (await tx.supplier.create({ data: { name: 'Plant Transfer', code: 'TRF-PARTY' } }));
+            if (type && supplier) {
+                const year = new Date().getFullYear();
+                const prefix = `INW-${year}-`;
+                const latest = await tx.rawMaterialInward.findFirst({
+                    where: { inwardNumber: { startsWith: prefix } },
+                    orderBy: { inwardNumber: 'desc' },
+                });
+                let next = 1;
+                if (latest) {
+                    const n = parseInt(latest.inwardNumber.split('-').pop() || '0', 10);
+                    if (!isNaN(n))
+                        next = n + 1;
                 }
+                const inwardNumber = `${prefix}${String(next).padStart(5, '0')}`;
+                const inward = await tx.rawMaterialInward.create({
+                    data: {
+                        inwardNumber,
+                        supplierId: supplier.id,
+                        inwardDate: new Date(),
+                        truckNumber: `TRF-${t.transferNumber}`,
+                        productId: t.productId,
+                        numberOfBags: 0,
+                        weightKg: t.quantityKg,
+                        inputUnit: 'KG',
+                        inwardTypeId: type.id,
+                        locationId: t.destLocationId,
+                        remarks: `Auto-linked from plant transfer ${t.transferNumber} (${t.stockCategory})`,
+                        createdById: user.sub,
+                    },
+                });
+                await tx.plantTransfer.update({
+                    where: { id },
+                    data: { linkedInwardId: inward.id },
+                });
             }
         });
         await this.audit.log({
@@ -2265,6 +2581,86 @@ let ProductionService = class ProductionService {
             _sum: { availableKg: true },
         });
         const processedAvailableKg = processedLotsAvail._sum.availableKg || 0;
+        const activeProductionRuns = await this.prisma.productionRun.findMany({
+            where: { status: { notIn: [production_constants_1.ProductionRunStatus.COMPLETED, production_constants_1.ProductionRunStatus.CANCELLED] } },
+            select: { totalInputKg: true, plantId: true },
+        });
+        const materialCurrentlyInProductionKg = Math.round(activeProductionRuns.reduce((s, r) => s + (r.totalInputKg || 0), 0) * 1000) / 1000;
+        const unallocatedProcessedLots = await this.prisma.processedOutputLot.findMany({
+            where: { availableKg: { gt: 0.001 }, status: 'AVAILABLE' },
+            include: { product: true, plant: true, productionRun: { select: { productionNumber: true, finalisedAt: true } } },
+            orderBy: { completionDate: 'asc' },
+            take: 50,
+        });
+        const unassignedInventoryAging = unallocatedProcessedLots.map((lot) => {
+            const finalDate = lot.productionRun?.finalisedAt || lot.completionDate || lot.createdAt;
+            const daysUnassigned = Math.max(0, Math.floor((today.getTime() - new Date(finalDate).getTime()) / 86400000));
+            return {
+                id: lot.id,
+                productionNumber: lot.productionRun?.productionNumber || lot.lotNumber,
+                product: lot.product?.name || '—',
+                plant: lot.plant?.name || '—',
+                availableUnassignedKg: lot.availableKg,
+                finalizationDate: finalDate,
+                daysUnassigned,
+            };
+        });
+        const allocatedActiveAllocations = await this.prisma.containerAllocation.findMany({
+            where: { status: 'ACTIVE' },
+            include: {
+                productionRun: { select: { productionNumber: true } },
+                processedLot: { select: { lotNumber: true } },
+            },
+            orderBy: { allocationDate: 'asc' },
+            take: 50,
+        });
+        const allocContractIds = [...new Set(allocatedActiveAllocations.map((a) => a.contractId))];
+        const allocContainerIds = [...new Set(allocatedActiveAllocations.map((a) => a.containerId))];
+        const allocProductIds = [...new Set(allocatedActiveAllocations.map((a) => a.productId))];
+        const [allocContracts, allocContainers, allocProducts] = await Promise.all([
+            this.prisma.contract.findMany({
+                where: { id: { in: allocContractIds } },
+                select: { id: true, contractNumber: true },
+            }),
+            this.prisma.contractContainer.findMany({
+                where: { id: { in: allocContainerIds } },
+                select: {
+                    id: true,
+                    containerIndex: true,
+                    containerNo: true,
+                    containerStatus: true,
+                    packagingType: { select: { name: true } },
+                    packagingSize: { select: { label: true } },
+                },
+            }),
+            this.prisma.product.findMany({
+                where: { id: { in: allocProductIds } },
+                select: { id: true, name: true },
+            }),
+        ]);
+        const contractMap = new Map(allocContracts.map((c) => [c.id, c]));
+        const containerMap = new Map(allocContainers.map((c) => [c.id, c]));
+        const productMap = new Map(allocProducts.map((p) => [p.id, p]));
+        const allocatedContainerAging = allocatedActiveAllocations.map((alloc) => {
+            const c = containerMap.get(alloc.containerId);
+            const ct = contractMap.get(alloc.contractId);
+            const pr = productMap.get(alloc.productId);
+            const allocDate = alloc.allocationDate || alloc.createdAt;
+            const isDispatched = c?.containerStatus === 'DISPATCHED' || c?.containerStatus === 'SHIPPED';
+            const daysWaiting = Math.max(0, Math.floor((today.getTime() - new Date(allocDate).getTime()) / 86400000));
+            return {
+                id: alloc.id,
+                contractNumber: ct?.contractNumber || '—',
+                containerNumber: c?.containerNo || `Container ${c?.containerIndex ?? '—'}`,
+                product: pr?.name || '—',
+                packaging: c?.packagingSize?.label || c?.packagingType?.name || '—',
+                allocatedQtyKg: alloc.quantityKg,
+                productionLotReference: alloc.productionRun?.productionNumber || alloc.processedLot?.lotNumber || '—',
+                allocationDate: allocDate,
+                dispatchStatus: isDispatched ? 'Dispatched' : 'Pending Dispatch',
+                daysWaiting,
+            };
+        });
         return {
             inventory: {
                 byCategory,
@@ -2301,16 +2697,22 @@ let ProductionService = class ProductionService {
                 overdue,
                 dueSoon,
                 other,
+                totalCount: pendingItems.length,
                 items: pendingItems,
             },
             production: {
                 activeRuns,
+                materialCurrentlyInProductionKg,
                 completedToday: completedToday.map((r) => ({
                     productionNumber: r.productionNumber,
                     product: r.product.name,
                     plant: r.plant.name,
                     netOutputKg: r.netOutputKg,
                 })),
+            },
+            aging: {
+                unassignedInventory: unassignedInventoryAging,
+                allocatedContainers: allocatedContainerAging,
             },
             payments: {
                 pendingContainers: paymentPending,

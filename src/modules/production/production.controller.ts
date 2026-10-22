@@ -24,9 +24,11 @@ import {
   JobWorkInwardDto,
   JobWorkOutwardDto,
   JobWorkProcessResultDto,
+  MergeWastageDto,
   SampleResultDto,
   StartProductionDto,
   StartReSortexDto,
+  WastageOutwardDto,
 } from './production.dto';
 
 const PROD_ROLES = [
@@ -146,6 +148,24 @@ export class ProductionController {
   @Get('wastage-lots')
   wastageLots(@Query('productId') productId?: string, @Query('locationId') locationId?: string) {
     return this.production.listWastageLots({ productId, locationId });
+  }
+
+  @Roles(...PRODUCTION_OPS)
+  @Post('wastage-lots/merge')
+  mergeWastage(@Body() dto: MergeWastageDto, @CurrentUser() user: JwtPayload) {
+    return this.production.mergeWastageLots(dto, user);
+  }
+
+  @Roles(...INVENTORY_OPS)
+  @Post('wastage-lots/outward')
+  wastageOutward(@Body() dto: WastageOutwardDto, @CurrentUser() user: JwtPayload) {
+    return this.production.recordWastageOutward(dto, user);
+  }
+
+  @Roles(...READ_ROLES)
+  @Get('wastage-lots/truck-report')
+  wastageTruckReport(@Query('year') year?: string) {
+    return this.production.getWastageTruckReport(year ? parseInt(year, 10) : undefined);
   }
 
   @Roles(...PRODUCTION_OPS)

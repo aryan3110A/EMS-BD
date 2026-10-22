@@ -62,16 +62,18 @@ let InventoryLedgerService = class InventoryLedgerService {
         const qtyIn = params.quantityInKg ?? 0;
         const qtyOut = params.quantityOutKg ?? 0;
         let balanceKg = null;
+        const fromProdId = params.fromProductId || params.productId;
+        const toProdId = params.toProductId || params.productId;
         if (params.fromCategory && params.toCategory && params.locationId) {
-            await this.adjustBalance(tx, params.productId, params.locationId, params.fromCategory, -qtyOut);
-            balanceKg = await this.adjustBalance(tx, params.productId, params.locationId, params.toCategory, qtyIn || qtyOut);
+            await this.adjustBalance(tx, fromProdId, params.locationId, params.fromCategory, -qtyOut);
+            balanceKg = await this.adjustBalance(tx, toProdId, params.locationId, params.toCategory, qtyIn || qtyOut);
         }
         else {
             if (qtyOut > 0 && params.sourceLocationId) {
-                await this.adjustBalance(tx, params.productId, params.sourceLocationId, params.stockCategory, -qtyOut);
+                await this.adjustBalance(tx, fromProdId, params.sourceLocationId, params.stockCategory, -qtyOut);
             }
             if (qtyIn > 0 && params.destLocationId) {
-                balanceKg = await this.adjustBalance(tx, params.productId, params.destLocationId, params.stockCategory, qtyIn);
+                balanceKg = await this.adjustBalance(tx, toProdId, params.destLocationId, params.stockCategory, qtyIn);
             }
         }
         const txnNumber = await this.nextTxnNumber(tx);
@@ -79,7 +81,7 @@ let InventoryLedgerService = class InventoryLedgerService {
             data: {
                 txnNumber,
                 txnType: params.txnType,
-                productId: params.productId,
+                productId: toProdId,
                 stockCategory: params.toCategory || params.stockCategory,
                 sourceLocationId: params.sourceLocationId || params.locationId || null,
                 destLocationId: params.destLocationId || params.locationId || null,

@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UpdateContainerStatusDto = exports.DashboardQueryDto = exports.ContractQueryDto = exports.UpdateContractDto = exports.CreateContractDto = exports.CreateContainerProductDto = exports.ContainerProductLineDto = exports.CreateLotDto = void 0;
+exports.CancelContractDto = exports.ReviseContractQuantityDto = exports.UpdateContainerStatusDto = exports.DashboardQueryDto = exports.ContractQueryDto = exports.UpdateContractDto = exports.CreateContractDto = exports.CreateContainerProductDto = exports.ContainerProductLineDto = exports.CreateLotDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 const enums_1 = require("../../common/constants/enums");
@@ -900,4 +900,28 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateContainerStatusDto.prototype, "remarks", void 0);
+class ReviseContractQuantityDto {
+    totalMt;
+    reason;
+}
+exports.ReviseContractQuantityDto = ReviseContractQuantityDto;
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0.001),
+    __metadata("design:type", Number)
+], ReviseContractQuantityDto.prototype, "totalMt", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ReviseContractQuantityDto.prototype, "reason", void 0);
+class CancelContractDto {
+    reason;
+}
+exports.CancelContractDto = CancelContractDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CancelContractDto.prototype, "reason", void 0);
 //# sourceMappingURL=contracts.dto.js.map

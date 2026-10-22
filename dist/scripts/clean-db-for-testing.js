@@ -106,6 +106,8 @@ async function main() {
         throw new Error('Ahmedabad office not found');
     }
     const passwordHash = await bcrypt.hash('admin123', 10);
+    const nedraLoc = await prisma.inventoryLocation.findUnique({ where: { code: 'NEDRA' } });
+    const bhramanwadaLoc = await prisma.inventoryLocation.findUnique({ where: { code: 'BHRAMANWADA' } });
     const desiredUsers = [
         {
             email: 'admin@ems.com',
@@ -152,6 +154,18 @@ async function main() {
         {
             email: 'production2@ems.com',
             name: 'Production User 2',
+            role: enums_1.UserRole.PRODUCTION_TEAM,
+            officeId: ahmedabad.id,
+        },
+        {
+            email: 'nedra.prod@ems.com',
+            name: 'Nedra Plant Operator',
+            role: enums_1.UserRole.PRODUCTION_TEAM,
+            officeId: ahmedabad.id,
+        },
+        {
+            email: 'bhramanwada.prod@ems.com',
+            name: 'Bhramanwada Plant Operator',
             role: enums_1.UserRole.PRODUCTION_TEAM,
             officeId: ahmedabad.id,
         },

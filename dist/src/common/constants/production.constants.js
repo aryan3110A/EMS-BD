@@ -5,7 +5,9 @@ exports.requiresSampling = requiresSampling;
 exports.toKg = toKg;
 exports.fromKg = fromKg;
 exports.ProcessType = {
+    CLEANING: 'CLEANING',
     SORTEX: 'SORTEX',
+    HULLING_SORTEX: 'HULLING_SORTEX',
     FULL_PROCESS: 'FULL_PROCESS',
 };
 exports.InputStockCategory = {

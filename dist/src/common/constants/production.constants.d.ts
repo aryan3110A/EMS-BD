@@ -1,5 +1,7 @@
 export declare const ProcessType: {
+    readonly CLEANING: "CLEANING";
     readonly SORTEX: "SORTEX";
+    readonly HULLING_SORTEX: "HULLING_SORTEX";
     readonly FULL_PROCESS: "FULL_PROCESS";
 };
 export type ProcessType = (typeof ProcessType)[keyof typeof ProcessType];

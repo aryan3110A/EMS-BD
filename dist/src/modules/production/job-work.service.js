@@ -176,40 +176,34 @@ let JobWorkService = class JobWorkService {
         return { ...jw, reconciliation: this.buildReconciliation(jw) };
     }
     buildReconciliation(jw) {
-        const totalSent = jw.totalSentKg || 0;
+        const totalOutward = (jw.outwards || []).reduce((s, o) => s + (o.quantityKg || 0), 0) || (jw.totalSentKg || 0);
         const processedReceived = (jw.inwards || [])
             .flatMap((i) => i.lines || [])
             .filter((l) => l.returnCategory === production_constants_1.JobWorkReturnCategory.PROCESSED)
-            .reduce((s, l) => s + l.quantityKg, 0);
+            .reduce((s, l) => s + (l.quantityKg || 0), 0);
         const wastageReceived = (jw.inwards || [])
             .flatMap((i) => i.lines || [])
             .filter((l) => l.returnCategory === production_constants_1.JobWorkReturnCategory.WASTAGE)
-            .reduce((s, l) => s + l.quantityKg, 0);
+            .reduce((s, l) => s + (l.quantityKg || 0), 0);
         const unprocessedReturned = (jw.inwards || [])
             .flatMap((i) => i.lines || [])
             .filter((l) => l.returnCategory === production_constants_1.JobWorkReturnCategory.UNPROCESSED)
-            .reduce((s, l) => s + l.quantityKg, 0);
-        const wastageDiscarded = (jw.wastageDispositions || [])
-            .filter((d) => d.disposition === production_constants_1.JobWorkWastageDisposition.DISCARDED_AT_WORKER)
-            .reduce((s, d) => s + d.quantityKg, 0);
-        const wastageExpectedReturn = (jw.wastageDispositions || [])
-            .filter((d) => d.disposition === production_constants_1.JobWorkWastageDisposition.RETURNED)
-            .reduce((s, d) => s + d.quantityKg, 0);
-        const stillOutside = Math.round((totalSent - processedReceived - wastageReceived - unprocessedReturned - wastageDiscarded) * 1000) / 1000;
-        const expectedProcessed = jw.netProcessedOutputKg || 0;
-        const reconDiff = Math.round((expectedProcessed - processedReceived) * 1000) / 1000;
+            .reduce((s, l) => s + (l.quantityKg || 0), 0);
+        const differenceKg = Math.round((totalOutward - processedReceived - wastageReceived - unprocessedReturned) * 1000) / 1000;
         return {
-            totalSentKg: totalSent,
-            totalProcessedInputKg: jw.totalProcessedInputKg || 0,
-            processedOutputExpectedKg: expectedProcessed,
-            processedOutputReceivedKg: processedReceived,
-            wastageExpectedReturnKg: wastageExpectedReturn,
-            wastageReceivedKg: wastageReceived,
-            wastageDiscardedKg: wastageDiscarded,
+            totalMaterialOutwardKg: totalOutward,
+            totalProcessedReceivedKg: processedReceived,
+            totalWastageReceivedKg: wastageReceived,
             unprocessedReturnedKg: unprocessedReturned,
-            quantityStillOutsideKg: stillOutside,
-            reconciliationDifferenceKg: reconDiff,
-            flagged: Math.abs(stillOutside) > 0.001 || Math.abs(reconDiff) > 0.001,
+            differenceKg,
+            totalSentKg: totalOutward,
+            processedOutputReceivedKg: processedReceived,
+            wastageReceivedKg: wastageReceived,
+            processedOutputExpectedKg: jw.netProcessedOutputKg || 0,
+            netProcessedOutputKg: jw.netProcessedOutputKg || 0,
+            totalWastageKg: jw.totalWastageKg || 0,
+            quantityStillOutsideKg: differenceKg,
+            flagged: Math.abs(differenceKg) > 0.001,
         };
     }
     async create(dto, user) {
@@ -544,14 +538,11 @@ let JobWorkService = class JobWorkService {
     }
     async close(id, dto, user) {
         const jw = await this.getOne(id);
-        if (!jw.processResultEnteredAt) {
-            throw new common_1.BadRequestException('Process result must be entered before closing');
-        }
         const recon = jw.reconciliation;
-        if (Math.abs(recon.quantityStillOutsideKg) > 0.001) {
+        if (Math.abs(recon.differenceKg ?? recon.quantityStillOutsideKg) > 0.001) {
             const isAdmin = [enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN].includes(user.role);
             if (!isAdmin || dto.varianceKg == null || !dto.varianceReason?.trim()) {
-                throw new common_1.BadRequestException(`Unreconciled difference: ${recon.quantityStillOutsideKg} KG. Admin-authorised variance with reason required to close.`);
+                throw new common_1.BadRequestException(`Unreconciled difference: ${recon.differenceKg ?? recon.quantityStillOutsideKg} KG. Admin-authorised variance with reason required to close.`);
             }
         }
         await this.prisma.jobWork.update({

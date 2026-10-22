@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
-import { ContractStatus, UserRole } from '../../common/constants/enums';
+import { ContractStatus, UserRole, ContainerStatus } from '../../common/constants/enums';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CalculationService } from '../../common/services/calculation.service';
@@ -10,7 +10,15 @@ import { mapContainerDtoToCreateData, resolveContainerProductLines } from '../..
 import { Incoterm } from '../../common/constants/enums';
 import { DEFAULT_FOB_DEDUCTION, FOB_DEDUCTION_SETTING_KEY } from '../../common/constants/commercial.constants';
 import { AmendContainerCommercialDto } from './container-commercial.dto';
-import { CreateContractDto, UpdateContractDto, ContractQueryDto, CreateContainerProductDto, DashboardQueryDto } from './contracts.dto';
+import {
+  CreateContractDto,
+  UpdateContractDto,
+  ContractQueryDto,
+  CreateContainerProductDto,
+  DashboardQueryDto,
+  ReviseContractQuantityDto,
+  CancelContractDto,
+} from './contracts.dto';
 import { SubmitContractDto } from './submit-contract.dto';
 import {
   applyPendingIdsToContractDto,
@@ -979,6 +987,158 @@ export class ContractsService {
       return u.id;
     }, this.txOptions);
     return this.findOne(updated, user);
+  }
+
+  async reviseQuantity(id: string, dto: ReviseContractQuantityDto, user: JwtPayload) {
+    const contract = await this.prisma.contract.findUnique({
+      where: { id },
+      include: {
+        containers: true,
+      },
+    });
+    if (!contract) throw new NotFoundException('Contract not found');
+
+    const isAdmin = [UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN].includes(user.role as any);
+    const isCreator = contract.createdById === user.sub;
+    if (!isAdmin && !isCreator) {
+      throw new ForbiddenException('Only the contract creator or an admin can revise contract quantity');
+    }
+
+    if (contract.status === ContractStatus.CANCELLED) {
+      throw new BadRequestException('Cannot revise quantity of a cancelled contract');
+    }
+
+    // Query active container allocations for this contract
+    const activeAllocs = await this.prisma.containerAllocation.findMany({
+      where: { contractId: id, status: 'ACTIVE' },
+    });
+    const fulfilledKg = activeAllocs.reduce((sum, a) => sum + (a.quantityKg || 0), 0);
+    const fulfilledMt = Math.round((fulfilledKg / 1000) * 1000) / 1000;
+
+    if (dto.totalMt < fulfilledMt - 0.001) {
+      throw new BadRequestException(
+        `Cannot reduce contracted quantity to ${dto.totalMt} MT because ${fulfilledMt} MT has already been fulfilled/allocated.`,
+      );
+    }
+
+    const prevMt = contract.totalMt;
+    const newMt = dto.totalMt;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.contract.update({
+        where: { id },
+        data: {
+          totalMt: newMt,
+        },
+      });
+
+      await tx.contractAuditLog.create({
+        data: {
+          contractId: id,
+          contractNumber: contract.contractNumber,
+          fieldName: 'totalMt',
+          previousValue: String(prevMt),
+          newValue: String(newMt),
+          changedById: user.sub,
+        },
+      });
+
+      if (dto.reason?.trim()) {
+        await tx.contractAuditLog.create({
+          data: {
+            contractId: id,
+            contractNumber: contract.contractNumber,
+            fieldName: 'quantityRevisionReason',
+            previousValue: null,
+            newValue: dto.reason.trim(),
+            changedById: user.sub,
+          },
+        });
+      }
+    }, this.txOptions);
+
+    return this.findOne(id, user);
+  }
+
+  async cancelContract(id: string, dto: CancelContractDto, user: JwtPayload) {
+    const contract = await this.prisma.contract.findUnique({
+      where: { id },
+      include: {
+        containers: true,
+      },
+    });
+    if (!contract) throw new NotFoundException('Contract not found');
+
+    const isAdmin = [UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN].includes(user.role as any);
+    const isCreator = contract.createdById === user.sub;
+    if (!isAdmin && !isCreator) {
+      throw new ForbiddenException('Only the contract creator or an admin can cancel this contract');
+    }
+
+    if (contract.status === ContractStatus.CANCELLED) {
+      throw new BadRequestException('Contract is already cancelled');
+    }
+
+    if (contract.status === ContractStatus.COMPLETED) {
+      throw new BadRequestException('Dispatched or fully completed contracts cannot be cancelled');
+    }
+
+    // Check for dispatched containers
+    const dispatchedStatuses = [
+      ContainerStatus.DISPATCHED_FROM_FACTORY,
+      ContainerStatus.REACHED_PORT,
+      ContainerStatus.SHIPPED,
+      ContainerStatus.COMPLETED,
+    ];
+    const hasDispatched = contract.containers.some(
+      (c) => dispatchedStatuses.includes(c.containerStatus as any),
+    );
+    if (hasDispatched) {
+      throw new BadRequestException('Contract contains dispatched container(s) and cannot be cancelled');
+    }
+
+    // Check for active container allocations
+    const activeAllocs = await this.prisma.containerAllocation.findMany({
+      where: { contractId: id, status: 'ACTIVE' },
+    });
+    const activeAllocKg = activeAllocs.reduce((sum, a) => sum + (a.quantityKg || 0), 0);
+    if (activeAllocKg > 0.001) {
+      throw new BadRequestException(
+        `Partially fulfilled contract has ${Math.round(activeAllocKg)} KG allocated. Please deallocate or resolve container allocations before cancelling.`,
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.contract.update({
+        where: { id },
+        data: {
+          status: ContractStatus.CANCELLED,
+        },
+      });
+
+      await tx.contractStatusHistory.create({
+        data: {
+          contractId: id,
+          fromStatus: contract.status,
+          toStatus: ContractStatus.CANCELLED,
+          changedBy: user.name,
+          remarks: dto?.reason?.trim() || 'Contract cancelled by creator',
+        },
+      });
+
+      await tx.contractAuditLog.create({
+        data: {
+          contractId: id,
+          contractNumber: contract.contractNumber,
+          fieldName: 'status',
+          previousValue: contract.status,
+          newValue: ContractStatus.CANCELLED,
+          changedById: user.sub,
+        },
+      });
+    }, this.txOptions);
+
+    return this.findOne(id, user);
   }
 
   async getDashboardStats(user: JwtPayload, query: DashboardQueryDto = {}) {

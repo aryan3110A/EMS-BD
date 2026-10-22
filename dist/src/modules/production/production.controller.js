@@ -91,6 +91,15 @@ let ProductionController = class ProductionController {
     wastageLots(productId, locationId) {
         return this.production.listWastageLots({ productId, locationId });
     }
+    mergeWastage(dto, user) {
+        return this.production.mergeWastageLots(dto, user);
+    }
+    wastageOutward(dto, user) {
+        return this.production.recordWastageOutward(dto, user);
+    }
+    wastageTruckReport(year) {
+        return this.production.getWastageTruckReport(year ? parseInt(year, 10) : undefined);
+    }
     discardWastage(id, body, user) {
         return this.production.discardWastageLot(id, user, body?.reason);
     }
@@ -307,6 +316,32 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], ProductionController.prototype, "wastageLots", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...PRODUCTION_OPS),
+    (0, common_1.Post)('wastage-lots/merge'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [production_dto_1.MergeWastageDto, Object]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "mergeWastage", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...INVENTORY_OPS),
+    (0, common_1.Post)('wastage-lots/outward'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [production_dto_1.WastageOutwardDto, Object]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "wastageOutward", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...READ_ROLES),
+    (0, common_1.Get)('wastage-lots/truck-report'),
+    __param(0, (0, common_1.Query)('year')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "wastageTruckReport", null);
 __decorate([
     (0, roles_decorator_1.Roles)(...PRODUCTION_OPS),
     (0, common_1.Post)('wastage-lots/:id/discard'),

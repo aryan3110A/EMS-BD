@@ -20,15 +20,17 @@ export declare class InventoryLedgerService {
         fromCategory?: string;
         toCategory?: string;
         locationId?: string;
+        fromProductId?: string;
+        toProductId?: string;
     }): Promise<{
         id: string;
         createdAt: Date;
         productId: string;
         remarks: string | null;
         createdById: string | null;
+        stockCategory: string;
         txnNumber: string;
         txnType: string;
-        stockCategory: string;
         sourceLocationId: string | null;
         destLocationId: string | null;
         quantityInKg: number;

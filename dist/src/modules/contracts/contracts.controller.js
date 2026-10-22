@@ -65,6 +65,12 @@ let ContractsController = class ContractsController {
     updateStatus(id, status, remarks, user) {
         return this.contractsService.updateStatus(id, status, user, remarks);
     }
+    reviseQuantity(id, dto, user) {
+        return this.contractsService.reviseQuantity(id, dto, user);
+    }
+    cancelContract(id, dto, user) {
+        return this.contractsService.cancelContract(id, dto, user);
+    }
 };
 exports.ContractsController = ContractsController;
 __decorate([
@@ -176,6 +182,26 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String, Object]),
     __metadata("design:returntype", void 0)
 ], ContractsController.prototype, "updateStatus", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM, enums_1.UserRole.SUPER_SALES),
+    (0, common_1.Patch)(':id/revise-quantity'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, contracts_dto_1.ReviseContractQuantityDto, Object]),
+    __metadata("design:returntype", void 0)
+], ContractsController.prototype, "reviseQuantity", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM, enums_1.UserRole.SUPER_SALES),
+    (0, common_1.Post)(':id/cancel'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, contracts_dto_1.CancelContractDto, Object]),
+    __metadata("design:returntype", void 0)
+], ContractsController.prototype, "cancelContract", null);
 exports.ContractsController = ContractsController = __decorate([
     (0, swagger_1.ApiTags)('Contracts'),
     (0, swagger_1.ApiBearerAuth)(),

@@ -1,7 +1,10 @@
 /** Production / Inventory / QC / Job Work constants (ERP Changes 10.09.26) */
 
 export const ProcessType = {
+  CLEANING: 'CLEANING',
   SORTEX: 'SORTEX',
+  HULLING_SORTEX: 'HULLING_SORTEX',
+  /** @deprecated backward compatibility mapping for historical runs */
   FULL_PROCESS: 'FULL_PROCESS',
 } as const;
 export type ProcessType = (typeof ProcessType)[keyof typeof ProcessType];

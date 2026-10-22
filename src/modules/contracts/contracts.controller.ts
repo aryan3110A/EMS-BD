@@ -1,7 +1,14 @@
 import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ContractsService } from './contracts.service';
-import { CreateContractDto, UpdateContractDto, ContractQueryDto, DashboardQueryDto } from './contracts.dto';
+import {
+  CreateContractDto,
+  UpdateContractDto,
+  ContractQueryDto,
+  DashboardQueryDto,
+  ReviseContractQuantityDto,
+  CancelContractDto,
+} from './contracts.dto';
 import { AmendContainerCommercialDto } from './container-commercial.dto';
 import { SubmitContractDto } from './submit-contract.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -103,5 +110,25 @@ export class ContractsController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.contractsService.updateStatus(id, status, user, remarks);
+  }
+
+  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.CONTRACT_TEAM, UserRole.SUPER_SALES)
+  @Patch(':id/revise-quantity')
+  reviseQuantity(
+    @Param('id') id: string,
+    @Body() dto: ReviseContractQuantityDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.contractsService.reviseQuantity(id, dto, user);
+  }
+
+  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN, UserRole.CONTRACT_TEAM, UserRole.SUPER_SALES)
+  @Post(':id/cancel')
+  cancelContract(
+    @Param('id') id: string,
+    @Body() dto: CancelContractDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.contractsService.cancelContract(id, dto, user);
   }
 }

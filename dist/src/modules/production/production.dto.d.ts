@@ -48,8 +48,29 @@ export declare class WastageDispositionLineDto {
     wastageTypeId: string;
     action: string;
 }
+export declare class DirectAllocationLineDto {
+    contractId: string;
+    containerId: string;
+    containerProductId?: string;
+    quantityKg: number;
+    remarks?: string;
+}
 export declare class FinaliseProductionDto {
-    dispositions: WastageDispositionLineDto[];
+    dispositions?: WastageDispositionLineDto[];
+    directAllocations?: DirectAllocationLineDto[];
+}
+export declare class MergeWastageDto {
+    sourceLotIds: string[];
+    mergedLotName?: string;
+}
+export declare class WastageOutwardDto {
+    outwardDate: string;
+    wastageLotId: string;
+    quantityKg: number;
+    numberOfTrucks?: number;
+    truckNumber?: string;
+    destination?: string;
+    remarks?: string;
 }
 export declare class FulfilmentAllocateDto {
     productId: string;
@@ -82,9 +103,11 @@ export declare class WastageLineDto {
 }
 export declare class CleaningResultDto {
     lines: WastageLineDto[];
+    actualCleanedOutputKg?: number;
 }
 export declare class HullingResultDto {
     lines: WastageLineDto[];
+    actualProcessedOutputKg?: number;
 }
 export declare class AllocateContainerDto {
     contractId: string;

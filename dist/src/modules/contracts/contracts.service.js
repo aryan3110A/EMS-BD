@@ -911,6 +911,131 @@ let ContractsService = class ContractsService {
         }, this.txOptions);
         return this.findOne(updated, user);
     }
+    async reviseQuantity(id, dto, user) {
+        const contract = await this.prisma.contract.findUnique({
+            where: { id },
+            include: {
+                containers: true,
+            },
+        });
+        if (!contract)
+            throw new common_1.NotFoundException('Contract not found');
+        const isAdmin = [enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN].includes(user.role);
+        const isCreator = contract.createdById === user.sub;
+        if (!isAdmin && !isCreator) {
+            throw new common_1.ForbiddenException('Only the contract creator or an admin can revise contract quantity');
+        }
+        if (contract.status === enums_1.ContractStatus.CANCELLED) {
+            throw new common_1.BadRequestException('Cannot revise quantity of a cancelled contract');
+        }
+        const activeAllocs = await this.prisma.containerAllocation.findMany({
+            where: { contractId: id, status: 'ACTIVE' },
+        });
+        const fulfilledKg = activeAllocs.reduce((sum, a) => sum + (a.quantityKg || 0), 0);
+        const fulfilledMt = Math.round((fulfilledKg / 1000) * 1000) / 1000;
+        if (dto.totalMt < fulfilledMt - 0.001) {
+            throw new common_1.BadRequestException(`Cannot reduce contracted quantity to ${dto.totalMt} MT because ${fulfilledMt} MT has already been fulfilled/allocated.`);
+        }
+        const prevMt = contract.totalMt;
+        const newMt = dto.totalMt;
+        await this.prisma.$transaction(async (tx) => {
+            await tx.contract.update({
+                where: { id },
+                data: {
+                    totalMt: newMt,
+                },
+            });
+            await tx.contractAuditLog.create({
+                data: {
+                    contractId: id,
+                    contractNumber: contract.contractNumber,
+                    fieldName: 'totalMt',
+                    previousValue: String(prevMt),
+                    newValue: String(newMt),
+                    changedById: user.sub,
+                },
+            });
+            if (dto.reason?.trim()) {
+                await tx.contractAuditLog.create({
+                    data: {
+                        contractId: id,
+                        contractNumber: contract.contractNumber,
+                        fieldName: 'quantityRevisionReason',
+                        previousValue: null,
+                        newValue: dto.reason.trim(),
+                        changedById: user.sub,
+                    },
+                });
+            }
+        }, this.txOptions);
+        return this.findOne(id, user);
+    }
+    async cancelContract(id, dto, user) {
+        const contract = await this.prisma.contract.findUnique({
+            where: { id },
+            include: {
+                containers: true,
+            },
+        });
+        if (!contract)
+            throw new common_1.NotFoundException('Contract not found');
+        const isAdmin = [enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN].includes(user.role);
+        const isCreator = contract.createdById === user.sub;
+        if (!isAdmin && !isCreator) {
+            throw new common_1.ForbiddenException('Only the contract creator or an admin can cancel this contract');
+        }
+        if (contract.status === enums_1.ContractStatus.CANCELLED) {
+            throw new common_1.BadRequestException('Contract is already cancelled');
+        }
+        if (contract.status === enums_1.ContractStatus.COMPLETED) {
+            throw new common_1.BadRequestException('Dispatched or fully completed contracts cannot be cancelled');
+        }
+        const dispatchedStatuses = [
+            enums_1.ContainerStatus.DISPATCHED_FROM_FACTORY,
+            enums_1.ContainerStatus.REACHED_PORT,
+            enums_1.ContainerStatus.SHIPPED,
+            enums_1.ContainerStatus.COMPLETED,
+        ];
+        const hasDispatched = contract.containers.some((c) => dispatchedStatuses.includes(c.containerStatus));
+        if (hasDispatched) {
+            throw new common_1.BadRequestException('Contract contains dispatched container(s) and cannot be cancelled');
+        }
+        const activeAllocs = await this.prisma.containerAllocation.findMany({
+            where: { contractId: id, status: 'ACTIVE' },
+        });
+        const activeAllocKg = activeAllocs.reduce((sum, a) => sum + (a.quantityKg || 0), 0);
+        if (activeAllocKg > 0.001) {
+            throw new common_1.BadRequestException(`Partially fulfilled contract has ${Math.round(activeAllocKg)} KG allocated. Please deallocate or resolve container allocations before cancelling.`);
+        }
+        await this.prisma.$transaction(async (tx) => {
+            await tx.contract.update({
+                where: { id },
+                data: {
+                    status: enums_1.ContractStatus.CANCELLED,
+                },
+            });
+            await tx.contractStatusHistory.create({
+                data: {
+                    contractId: id,
+                    fromStatus: contract.status,
+                    toStatus: enums_1.ContractStatus.CANCELLED,
+                    changedBy: user.name,
+                    remarks: dto?.reason?.trim() || 'Contract cancelled by creator',
+                },
+            });
+            await tx.contractAuditLog.create({
+                data: {
+                    contractId: id,
+                    contractNumber: contract.contractNumber,
+                    fieldName: 'status',
+                    previousValue: contract.status,
+                    newValue: enums_1.ContractStatus.CANCELLED,
+                    changedById: user.sub,
+                },
+            });
+        }, this.txOptions);
+        return this.findOne(id, user);
+    }
     async getDashboardStats(user, query = {}) {
         const officeId = this.scopeOffice(user);
         const fromDate = query.startDate ? new Date(query.startDate) : new Date();

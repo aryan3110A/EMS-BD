@@ -105,6 +105,9 @@ async function main() {
   // - 1 Super Sales User (supersales@ems.com)
   // - 1 Accounts Team (accounts@ems.com)
   // - 1 Inventory Team (inventory@ems.com)
+  const nedraLoc = await prisma.inventoryLocation.findUnique({ where: { code: 'NEDRA' } });
+  const bhramanwadaLoc = await prisma.inventoryLocation.findUnique({ where: { code: 'BHRAMANWADA' } });
+
   const desiredUsers = [
     {
       email: 'admin@ems.com',
@@ -151,6 +154,18 @@ async function main() {
     {
       email: 'production2@ems.com',
       name: 'Production User 2',
+      role: UserRole.PRODUCTION_TEAM,
+      officeId: ahmedabad.id,
+    },
+    {
+      email: 'nedra.prod@ems.com',
+      name: 'Nedra Plant Operator',
+      role: UserRole.PRODUCTION_TEAM,
+      officeId: ahmedabad.id,
+    },
+    {
+      email: 'bhramanwada.prod@ems.com',
+      name: 'Bhramanwada Plant Operator',
       role: UserRole.PRODUCTION_TEAM,
       officeId: ahmedabad.id,
     },

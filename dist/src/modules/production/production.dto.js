@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateTransferDto = exports.SampleResultDto = exports.StartReSortexDto = exports.CloseJobWorkDto = exports.JobWorkProcessResultDto = exports.JobWorkInwardDto = exports.JobWorkInwardLineDto = exports.JobWorkOutwardDto = exports.CreateJobWorkDto = exports.CreateJobWorkerDto = exports.AllocateFromStockDto = exports.StoreProcessedDto = exports.AllocateContainerDto = exports.HullingResultDto = exports.CleaningResultDto = exports.WastageLineDto = exports.AddInputDto = exports.FulfilmentAllocateDto = exports.FinaliseProductionDto = exports.WastageDispositionLineDto = exports.StartProductionDto = exports.InwardQueryDto = exports.CreateInwardDto = exports.CreateSupplierDto = void 0;
+exports.CreateTransferDto = exports.SampleResultDto = exports.StartReSortexDto = exports.CloseJobWorkDto = exports.JobWorkProcessResultDto = exports.JobWorkInwardDto = exports.JobWorkInwardLineDto = exports.JobWorkOutwardDto = exports.CreateJobWorkDto = exports.CreateJobWorkerDto = exports.AllocateFromStockDto = exports.StoreProcessedDto = exports.AllocateContainerDto = exports.HullingResultDto = exports.CleaningResultDto = exports.WastageLineDto = exports.AddInputDto = exports.FulfilmentAllocateDto = exports.WastageOutwardDto = exports.MergeWastageDto = exports.FinaliseProductionDto = exports.DirectAllocationLineDto = exports.WastageDispositionLineDto = exports.StartProductionDto = exports.InwardQueryDto = exports.CreateInwardDto = exports.CreateSupplierDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 class CreateSupplierDto {
@@ -254,16 +254,115 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], WastageDispositionLineDto.prototype, "action", void 0);
+class DirectAllocationLineDto {
+    contractId;
+    containerId;
+    containerProductId;
+    quantityKg;
+    remarks;
+}
+exports.DirectAllocationLineDto = DirectAllocationLineDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DirectAllocationLineDto.prototype, "contractId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DirectAllocationLineDto.prototype, "containerId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DirectAllocationLineDto.prototype, "containerProductId", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0.001),
+    __metadata("design:type", Number)
+], DirectAllocationLineDto.prototype, "quantityKg", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DirectAllocationLineDto.prototype, "remarks", void 0);
 class FinaliseProductionDto {
     dispositions;
+    directAllocations;
 }
 exports.FinaliseProductionDto = FinaliseProductionDto;
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.ValidateNested)({ each: true }),
     (0, class_transformer_1.Type)(() => WastageDispositionLineDto),
     __metadata("design:type", Array)
 ], FinaliseProductionDto.prototype, "dispositions", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => DirectAllocationLineDto),
+    __metadata("design:type", Array)
+], FinaliseProductionDto.prototype, "directAllocations", void 0);
+class MergeWastageDto {
+    sourceLotIds;
+    mergedLotName;
+}
+exports.MergeWastageDto = MergeWastageDto;
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsString)({ each: true }),
+    __metadata("design:type", Array)
+], MergeWastageDto.prototype, "sourceLotIds", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], MergeWastageDto.prototype, "mergedLotName", void 0);
+class WastageOutwardDto {
+    outwardDate;
+    wastageLotId;
+    quantityKg;
+    numberOfTrucks;
+    truckNumber;
+    destination;
+    remarks;
+}
+exports.WastageOutwardDto = WastageOutwardDto;
+__decorate([
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], WastageOutwardDto.prototype, "outwardDate", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], WastageOutwardDto.prototype, "wastageLotId", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0.001),
+    __metadata("design:type", Number)
+], WastageOutwardDto.prototype, "quantityKg", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(1),
+    __metadata("design:type", Number)
+], WastageOutwardDto.prototype, "numberOfTrucks", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], WastageOutwardDto.prototype, "truckNumber", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], WastageOutwardDto.prototype, "destination", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], WastageOutwardDto.prototype, "remarks", void 0);
 class FulfilmentAllocateDto {
     productId;
     locationId;
@@ -409,6 +508,7 @@ __decorate([
 ], WastageLineDto.prototype, "remarks", void 0);
 class CleaningResultDto {
     lines;
+    actualCleanedOutputKg;
 }
 exports.CleaningResultDto = CleaningResultDto;
 __decorate([
@@ -417,8 +517,15 @@ __decorate([
     (0, class_transformer_1.Type)(() => WastageLineDto),
     __metadata("design:type", Array)
 ], CleaningResultDto.prototype, "lines", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    __metadata("design:type", Number)
+], CleaningResultDto.prototype, "actualCleanedOutputKg", void 0);
 class HullingResultDto {
     lines;
+    actualProcessedOutputKg;
 }
 exports.HullingResultDto = HullingResultDto;
 __decorate([
@@ -427,6 +534,12 @@ __decorate([
     (0, class_transformer_1.Type)(() => WastageLineDto),
     __metadata("design:type", Array)
 ], HullingResultDto.prototype, "lines", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    __metadata("design:type", Number)
+], HullingResultDto.prototype, "actualProcessedOutputKg", void 0);
 class AllocateContainerDto {
     contractId;
     containerId;

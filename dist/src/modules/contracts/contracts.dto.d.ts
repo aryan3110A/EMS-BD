@@ -156,3 +156,10 @@ export declare class UpdateContainerStatusDto {
     status: string;
     remarks?: string;
 }
+export declare class ReviseContractQuantityDto {
+    totalMt: number;
+    reason?: string;
+}
+export declare class CancelContractDto {
+    reason?: string;
+}

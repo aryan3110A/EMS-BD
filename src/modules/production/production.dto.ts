@@ -167,11 +167,77 @@ export class WastageDispositionLineDto {
   action: string; // STORE | DISCARD
 }
 
+export class DirectAllocationLineDto {
+  @IsString()
+  contractId: string;
+
+  @IsString()
+  containerId: string;
+
+  @IsOptional()
+  @IsString()
+  containerProductId?: string;
+
+  @IsNumber()
+  @Min(0.001)
+  quantityKg: number;
+
+  @IsOptional()
+  @IsString()
+  remarks?: string;
+}
+
 export class FinaliseProductionDto {
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => WastageDispositionLineDto)
-  dispositions: WastageDispositionLineDto[];
+  dispositions?: WastageDispositionLineDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DirectAllocationLineDto)
+  directAllocations?: DirectAllocationLineDto[];
+}
+
+export class MergeWastageDto {
+  @IsArray()
+  @IsString({ each: true })
+  sourceLotIds: string[];
+
+  @IsOptional()
+  @IsString()
+  mergedLotName?: string;
+}
+
+export class WastageOutwardDto {
+  @IsDateString()
+  outwardDate: string;
+
+  @IsString()
+  wastageLotId: string;
+
+  @IsNumber()
+  @Min(0.001)
+  quantityKg: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  numberOfTrucks?: number;
+
+  @IsOptional()
+  @IsString()
+  truckNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  destination?: string;
+
+  @IsOptional()
+  @IsString()
+  remarks?: string;
 }
 
 export class FulfilmentAllocateDto {
@@ -273,6 +339,11 @@ export class CleaningResultDto {
   @ValidateNested({ each: true })
   @Type(() => WastageLineDto)
   lines: WastageLineDto[];
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  actualCleanedOutputKg?: number;
 }
 
 export class HullingResultDto {
@@ -280,6 +351,11 @@ export class HullingResultDto {
   @ValidateNested({ each: true })
   @Type(() => WastageLineDto)
   lines: WastageLineDto[];
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  actualProcessedOutputKg?: number;
 }
 
 export class AllocateContainerDto {

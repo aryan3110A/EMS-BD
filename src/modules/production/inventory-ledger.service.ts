@@ -77,17 +77,21 @@ export class InventoryLedgerService {
       fromCategory?: string;
       toCategory?: string;
       locationId?: string;
+      fromProductId?: string;
+      toProductId?: string;
     },
   ) {
     const qtyIn = params.quantityInKg ?? 0;
     const qtyOut = params.quantityOutKg ?? 0;
     let balanceKg: number | null = null;
+    const fromProdId = params.fromProductId || params.productId;
+    const toProdId = params.toProductId || params.productId;
 
     if (params.fromCategory && params.toCategory && params.locationId) {
-      await this.adjustBalance(tx, params.productId, params.locationId, params.fromCategory, -qtyOut);
+      await this.adjustBalance(tx, fromProdId, params.locationId, params.fromCategory, -qtyOut);
       balanceKg = await this.adjustBalance(
         tx,
-        params.productId,
+        toProdId,
         params.locationId,
         params.toCategory,
         qtyIn || qtyOut,
@@ -96,7 +100,7 @@ export class InventoryLedgerService {
       if (qtyOut > 0 && params.sourceLocationId) {
         await this.adjustBalance(
           tx,
-          params.productId,
+          fromProdId,
           params.sourceLocationId,
           params.stockCategory,
           -qtyOut,
@@ -105,7 +109,7 @@ export class InventoryLedgerService {
       if (qtyIn > 0 && params.destLocationId) {
         balanceKg = await this.adjustBalance(
           tx,
-          params.productId,
+          toProdId,
           params.destLocationId,
           params.stockCategory,
           qtyIn,
@@ -118,7 +122,7 @@ export class InventoryLedgerService {
       data: {
         txnNumber,
         txnType: params.txnType,
-        productId: params.productId,
+        productId: toProdId,
         stockCategory: params.toCategory || params.stockCategory,
         sourceLocationId: params.sourceLocationId || params.locationId || null,
         destLocationId: params.destLocationId || params.locationId || null,

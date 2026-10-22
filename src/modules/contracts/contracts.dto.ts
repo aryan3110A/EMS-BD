@@ -625,3 +625,20 @@ export class UpdateContainerStatusDto {
   remarks?: string;
 }
 
+export class ReviseContractQuantityDto {
+  @IsNumber()
+  @Min(0.001)
+  totalMt: number;
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+
+export class CancelContractDto {
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+
+

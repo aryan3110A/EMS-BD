@@ -16,12 +16,12 @@ export declare class ProductionAuditService {
     }): Promise<{
         id: string;
         createdAt: Date;
+        fieldName: string | null;
+        newValue: string | null;
+        changedById: string | null;
         module: string;
         action: string;
-        newValue: string | null;
         reason: string | null;
-        fieldName: string | null;
-        changedById: string | null;
         oldValue: string | null;
         recordType: string;
         recordNumber: string | null;
@@ -40,12 +40,12 @@ export declare class ProductionAuditService {
     } & {
         id: string;
         createdAt: Date;
+        fieldName: string | null;
+        newValue: string | null;
+        changedById: string | null;
         module: string;
         action: string;
-        newValue: string | null;
         reason: string | null;
-        fieldName: string | null;
-        changedById: string | null;
         oldValue: string | null;
         recordType: string;
         recordNumber: string | null;
