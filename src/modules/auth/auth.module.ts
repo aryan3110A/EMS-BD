@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
+import { resolveJwtSecret } from '../../common/config/jwt-secret';
 
 @Module({
   imports: [
@@ -13,7 +14,7 @@ import { JwtStrategy } from './jwt.strategy';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET', 'ems-dev-secret'),
+        secret: resolveJwtSecret(config),
         signOptions: {
           expiresIn: config.get<string>('JWT_EXPIRES_IN', '7d') as `${number}d`,
         },

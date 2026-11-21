@@ -17,7 +17,20 @@ import {
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { JwtPayload } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../common/constants/enums';
+
+/**
+ * Roles allowed to create/modify master data. Mirrors the roles the frontend shows the
+ * Masters page and the contract form (where buyers/ports are added inline) to.
+ * SUPER_ADMIN is always allowed by RolesGuard. Read endpoints stay open to any
+ * authenticated user because production/inventory screens read these lists.
+ */
+const MASTER_EDITORS = [
+  UserRole.OFFICE_ADMIN,
+  UserRole.CONTRACT_TEAM,
+  UserRole.SUPER_SALES,
+] as const;
 
 @ApiTags('Masters')
 @ApiBearerAuth()
@@ -31,6 +44,7 @@ export class MastersController {
     return this.mastersService.getSalespersons();
   }
 
+  @Roles(...MASTER_EDITORS)
   @Post('salespersons')
   createSalesperson(@Body() dto: CreateSalespersonDto) {
     return this.mastersService.createSalesperson(dto);
@@ -52,6 +66,7 @@ export class MastersController {
     return this.mastersService.getBuyers(user.officeId, search, false);
   }
 
+  @Roles(...MASTER_EDITORS)
   @Post('buyers')
   createBuyer(@CurrentUser() user: JwtPayload, @Body() dto: CreateBuyerDto) {
     return this.mastersService.createBuyer({
@@ -65,6 +80,7 @@ export class MastersController {
     return this.mastersService.getCountries();
   }
 
+  @Roles(...MASTER_EDITORS)
   @Post('countries')
   createCountry(@Body() dto: CreateCountryDto) {
     return this.mastersService.createCountry(dto);
@@ -75,16 +91,19 @@ export class MastersController {
     return this.mastersService.getProducts();
   }
 
+  @Roles(...MASTER_EDITORS)
   @Post('products')
   createProduct(@Body() dto: CreateProductDto) {
     return this.mastersService.createProduct(dto);
   }
 
+  @Roles(...MASTER_EDITORS)
   @Patch('products/:id')
   updateProduct(@Param('id') id: string, @Body() dto: UpdateProductDto) {
     return this.mastersService.updateProduct(id, dto);
   }
 
+  @Roles(...MASTER_EDITORS)
   @Post('product-variants')
   createProductVariant(@Body() dto: CreateProductVariantDto) {
     return this.mastersService.createProductVariant(dto);
@@ -95,11 +114,13 @@ export class MastersController {
     return this.mastersService.getPackaging();
   }
 
+  @Roles(...MASTER_EDITORS)
   @Post('packaging')
   createPackagingType(@Body() dto: CreatePackagingTypeDto) {
     return this.mastersService.createPackagingType(dto);
   }
 
+  @Roles(...MASTER_EDITORS)
   @Post('packaging/sizes')
   createPackagingSize(@Body() dto: CreatePackagingSizeDto) {
     return this.mastersService.createPackagingSize(dto);
@@ -115,21 +136,25 @@ export class MastersController {
     return this.mastersService.getPorts(includeInactive === 'true');
   }
 
+  @Roles(...MASTER_EDITORS)
   @Post('ports')
   createPort(@CurrentUser() user: JwtPayload, @Body() dto: CreatePortDto) {
     return this.mastersService.createPort(dto, user?.sub);
   }
 
+  @Roles(...MASTER_EDITORS)
   @Patch('buyers/:id')
   updateBuyer(@Param('id') id: string, @CurrentUser() user: JwtPayload, @Body() dto: UpdateBuyerDto) {
     return this.mastersService.updateBuyer(id, dto, user?.sub);
   }
 
+  @Roles(...MASTER_EDITORS)
   @Patch('buyers/:id/deactivate')
   deactivateBuyer(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.mastersService.deactivateBuyer(id, user?.sub);
   }
 
+  @Roles(...MASTER_EDITORS)
   @Patch('ports/:id')
   updatePort(@Param('id') id: string, @CurrentUser() user: JwtPayload, @Body() dto: UpdatePortDto) {
     return this.mastersService.updatePort(id, dto, user?.sub);

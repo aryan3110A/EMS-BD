@@ -1,7 +1,8 @@
 import { Module, Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Public } from '../../common/decorators/roles.decorator';
+import { Public, Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { UserRole } from '../../common/constants/enums';
 import { IsOptional, IsString } from 'class-validator';
 
 class CreateOfficeDto {
@@ -39,6 +40,7 @@ export class OfficesController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN)
   @Post()
   create(@Body() dto: CreateOfficeDto) {
     return this.prisma.office.create({

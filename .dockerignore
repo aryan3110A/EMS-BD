@@ -1,0 +1,15 @@
+node_modules
+dist
+coverage
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+*.pdf
+_pdf_extract.txt
+scripts/*.json
+README.md
+render.yaml
+Dockerfile
+.dockerignore

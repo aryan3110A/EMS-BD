@@ -89,11 +89,14 @@ let NotificationService = class NotificationService {
             take: 50,
         });
     }
-    markRead(id) {
-        return this.prisma.notification.update({
-            where: { id },
+    async markRead(id, userId, role) {
+        const result = await this.prisma.notification.updateMany({
+            where: { id, OR: [{ userId }, { targetRole: role }] },
             data: { readAt: new Date() },
         });
+        if (result.count === 0)
+            throw new common_1.NotFoundException('Notification not found');
+        return { id };
     }
 };
 exports.NotificationService = NotificationService;

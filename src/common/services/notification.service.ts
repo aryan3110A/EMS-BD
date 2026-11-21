@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter } from 'events';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserRole } from '../constants/enums';
@@ -108,10 +108,13 @@ export class NotificationService {
     });
   }
 
-  markRead(id: string) {
-    return this.prisma.notification.update({
-      where: { id },
+  /** Only notifications addressed to this user (directly or via their role) can be marked read. */
+  async markRead(id: string, userId: string, role: string) {
+    const result = await this.prisma.notification.updateMany({
+      where: { id, OR: [{ userId }, { targetRole: role }] },
       data: { readAt: new Date() },
     });
+    if (result.count === 0) throw new NotFoundException('Notification not found');
+    return { id };
   }
 }

@@ -15,16 +15,23 @@ const passport_1 = require("@nestjs/passport");
 const passport_jwt_1 = require("passport-jwt");
 const config_1 = require("@nestjs/config");
 const prisma_service_1 = require("../../prisma/prisma.service");
+const jwt_secret_1 = require("../../common/config/jwt-secret");
+function sseQueryToken(req) {
+    const token = req?.query?.token;
+    if (typeof token !== 'string' || !token)
+        return null;
+    return req.path?.endsWith('/notifications/sse') ? token : null;
+}
 let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(passport_jwt_1.Strategy) {
     prisma;
     constructor(configService, prisma) {
         super({
             jwtFromRequest: passport_jwt_1.ExtractJwt.fromExtractors([
                 passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
-                (req) => req?.query?.token ? req.query.token : null,
+                sseQueryToken,
             ]),
             ignoreExpiration: false,
-            secretOrKey: configService.get('JWT_SECRET', 'ems-dev-secret'),
+            secretOrKey: (0, jwt_secret_1.resolveJwtSecret)(configService),
         });
         this.prisma = prisma;
     }

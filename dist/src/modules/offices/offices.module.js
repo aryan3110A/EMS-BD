@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
+const enums_1 = require("../../common/constants/enums");
 const class_validator_1 = require("class-validator");
 class CreateOfficeDto {
     name;
@@ -75,6 +76,7 @@ __decorate([
 ], OfficesController.prototype, "findAll", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN),
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
