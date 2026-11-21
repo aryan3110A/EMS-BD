@@ -19,7 +19,13 @@ const masters_service_1 = require("./masters.service");
 const masters_dto_1 = require("./masters.dto");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
+const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 const enums_1 = require("../../common/constants/enums");
+const MASTER_EDITORS = [
+    enums_1.UserRole.OFFICE_ADMIN,
+    enums_1.UserRole.CONTRACT_TEAM,
+    enums_1.UserRole.SUPER_SALES,
+];
 let MastersController = class MastersController {
     mastersService;
     constructor(mastersService) {
@@ -99,6 +105,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "getSalespersons", null);
 __decorate([
+    (0, roles_decorator_1.Roles)(...MASTER_EDITORS),
     (0, common_1.Post)('salespersons'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -116,6 +123,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "getBuyers", null);
 __decorate([
+    (0, roles_decorator_1.Roles)(...MASTER_EDITORS),
     (0, common_1.Post)('buyers'),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
@@ -130,6 +138,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "getCountries", null);
 __decorate([
+    (0, roles_decorator_1.Roles)(...MASTER_EDITORS),
     (0, common_1.Post)('countries'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -143,6 +152,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "getProducts", null);
 __decorate([
+    (0, roles_decorator_1.Roles)(...MASTER_EDITORS),
     (0, common_1.Post)('products'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -150,6 +160,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "createProduct", null);
 __decorate([
+    (0, roles_decorator_1.Roles)(...MASTER_EDITORS),
     (0, common_1.Patch)('products/:id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
@@ -158,6 +169,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "updateProduct", null);
 __decorate([
+    (0, roles_decorator_1.Roles)(...MASTER_EDITORS),
     (0, common_1.Post)('product-variants'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -171,6 +183,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "getPackaging", null);
 __decorate([
+    (0, roles_decorator_1.Roles)(...MASTER_EDITORS),
     (0, common_1.Post)('packaging'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -178,6 +191,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "createPackagingType", null);
 __decorate([
+    (0, roles_decorator_1.Roles)(...MASTER_EDITORS),
     (0, common_1.Post)('packaging/sizes'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -199,6 +213,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "getPorts", null);
 __decorate([
+    (0, roles_decorator_1.Roles)(...MASTER_EDITORS),
     (0, common_1.Post)('ports'),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
@@ -207,6 +222,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "createPort", null);
 __decorate([
+    (0, roles_decorator_1.Roles)(...MASTER_EDITORS),
     (0, common_1.Patch)('buyers/:id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
@@ -216,6 +232,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "updateBuyer", null);
 __decorate([
+    (0, roles_decorator_1.Roles)(...MASTER_EDITORS),
     (0, common_1.Patch)('buyers/:id/deactivate'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
@@ -224,6 +241,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], MastersController.prototype, "deactivateBuyer", null);
 __decorate([
+    (0, roles_decorator_1.Roles)(...MASTER_EDITORS),
     (0, common_1.Patch)('ports/:id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),

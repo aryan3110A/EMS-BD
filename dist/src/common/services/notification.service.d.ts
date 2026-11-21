@@ -42,18 +42,7 @@ export declare class NotificationService {
         oldValue: string | null;
         readAt: Date | null;
     }[]>;
-    markRead(id: string): import(".prisma/client").Prisma.Prisma__NotificationClient<{
+    markRead(id: string, userId: string, role: string): Promise<{
         id: string;
-        createdAt: Date;
-        contractId: string | null;
-        containerId: string | null;
-        newValue: string | null;
-        changedById: string | null;
-        userId: string | null;
-        targetRole: string | null;
-        type: string;
-        message: string;
-        oldValue: string | null;
-        readAt: Date | null;
-    }, never, import("@prisma/client/runtime/library").DefaultArgs>;
+    }>;
 }

@@ -35,8 +35,8 @@ let NotificationsController = class NotificationsController {
             data: n,
         })));
     }
-    markRead(id) {
-        return this.notifications.markRead(id);
+    markRead(id, user) {
+        return this.notifications.markRead(id, user.sub, user.role);
     }
 };
 exports.NotificationsController = NotificationsController;
@@ -57,8 +57,9 @@ __decorate([
 __decorate([
     (0, common_1.Patch)(':id/read'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], NotificationsController.prototype, "markRead", null);
 exports.NotificationsController = NotificationsController = __decorate([

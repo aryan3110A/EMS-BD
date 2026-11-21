@@ -20,18 +20,7 @@ export declare class NotificationsController {
         readAt: Date | null;
     }[]>;
     sse(user: JwtPayload): Observable<MessageEvent>;
-    markRead(id: string): import(".prisma/client").Prisma.Prisma__NotificationClient<{
+    markRead(id: string, user: JwtPayload): Promise<{
         id: string;
-        createdAt: Date;
-        contractId: string | null;
-        containerId: string | null;
-        newValue: string | null;
-        changedById: string | null;
-        userId: string | null;
-        targetRole: string | null;
-        type: string;
-        message: string;
-        oldValue: string | null;
-        readAt: Date | null;
-    }, never, import("@prisma/client/runtime/library").DefaultArgs>;
+    }>;
 }

@@ -19,6 +19,7 @@ const notifications_module_1 = require("./modules/notifications/notifications.mo
 const production_module_1 = require("./modules/production/production.module");
 const jwt_auth_guard_1 = require("./common/guards/jwt-auth.guard");
 const roles_guard_1 = require("./common/guards/roles.guard");
+const health_controller_1 = require("./health.controller");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -34,6 +35,7 @@ exports.AppModule = AppModule = __decorate([
             notifications_module_1.NotificationsModule,
             production_module_1.ProductionModule,
         ],
+        controllers: [health_controller_1.HealthController],
         providers: [
             { provide: core_1.APP_GUARD, useClass: jwt_auth_guard_1.JwtAuthGuard },
             { provide: core_1.APP_GUARD, useClass: roles_guard_1.RolesGuard },
