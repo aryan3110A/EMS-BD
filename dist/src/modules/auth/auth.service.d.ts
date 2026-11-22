@@ -14,6 +14,7 @@ export declare class AuthService {
             role: string;
             officeId: string | undefined;
             officeName: string | undefined;
+            canDeleteProduction: boolean;
         };
     }>;
     getProfile(userId: string): Promise<{
@@ -23,5 +24,6 @@ export declare class AuthService {
         role: string;
         officeId: string | null;
         officeName: string | undefined;
+        canDeleteProduction: boolean;
     }>;
 }

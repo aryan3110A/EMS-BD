@@ -13,7 +13,6 @@ const contracts_service_1 = require("./contracts.service");
 const calculation_service_1 = require("../../common/services/calculation.service");
 const exchange_rate_service_1 = require("../../common/services/exchange-rate.service");
 const contract_audit_service_1 = require("../../common/services/contract-audit.service");
-const notification_service_1 = require("../../common/services/notification.service");
 let ContractsModule = class ContractsModule {
 };
 exports.ContractsModule = ContractsModule;
@@ -25,7 +24,6 @@ exports.ContractsModule = ContractsModule = __decorate([
             calculation_service_1.CalculationService,
             exchange_rate_service_1.ExchangeRateService,
             contract_audit_service_1.ContractAuditService,
-            notification_service_1.NotificationService,
         ],
         exports: [contracts_service_1.ContractsService],
     })

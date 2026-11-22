@@ -11,11 +11,13 @@ import { ProductionModule } from './modules/production/production.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { HealthController } from './health.controller';
+import { ContainerWorkflowModule } from './modules/container-workflow/container-workflow.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    ContainerWorkflowModule,
     AuthModule,
     OfficesModule,
     MastersModule,

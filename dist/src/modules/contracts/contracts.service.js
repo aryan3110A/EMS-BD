@@ -18,6 +18,10 @@ const exchange_rate_service_1 = require("../../common/services/exchange-rate.ser
 const contract_audit_service_1 = require("../../common/services/contract-audit.service");
 const notification_service_1 = require("../../common/services/notification.service");
 const container_mapper_1 = require("../../common/services/container-mapper");
+const container_workflow_service_1 = require("../container-workflow/container-workflow.service");
+const container_workflow_logic_1 = require("../container-workflow/container-workflow.logic");
+const inventory_ledger_service_1 = require("../production/inventory-ledger.service");
+const production_constants_1 = require("../../common/constants/production.constants");
 const enums_2 = require("../../common/constants/enums");
 const commercial_constants_1 = require("../../common/constants/commercial.constants");
 const pending_masters_resolver_1 = require("./pending-masters.resolver");
@@ -34,13 +38,17 @@ let ContractsService = class ContractsService {
     exchangeRate;
     audit;
     notifications;
+    workflow;
+    ledger;
     txOptions = { maxWait: 15000, timeout: 30000 };
-    constructor(prisma, calc, exchangeRate, audit, notifications) {
+    constructor(prisma, calc, exchangeRate, audit, notifications, workflow, ledger) {
         this.prisma = prisma;
         this.calc = calc;
         this.exchangeRate = exchangeRate;
         this.audit = audit;
         this.notifications = notifications;
+        this.workflow = workflow;
+        this.ledger = ledger;
     }
     detailInclude = {
         office: true,
@@ -569,7 +577,7 @@ let ContractsService = class ContractsService {
         }
         const [allocations, sampleRecords] = await Promise.all([
             this.prisma.containerAllocation.findMany({
-                where: { contractId: id, status: 'ACTIVE' },
+                where: { contractId: id, status: { in: container_workflow_service_1.COUNTED_ALLOCATION_STATUSES } },
                 include: {
                     productionRun: { select: { id: true, productionNumber: true } },
                     processedLot: { select: { id: true, lotNumber: true } },
@@ -748,34 +756,80 @@ let ContractsService = class ContractsService {
                         });
                     }
                 }
-                await tx.contractContainerProduct.deleteMany({ where: { contractId: id } });
-                await tx.contractContainer.deleteMany({ where: { contractId: id } });
+                const incomingIndexes = new Set(normalizedRows.map((c) => c.containerIndex));
+                const removedContainers = existingContainers.filter((ec) => !incomingIndexes.has(ec.containerIndex));
+                if (removedContainers.length) {
+                    const removedIds = removedContainers.map((r) => r.id);
+                    const [allocCount, sampleCount] = await Promise.all([
+                        tx.containerAllocation.count({ where: { containerId: { in: removedIds }, status: { not: 'REJECTED' } } }),
+                        tx.sampleRecord.count({ where: { containerId: { in: removedIds } } }),
+                    ]);
+                    if (allocCount || sampleCount) {
+                        throw new common_1.BadRequestException(`Container ${removedContainers.map((r) => r.containerIndex).join(', ')} cannot be removed: it already has production fulfilment or sampling records.`);
+                    }
+                    await tx.contractContainer.deleteMany({ where: { id: { in: removedIds } } });
+                }
                 for (const c of normalizedRows) {
                     const mapped = (0, container_mapper_1.mapContainerDtoToCreateData)(c, this.calc, fobDeduction, contractFallback);
                     const { productLines, ...containerData } = mapped;
-                    const container = await tx.contractContainer.create({
-                        data: { contractId: id, ...containerData },
-                        select: { id: true },
-                    });
-                    if (productLines?.length) {
-                        await tx.contractContainerProduct.createMany({
-                            data: productLines.map((p, i) => ({
-                                contractId: id,
-                                containerId: container.id,
-                                productIndex: p.productIndex ?? i + 1,
-                                productId: p.productId,
-                                productVariantId: cleanRelationId(p.productVariantId) || null,
-                                processingType: p.processingType || null,
-                                specification: p.specification || null,
-                                quantityMt: p.quantityMt,
-                                packagingTypeId: cleanRelationId(p.packagingTypeId) || null,
-                                packagingSizeId: cleanRelationId(p.packagingSizeId) || null,
-                                packingDescription: p.packingDescription || null,
-                                packingSizeValue: p.packingSizeValue ?? null,
-                                packingSizeUnit: p.packingSizeUnit || null,
-                                productRemarks: p.productRemarks || null,
-                            })),
+                    const existingC = existingContainers.find((ec) => ec.containerIndex === c.containerIndex);
+                    let containerId;
+                    if (existingC) {
+                        const { containerStatus: _stage, containerNo: _no, factorySealNo: _fs, shippingLineSealNo: _ss, ...editable } = containerData;
+                        await tx.contractContainer.update({ where: { id: existingC.id }, data: editable });
+                        containerId = existingC.id;
+                    }
+                    else {
+                        const created = await tx.contractContainer.create({
+                            data: { contractId: id, ...containerData, containerStatus: enums_1.ContainerStatus.DRAFT },
+                            select: { id: true },
                         });
+                        containerId = created.id;
+                    }
+                    const existingLines = await tx.contractContainerProduct.findMany({ where: { containerId } });
+                    const incomingLines = (productLines || []).map((p, i) => ({ ...p, productIndex: p.productIndex ?? i + 1 }));
+                    const keepIdx = new Set(incomingLines.map((l) => l.productIndex));
+                    const removedLines = existingLines.filter((l) => !keepIdx.has(l.productIndex));
+                    if (removedLines.length) {
+                        const used = await tx.containerAllocation.count({
+                            where: { containerProductId: { in: removedLines.map((l) => l.id) }, status: { not: 'REJECTED' } },
+                        });
+                        if (used) {
+                            throw new common_1.BadRequestException(`A product line in container ${c.containerIndex} already has production fulfilment and cannot be removed.`);
+                        }
+                        await tx.contractContainerProduct.deleteMany({ where: { id: { in: removedLines.map((l) => l.id) } } });
+                    }
+                    for (const p of incomingLines) {
+                        const lineData = {
+                            productId: p.productId,
+                            productVariantId: cleanRelationId(p.productVariantId) || null,
+                            processingType: p.processingType || null,
+                            specification: p.specification || null,
+                            quantityMt: p.quantityMt,
+                            packagingTypeId: cleanRelationId(p.packagingTypeId) || null,
+                            packagingSizeId: cleanRelationId(p.packagingSizeId) || null,
+                            packingDescription: p.packingDescription || null,
+                            packingSizeValue: p.packingSizeValue ?? null,
+                            packingSizeUnit: p.packingSizeUnit || null,
+                            productRemarks: p.productRemarks || null,
+                        };
+                        const ex = existingLines.find((l) => l.productIndex === p.productIndex);
+                        if (ex) {
+                            if (ex.productId !== p.productId) {
+                                const used = await tx.containerAllocation.count({
+                                    where: { containerProductId: ex.id, status: { not: 'REJECTED' } },
+                                });
+                                if (used) {
+                                    throw new common_1.BadRequestException(`The product of line ${p.productIndex} in container ${c.containerIndex} cannot change: it already has production fulfilment.`);
+                                }
+                            }
+                            await tx.contractContainerProduct.update({ where: { id: ex.id }, data: lineData });
+                        }
+                        else {
+                            await tx.contractContainerProduct.create({
+                                data: { contractId: id, containerId, productIndex: p.productIndex, ...lineData },
+                            });
+                        }
                     }
                 }
             }
@@ -872,7 +926,8 @@ let ContractsService = class ContractsService {
                     })),
                 });
             }
-        }, this.txOptions);
+            await this.workflow.syncContract(tx, id, user.sub, 'Recalculated after contract update');
+        }, { maxWait: 15000, timeout: 60000 });
         return this.findOne(id, user);
     }
     async updateStatus(id, status, user, remarks) {
@@ -1077,24 +1132,40 @@ let ContractsService = class ContractsService {
         }
         await this.prisma.$transaction(async (tx) => {
             const allocations = await tx.containerAllocation.findMany({
-                where: { contractId: id },
+                where: { contractId: id, status: 'ACTIVE' },
+                include: { productionRun: { select: { plantId: true } } },
             });
             for (const alloc of allocations) {
-                if (alloc.processedLotId && alloc.quantityKg > 0) {
-                    const lot = await tx.processedOutputLot.findUnique({
-                        where: { id: alloc.processedLotId },
+                if (alloc.quantityKg <= 0)
+                    continue;
+                const lot = alloc.processedLotId
+                    ? await tx.processedOutputLot.findUnique({ where: { id: alloc.processedLotId } })
+                    : null;
+                const plantId = lot?.plantId || alloc.productionRun?.plantId;
+                if (lot) {
+                    await tx.processedOutputLot.update({
+                        where: { id: lot.id },
+                        data: {
+                            reservedKg: Math.max(0, (lot.reservedKg || 0) - alloc.quantityKg),
+                            availableKg: (lot.availableKg || 0) + alloc.quantityKg,
+                        },
                     });
-                    if (lot) {
-                        const newReserved = Math.max(0, (lot.reservedKg || 0) - alloc.quantityKg);
-                        const newAvailable = (lot.availableKg || 0) + alloc.quantityKg;
-                        await tx.processedOutputLot.update({
-                            where: { id: lot.id },
-                            data: {
-                                reservedKg: newReserved,
-                                availableKg: newAvailable,
-                            },
-                        });
-                    }
+                }
+                if (plantId) {
+                    await this.ledger.postTxn(tx, {
+                        txnType: production_constants_1.LedgerTxnType.CONTAINER_DEALLOCATION,
+                        productId: alloc.productId,
+                        stockCategory: production_constants_1.StockCategory.PROCESSED_RESERVED,
+                        locationId: plantId,
+                        fromCategory: production_constants_1.StockCategory.PROCESSED_RESERVED,
+                        toCategory: production_constants_1.StockCategory.PROCESSED_AVAILABLE,
+                        quantityOutKg: alloc.quantityKg,
+                        quantityInKg: alloc.quantityKg,
+                        referenceType: 'CONTRACT_DELETE',
+                        referenceId: id,
+                        remarks: `Contract ${contract.contractNumber} deleted — allocation returned to unassigned stock`,
+                        createdById: user.sub,
+                    });
                 }
             }
             await tx.sampleRejectedLot.updateMany({
@@ -1607,40 +1678,19 @@ let ContractsService = class ContractsService {
         return this.findOne(contractId, user);
     }
     async updateContainerStatus(contractId, containerId, status, user, remarks) {
-        const contract = await this.findOne(contractId, user);
-        const container = contract.containers?.find((c) => c.id === containerId);
-        if (!container)
-            throw new common_1.NotFoundException('Container not found');
-        const fromStatus = container.containerStatus;
-        if (fromStatus === status)
-            return contract;
-        await this.prisma.$transaction(async (tx) => {
-            await tx.contractContainer.update({
-                where: { id: containerId },
-                data: { containerStatus: status },
-            });
-            await tx.containerStatusHistory.create({
-                data: {
-                    containerId,
-                    contractId,
-                    fromStatus,
-                    toStatus: status,
-                    updatedById: user.sub,
-                    remarks: remarks || null,
-                },
-            });
-        });
-        await this.notifications.notifyChange({
-            type: 'CONTAINER_STATUS',
-            contractId,
-            containerId,
-            message: `Container status changed for Contract ${contract.contractNumber}, Container ${container.containerIndex}. ` +
-                `Old Status: ${fromStatus}. New Status: ${status}. Changed By: ${user.name}.`,
-            oldValue: fromStatus,
-            newValue: status,
-            changedById: user.sub,
-            targetRoles: [enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN, enums_1.UserRole.CONTRACT_TEAM, enums_1.UserRole.PRODUCTION_TEAM, enums_1.UserRole.SUPER_SALES],
-        });
+        await this.findOne(contractId, user);
+        const map = {
+            [enums_1.ContainerStatus.ON_HOLD]: container_workflow_logic_1.WorkflowAction.PUT_ON_HOLD,
+            [enums_1.ContainerStatus.READY_FOR_DISPATCH]: container_workflow_logic_1.WorkflowAction.MARK_READY_FOR_DISPATCH,
+            [enums_1.ContainerStatus.DISPATCHED_FROM_FACTORY]: container_workflow_logic_1.WorkflowAction.MARK_DISPATCHED,
+            [enums_1.ContainerStatus.REACHED_PORT]: container_workflow_logic_1.WorkflowAction.MARK_REACHED_PORT,
+            [enums_1.ContainerStatus.SHIPPED]: container_workflow_logic_1.WorkflowAction.MARK_SHIPPED,
+        };
+        const action = map[status];
+        if (!action) {
+            throw new common_1.BadRequestException('Container status is now calculated from fulfilment, container details, sampling and dispatch. Use the actions on the Container Status screen.');
+        }
+        await this.workflow.performAction(contractId, containerId, { action, remarks, reason: remarks }, user);
         return this.findOne(contractId, user);
     }
     async getAllAudits(user) {
@@ -1701,6 +1751,8 @@ exports.ContractsService = ContractsService = __decorate([
         calculation_service_1.CalculationService,
         exchange_rate_service_1.ExchangeRateService,
         contract_audit_service_1.ContractAuditService,
-        notification_service_1.NotificationService])
+        notification_service_1.NotificationService,
+        container_workflow_service_1.ContainerWorkflowService,
+        inventory_ledger_service_1.InventoryLedgerService])
 ], ContractsService);
 //# sourceMappingURL=contracts.service.js.map

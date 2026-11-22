@@ -13,6 +13,7 @@ export declare class AuthController {
             role: string;
             officeId: string | undefined;
             officeName: string | undefined;
+            canDeleteProduction: boolean;
         };
     }>;
     me(user: JwtPayload): Promise<{
@@ -22,5 +23,6 @@ export declare class AuthController {
         role: string;
         officeId: string | null;
         officeName: string | undefined;
+        canDeleteProduction: boolean;
     }>;
 }

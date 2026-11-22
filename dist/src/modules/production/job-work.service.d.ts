@@ -77,9 +77,9 @@ export declare class JobWorkService {
                 productId: string;
                 remarks: string | null;
                 numberOfBags: number | null;
-                wastageTypeId: string | null;
                 quantityKg: number;
                 inwardId: string;
+                wastageTypeId: string | null;
                 returnCategory: string;
             })[];
             receivingLocation: {
@@ -95,8 +95,8 @@ export declare class JobWorkService {
             createdAt: Date;
             remarks: string | null;
             jobWorkId: string;
-            inwardNumber: string;
             truckNumber: string | null;
+            inwardNumber: string;
             challanNumber: string | null;
             receiptDate: Date;
             receivingLocationId: string;
@@ -128,9 +128,9 @@ export declare class JobWorkService {
         } & {
             id: string;
             stage: string;
-            wastageTypeId: string;
             quantityKg: number;
             jobWorkId: string;
+            wastageTypeId: string;
             disposition: string;
         })[];
         sourceLocation: {
@@ -150,8 +150,8 @@ export declare class JobWorkService {
             createdById: string;
             quantityKg: number;
             jobWorkId: string;
-            truckNumber: string | null;
             sourceLocationId: string;
+            truckNumber: string | null;
             outwardDate: Date;
             challanNumber: string | null;
             outwardNumber: string;
@@ -203,18 +203,18 @@ export declare class JobWorkService {
             productId: string;
             status: string;
             lotNumber: string;
+            productionRunId: string | null;
+            plantId: string;
+            processType: string;
             quantityKg: number;
             availableKg: number;
-            processType: string;
-            reprocessingCycle: number;
-            productionRunId: string | null;
-            jobWorkId: string | null;
-            parentWastageLotId: string | null;
-            plantId: string;
+            reservedKg: number;
             completionDate: Date;
             productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
             sampleRejectedLotId: string | null;
-            reservedKg: number;
+            reprocessingCycle: number;
         }[];
         wastageLots: ({
             wastageType: {
@@ -235,19 +235,19 @@ export declare class JobWorkService {
             productId: string;
             status: string;
             lotNumber: string;
-            wastageTypeId: string;
+            productionRunId: string | null;
+            processType: string | null;
             quantityKg: number;
             availableKg: number;
-            reprocessedKg: number;
-            discardedKg: number;
-            originalProductionRunId: string | null;
-            processType: string | null;
-            reprocessingCycle: number;
-            productionDate: Date;
-            locationId: string;
-            productionRunId: string | null;
             jobWorkId: string | null;
             parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            locationId: string;
+            reprocessedKg: number;
+            wastageTypeId: string;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
         })[];
         product: {
             id: string;
@@ -282,9 +282,9 @@ export declare class JobWorkService {
                 productId: string;
                 remarks: string | null;
                 numberOfBags: number | null;
-                wastageTypeId: string | null;
                 quantityKg: number;
                 inwardId: string;
+                wastageTypeId: string | null;
                 returnCategory: string;
             })[];
             receivingLocation: {
@@ -300,8 +300,8 @@ export declare class JobWorkService {
             createdAt: Date;
             remarks: string | null;
             jobWorkId: string;
-            inwardNumber: string;
             truckNumber: string | null;
+            inwardNumber: string;
             challanNumber: string | null;
             receiptDate: Date;
             receivingLocationId: string;
@@ -333,9 +333,9 @@ export declare class JobWorkService {
         } & {
             id: string;
             stage: string;
-            wastageTypeId: string;
             quantityKg: number;
             jobWorkId: string;
+            wastageTypeId: string;
             disposition: string;
         })[];
         sourceLocation: {
@@ -355,8 +355,8 @@ export declare class JobWorkService {
             createdById: string;
             quantityKg: number;
             jobWorkId: string;
-            truckNumber: string | null;
             sourceLocationId: string;
+            truckNumber: string | null;
             outwardDate: Date;
             challanNumber: string | null;
             outwardNumber: string;
@@ -408,18 +408,18 @@ export declare class JobWorkService {
             productId: string;
             status: string;
             lotNumber: string;
+            productionRunId: string | null;
+            plantId: string;
+            processType: string;
             quantityKg: number;
             availableKg: number;
-            processType: string;
-            reprocessingCycle: number;
-            productionRunId: string | null;
-            jobWorkId: string | null;
-            parentWastageLotId: string | null;
-            plantId: string;
+            reservedKg: number;
             completionDate: Date;
             productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
             sampleRejectedLotId: string | null;
-            reservedKg: number;
+            reprocessingCycle: number;
         }[];
         wastageLots: ({
             wastageType: {
@@ -440,19 +440,19 @@ export declare class JobWorkService {
             productId: string;
             status: string;
             lotNumber: string;
-            wastageTypeId: string;
+            productionRunId: string | null;
+            processType: string | null;
             quantityKg: number;
             availableKg: number;
-            reprocessedKg: number;
-            discardedKg: number;
-            originalProductionRunId: string | null;
-            processType: string | null;
-            reprocessingCycle: number;
-            productionDate: Date;
-            locationId: string;
-            productionRunId: string | null;
             jobWorkId: string | null;
             parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            locationId: string;
+            reprocessedKg: number;
+            wastageTypeId: string;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
         })[];
         product: {
             id: string;
@@ -487,9 +487,9 @@ export declare class JobWorkService {
                 productId: string;
                 remarks: string | null;
                 numberOfBags: number | null;
-                wastageTypeId: string | null;
                 quantityKg: number;
                 inwardId: string;
+                wastageTypeId: string | null;
                 returnCategory: string;
             })[];
             receivingLocation: {
@@ -505,8 +505,8 @@ export declare class JobWorkService {
             createdAt: Date;
             remarks: string | null;
             jobWorkId: string;
-            inwardNumber: string;
             truckNumber: string | null;
+            inwardNumber: string;
             challanNumber: string | null;
             receiptDate: Date;
             receivingLocationId: string;
@@ -538,9 +538,9 @@ export declare class JobWorkService {
         } & {
             id: string;
             stage: string;
-            wastageTypeId: string;
             quantityKg: number;
             jobWorkId: string;
+            wastageTypeId: string;
             disposition: string;
         })[];
         sourceLocation: {
@@ -560,8 +560,8 @@ export declare class JobWorkService {
             createdById: string;
             quantityKg: number;
             jobWorkId: string;
-            truckNumber: string | null;
             sourceLocationId: string;
+            truckNumber: string | null;
             outwardDate: Date;
             challanNumber: string | null;
             outwardNumber: string;
@@ -612,18 +612,18 @@ export declare class JobWorkService {
             productId: string;
             status: string;
             lotNumber: string;
+            productionRunId: string | null;
+            plantId: string;
+            processType: string;
             quantityKg: number;
             availableKg: number;
-            processType: string;
-            reprocessingCycle: number;
-            productionRunId: string | null;
-            jobWorkId: string | null;
-            parentWastageLotId: string | null;
-            plantId: string;
+            reservedKg: number;
             completionDate: Date;
             productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
             sampleRejectedLotId: string | null;
-            reservedKg: number;
+            reprocessingCycle: number;
         }[];
         wastageLots: ({
             wastageType: {
@@ -644,19 +644,19 @@ export declare class JobWorkService {
             productId: string;
             status: string;
             lotNumber: string;
-            wastageTypeId: string;
+            productionRunId: string | null;
+            processType: string | null;
             quantityKg: number;
             availableKg: number;
-            reprocessedKg: number;
-            discardedKg: number;
-            originalProductionRunId: string | null;
-            processType: string | null;
-            reprocessingCycle: number;
-            productionDate: Date;
-            locationId: string;
-            productionRunId: string | null;
             jobWorkId: string | null;
             parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            locationId: string;
+            reprocessedKg: number;
+            wastageTypeId: string;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
         })[];
         product: {
             id: string;
@@ -691,9 +691,9 @@ export declare class JobWorkService {
                 productId: string;
                 remarks: string | null;
                 numberOfBags: number | null;
-                wastageTypeId: string | null;
                 quantityKg: number;
                 inwardId: string;
+                wastageTypeId: string | null;
                 returnCategory: string;
             })[];
             receivingLocation: {
@@ -709,8 +709,8 @@ export declare class JobWorkService {
             createdAt: Date;
             remarks: string | null;
             jobWorkId: string;
-            inwardNumber: string;
             truckNumber: string | null;
+            inwardNumber: string;
             challanNumber: string | null;
             receiptDate: Date;
             receivingLocationId: string;
@@ -742,9 +742,9 @@ export declare class JobWorkService {
         } & {
             id: string;
             stage: string;
-            wastageTypeId: string;
             quantityKg: number;
             jobWorkId: string;
+            wastageTypeId: string;
             disposition: string;
         })[];
         sourceLocation: {
@@ -764,8 +764,8 @@ export declare class JobWorkService {
             createdById: string;
             quantityKg: number;
             jobWorkId: string;
-            truckNumber: string | null;
             sourceLocationId: string;
+            truckNumber: string | null;
             outwardDate: Date;
             challanNumber: string | null;
             outwardNumber: string;
@@ -816,18 +816,18 @@ export declare class JobWorkService {
             productId: string;
             status: string;
             lotNumber: string;
+            productionRunId: string | null;
+            plantId: string;
+            processType: string;
             quantityKg: number;
             availableKg: number;
-            processType: string;
-            reprocessingCycle: number;
-            productionRunId: string | null;
-            jobWorkId: string | null;
-            parentWastageLotId: string | null;
-            plantId: string;
+            reservedKg: number;
             completionDate: Date;
             productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
             sampleRejectedLotId: string | null;
-            reservedKg: number;
+            reprocessingCycle: number;
         }[];
         wastageLots: ({
             wastageType: {
@@ -848,19 +848,19 @@ export declare class JobWorkService {
             productId: string;
             status: string;
             lotNumber: string;
-            wastageTypeId: string;
+            productionRunId: string | null;
+            processType: string | null;
             quantityKg: number;
             availableKg: number;
-            reprocessedKg: number;
-            discardedKg: number;
-            originalProductionRunId: string | null;
-            processType: string | null;
-            reprocessingCycle: number;
-            productionDate: Date;
-            locationId: string;
-            productionRunId: string | null;
             jobWorkId: string | null;
             parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            locationId: string;
+            reprocessedKg: number;
+            wastageTypeId: string;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
         })[];
         product: {
             id: string;
@@ -895,9 +895,9 @@ export declare class JobWorkService {
                 productId: string;
                 remarks: string | null;
                 numberOfBags: number | null;
-                wastageTypeId: string | null;
                 quantityKg: number;
                 inwardId: string;
+                wastageTypeId: string | null;
                 returnCategory: string;
             })[];
             receivingLocation: {
@@ -913,8 +913,8 @@ export declare class JobWorkService {
             createdAt: Date;
             remarks: string | null;
             jobWorkId: string;
-            inwardNumber: string;
             truckNumber: string | null;
+            inwardNumber: string;
             challanNumber: string | null;
             receiptDate: Date;
             receivingLocationId: string;
@@ -946,9 +946,9 @@ export declare class JobWorkService {
         } & {
             id: string;
             stage: string;
-            wastageTypeId: string;
             quantityKg: number;
             jobWorkId: string;
+            wastageTypeId: string;
             disposition: string;
         })[];
         sourceLocation: {
@@ -968,8 +968,8 @@ export declare class JobWorkService {
             createdById: string;
             quantityKg: number;
             jobWorkId: string;
-            truckNumber: string | null;
             sourceLocationId: string;
+            truckNumber: string | null;
             outwardDate: Date;
             challanNumber: string | null;
             outwardNumber: string;
@@ -1020,18 +1020,18 @@ export declare class JobWorkService {
             productId: string;
             status: string;
             lotNumber: string;
+            productionRunId: string | null;
+            plantId: string;
+            processType: string;
             quantityKg: number;
             availableKg: number;
-            processType: string;
-            reprocessingCycle: number;
-            productionRunId: string | null;
-            jobWorkId: string | null;
-            parentWastageLotId: string | null;
-            plantId: string;
+            reservedKg: number;
             completionDate: Date;
             productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
             sampleRejectedLotId: string | null;
-            reservedKg: number;
+            reprocessingCycle: number;
         }[];
         wastageLots: ({
             wastageType: {
@@ -1052,19 +1052,19 @@ export declare class JobWorkService {
             productId: string;
             status: string;
             lotNumber: string;
-            wastageTypeId: string;
+            productionRunId: string | null;
+            processType: string | null;
             quantityKg: number;
             availableKg: number;
-            reprocessedKg: number;
-            discardedKg: number;
-            originalProductionRunId: string | null;
-            processType: string | null;
-            reprocessingCycle: number;
-            productionDate: Date;
-            locationId: string;
-            productionRunId: string | null;
             jobWorkId: string | null;
             parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            locationId: string;
+            reprocessedKg: number;
+            wastageTypeId: string;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
         })[];
         product: {
             id: string;
@@ -1099,9 +1099,9 @@ export declare class JobWorkService {
                 productId: string;
                 remarks: string | null;
                 numberOfBags: number | null;
-                wastageTypeId: string | null;
                 quantityKg: number;
                 inwardId: string;
+                wastageTypeId: string | null;
                 returnCategory: string;
             })[];
             receivingLocation: {
@@ -1117,8 +1117,8 @@ export declare class JobWorkService {
             createdAt: Date;
             remarks: string | null;
             jobWorkId: string;
-            inwardNumber: string;
             truckNumber: string | null;
+            inwardNumber: string;
             challanNumber: string | null;
             receiptDate: Date;
             receivingLocationId: string;
@@ -1150,9 +1150,9 @@ export declare class JobWorkService {
         } & {
             id: string;
             stage: string;
-            wastageTypeId: string;
             quantityKg: number;
             jobWorkId: string;
+            wastageTypeId: string;
             disposition: string;
         })[];
         sourceLocation: {
@@ -1172,8 +1172,8 @@ export declare class JobWorkService {
             createdById: string;
             quantityKg: number;
             jobWorkId: string;
-            truckNumber: string | null;
             sourceLocationId: string;
+            truckNumber: string | null;
             outwardDate: Date;
             challanNumber: string | null;
             outwardNumber: string;
@@ -1224,18 +1224,18 @@ export declare class JobWorkService {
             productId: string;
             status: string;
             lotNumber: string;
+            productionRunId: string | null;
+            plantId: string;
+            processType: string;
             quantityKg: number;
             availableKg: number;
-            processType: string;
-            reprocessingCycle: number;
-            productionRunId: string | null;
-            jobWorkId: string | null;
-            parentWastageLotId: string | null;
-            plantId: string;
+            reservedKg: number;
             completionDate: Date;
             productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
             sampleRejectedLotId: string | null;
-            reservedKg: number;
+            reprocessingCycle: number;
         }[];
         wastageLots: ({
             wastageType: {
@@ -1256,19 +1256,19 @@ export declare class JobWorkService {
             productId: string;
             status: string;
             lotNumber: string;
-            wastageTypeId: string;
+            productionRunId: string | null;
+            processType: string | null;
             quantityKg: number;
             availableKg: number;
-            reprocessedKg: number;
-            discardedKg: number;
-            originalProductionRunId: string | null;
-            processType: string | null;
-            reprocessingCycle: number;
-            productionDate: Date;
-            locationId: string;
-            productionRunId: string | null;
             jobWorkId: string | null;
             parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            locationId: string;
+            reprocessedKg: number;
+            wastageTypeId: string;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
         })[];
         product: {
             id: string;
@@ -1303,9 +1303,9 @@ export declare class JobWorkService {
                 productId: string;
                 remarks: string | null;
                 numberOfBags: number | null;
-                wastageTypeId: string | null;
                 quantityKg: number;
                 inwardId: string;
+                wastageTypeId: string | null;
                 returnCategory: string;
             })[];
             receivingLocation: {
@@ -1321,8 +1321,8 @@ export declare class JobWorkService {
             createdAt: Date;
             remarks: string | null;
             jobWorkId: string;
-            inwardNumber: string;
             truckNumber: string | null;
+            inwardNumber: string;
             challanNumber: string | null;
             receiptDate: Date;
             receivingLocationId: string;
@@ -1354,9 +1354,9 @@ export declare class JobWorkService {
         } & {
             id: string;
             stage: string;
-            wastageTypeId: string;
             quantityKg: number;
             jobWorkId: string;
+            wastageTypeId: string;
             disposition: string;
         })[];
         sourceLocation: {
@@ -1376,8 +1376,8 @@ export declare class JobWorkService {
             createdById: string;
             quantityKg: number;
             jobWorkId: string;
-            truckNumber: string | null;
             sourceLocationId: string;
+            truckNumber: string | null;
             outwardDate: Date;
             challanNumber: string | null;
             outwardNumber: string;
@@ -1428,18 +1428,18 @@ export declare class JobWorkService {
             productId: string;
             status: string;
             lotNumber: string;
+            productionRunId: string | null;
+            plantId: string;
+            processType: string;
             quantityKg: number;
             availableKg: number;
-            processType: string;
-            reprocessingCycle: number;
-            productionRunId: string | null;
-            jobWorkId: string | null;
-            parentWastageLotId: string | null;
-            plantId: string;
+            reservedKg: number;
             completionDate: Date;
             productionSource: string;
+            jobWorkId: string | null;
+            parentWastageLotId: string | null;
             sampleRejectedLotId: string | null;
-            reservedKg: number;
+            reprocessingCycle: number;
         }[];
         wastageLots: ({
             wastageType: {
@@ -1460,19 +1460,19 @@ export declare class JobWorkService {
             productId: string;
             status: string;
             lotNumber: string;
-            wastageTypeId: string;
+            productionRunId: string | null;
+            processType: string | null;
             quantityKg: number;
             availableKg: number;
-            reprocessedKg: number;
-            discardedKg: number;
-            originalProductionRunId: string | null;
-            processType: string | null;
-            reprocessingCycle: number;
-            productionDate: Date;
-            locationId: string;
-            productionRunId: string | null;
             jobWorkId: string | null;
             parentWastageLotId: string | null;
+            reprocessingCycle: number;
+            locationId: string;
+            reprocessedKg: number;
+            wastageTypeId: string;
+            discardedKg: number;
+            originalProductionRunId: string | null;
+            productionDate: Date;
         })[];
         product: {
             id: string;
@@ -1507,9 +1507,9 @@ export declare class JobWorkService {
                 productId: string;
                 remarks: string | null;
                 numberOfBags: number | null;
-                wastageTypeId: string | null;
                 quantityKg: number;
                 inwardId: string;
+                wastageTypeId: string | null;
                 returnCategory: string;
             })[];
             receivingLocation: {
@@ -1525,8 +1525,8 @@ export declare class JobWorkService {
             createdAt: Date;
             remarks: string | null;
             jobWorkId: string;
-            inwardNumber: string;
             truckNumber: string | null;
+            inwardNumber: string;
             challanNumber: string | null;
             receiptDate: Date;
             receivingLocationId: string;
@@ -1558,9 +1558,9 @@ export declare class JobWorkService {
         } & {
             id: string;
             stage: string;
-            wastageTypeId: string;
             quantityKg: number;
             jobWorkId: string;
+            wastageTypeId: string;
             disposition: string;
         })[];
         sourceLocation: {
@@ -1580,8 +1580,8 @@ export declare class JobWorkService {
             createdById: string;
             quantityKg: number;
             jobWorkId: string;
-            truckNumber: string | null;
             sourceLocationId: string;
+            truckNumber: string | null;
             outwardDate: Date;
             challanNumber: string | null;
             outwardNumber: string;
@@ -1625,24 +1625,6 @@ export declare class JobWorkService {
             allowsSortex: boolean;
             samplingNormallyApplicable: boolean;
         };
-        inputs: {
-            id: string;
-            createdAt: Date;
-            productId: string;
-            remarks: string | null;
-            quantityKg: number;
-            productionRunId: string;
-            stockCategory: string;
-            supplierId: string | null;
-            inputUnit: string;
-            processedLotId: string | null;
-            addedById: string;
-            inwardId: string | null;
-            rejectedLotId: string | null;
-            wastageLotId: string | null;
-            inputDate: Date;
-            isAdditional: boolean;
-        }[];
         plant: {
             id: string;
             code: string;
@@ -1651,6 +1633,24 @@ export declare class JobWorkService {
             createdAt: Date;
             updatedAt: Date;
         };
+        inputs: {
+            id: string;
+            createdAt: Date;
+            productId: string;
+            remarks: string | null;
+            productionRunId: string;
+            quantityKg: number;
+            processedLotId: string | null;
+            stockCategory: string;
+            addedById: string;
+            supplierId: string | null;
+            inwardId: string | null;
+            rejectedLotId: string | null;
+            wastageLotId: string | null;
+            inputDate: Date;
+            inputUnit: string;
+            isAdditional: boolean;
+        }[];
     } & {
         id: string;
         createdAt: Date;
@@ -1659,14 +1659,16 @@ export declare class JobWorkService {
         remarks: string | null;
         status: string;
         createdById: string;
+        plantId: string;
         processType: string;
-        reprocessingCycle: number;
+        completionDate: Date | null;
+        productionSource: string;
         jobWorkId: string | null;
         parentWastageLotId: string | null;
+        sampleRejectedLotId: string | null;
+        reprocessingCycle: number;
         productionNumber: string;
-        plantId: string;
         startDate: Date;
-        completionDate: Date | null;
         daysSpanned: number | null;
         totalInputKg: number;
         cleaningWastageKg: number;
@@ -1680,11 +1682,13 @@ export declare class JobWorkService {
         cleaningFinalizedAt: Date | null;
         hullingFinalizedAt: Date | null;
         finalisedAt: Date | null;
-        productionSource: string;
-        sampleRejectedLotId: string | null;
         cancelledAt: Date | null;
         cancelReason: string | null;
         cancelledById: string | null;
+        deletedAt: Date | null;
+        deletedById: string | null;
+        deleteReason: string | null;
+        outputStockCategory: string | null;
     }) | null>;
     dashboardStats(): Promise<{
         activeJobWorks: number;

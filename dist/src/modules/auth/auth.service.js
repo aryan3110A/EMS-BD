@@ -77,6 +77,7 @@ let AuthService = class AuthService {
                 role: user.role,
                 officeId: user.officeId ?? undefined,
                 officeName: user.office?.name,
+                canDeleteProduction: user.role === 'SUPER_ADMIN' || user.canDeleteProduction,
             },
         };
     }
@@ -94,6 +95,7 @@ let AuthService = class AuthService {
             role: user.role,
             officeId: user.officeId,
             officeName: user.office?.name,
+            canDeleteProduction: user.role === 'SUPER_ADMIN' || user.canDeleteProduction,
         };
     }
 };

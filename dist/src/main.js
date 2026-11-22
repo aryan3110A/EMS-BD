@@ -31,7 +31,7 @@ async function bootstrap() {
     const swaggerEnabled = !isProduction || process.env.ENABLE_SWAGGER === 'true';
     if (swaggerEnabled) {
         const swaggerConfig = new swagger_1.DocumentBuilder()
-            .setTitle('Export Management System API')
+            .setTitle('Raj Foods EMS API')
             .setDescription('Inventory, Contract, Production & Dispatch Management')
             .setVersion('1.0')
             .addBearerAuth()

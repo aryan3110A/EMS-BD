@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SAMPLING_REQUIRED_COUNTRIES = exports.FULL_PROCESS_DEFAULT_PRODUCT_KEY = exports.DEFAULT_WASTAGE_ALERT_PCT = exports.WASTAGE_ALERT_THRESHOLD_KEY = exports.KG_PER_MT = exports.WeightUnit = exports.RejectedStockStatus = exports.WastageStage = exports.InwardTypeCode = exports.LedgerTxnType = exports.JobWorkWastageDisposition = exports.JobWorkReturnCategory = exports.JobWorkStatus = exports.TransferStatus = exports.SamplingStatus = exports.WastageLotStatus = exports.WastageDisposition = exports.ProductionRunStatus = exports.ProductionSource = exports.StockCategory = exports.InputStockCategory = exports.ProcessType = void 0;
+exports.SAMPLING_REQUIRED_NON_EU_COUNTRY_CODES = exports.FULL_PROCESS_DEFAULT_PRODUCT_KEY = exports.DEFAULT_WASTAGE_ALERT_PCT = exports.WASTAGE_ALERT_THRESHOLD_KEY = exports.KG_PER_MT = exports.WeightUnit = exports.RejectedStockStatus = exports.WastageStage = exports.InwardTypeCode = exports.LedgerTxnType = exports.JobWorkWastageDisposition = exports.JobWorkReturnCategory = exports.JobWorkStatus = exports.TransferStatus = exports.SamplingStatus = exports.WastageLotStatus = exports.WastageDisposition = exports.ProductionRunStatus = exports.ProductionSource = exports.StockCategory = exports.InputStockCategory = exports.ProcessType = void 0;
+exports.decideSampling = decideSampling;
 exports.requiresSampling = requiresSampling;
 exports.toKg = toKg;
 exports.fromKg = fromKg;
@@ -69,6 +70,7 @@ exports.SamplingStatus = {
     READY_FOR_SAMPLING: 'READY_FOR_SAMPLING',
     SAMPLE_COLLECTED: 'SAMPLE_COLLECTED',
     TESTING_IN_PROGRESS: 'TESTING_IN_PROGRESS',
+    RESULT_RECEIVED: 'RESULT_RECEIVED',
     PASSED: 'PASSED',
     FAILED: 'FAILED',
     REPROCESSING_REQUIRED: 'REPROCESSING_REQUIRED',
@@ -128,6 +130,9 @@ exports.LedgerTxnType = {
     JOB_WORK_INWARD_PROCESSED: 'JOB_WORK_INWARD_PROCESSED',
     JOB_WORK_INWARD_WASTAGE: 'JOB_WORK_INWARD_WASTAGE',
     JOB_WORK_INWARD_UNPROCESSED: 'JOB_WORK_INWARD_UNPROCESSED',
+    CONTAINER_DISPATCH: 'CONTAINER_DISPATCH',
+    AWAITING_PROCESS_RETURN: 'AWAITING_PROCESS_RETURN',
+    RECLASSIFICATION: 'RECLASSIFICATION',
 };
 exports.InwardTypeCode = {
     DOMESTIC: 'DOMESTIC',
@@ -155,14 +160,36 @@ exports.KG_PER_MT = 1000;
 exports.WASTAGE_ALERT_THRESHOLD_KEY = 'HULLING_WASTAGE_ALERT_PCT';
 exports.DEFAULT_WASTAGE_ALERT_PCT = 12;
 exports.FULL_PROCESS_DEFAULT_PRODUCT_KEY = 'FULL_PROCESS_DEFAULT_PRODUCT_ID';
-exports.SAMPLING_REQUIRED_COUNTRIES = ['RUSSIA', 'RU'];
-function requiresSampling(euClassification, destinationCountry, productSamplingNormallyApplicable) {
-    const eu = (euClassification || '').toUpperCase() === 'EU';
-    const country = (destinationCountry || '').trim().toUpperCase();
-    const russia = country === 'RUSSIA' ||
-        country === 'RU' ||
-        country.includes('RUSSIA');
-    return eu || russia || !!productSamplingNormallyApplicable;
+exports.SAMPLING_REQUIRED_NON_EU_COUNTRY_CODES = ['RU'];
+function decideSampling(input) {
+    const code = (input.countryCode || '').trim().toUpperCase();
+    const name = (input.countryName || input.destinationCountryText || '').trim();
+    const upperName = name.toUpperCase();
+    const isRussia = exports.SAMPLING_REQUIRED_NON_EU_COUNTRY_CODES.includes(code) ||
+        upperName === 'RUSSIA' ||
+        upperName === 'RUSSIAN FEDERATION';
+    if (isRussia) {
+        return { required: true, reason: 'RUSSIA', countryName: name || 'Russia', euClassification: 'NON_EU' };
+    }
+    const hasCountry = !!(input.countryCode || input.countryName);
+    const eu = hasCountry
+        ? (input.countryEuClassification || '').toUpperCase() === 'EU'
+        : (input.contractEuClassification || '').toUpperCase() === 'EU';
+    if (eu) {
+        return { required: true, reason: 'EU', countryName: name || null, euClassification: 'EU' };
+    }
+    if (!hasCountry && !input.contractEuClassification && !input.destinationCountryText) {
+        return { required: false, reason: 'UNKNOWN_DESTINATION', countryName: null, euClassification: null };
+    }
+    return {
+        required: false,
+        reason: 'NOT_REQUIRED',
+        countryName: name || null,
+        euClassification: input.countryEuClassification || input.contractEuClassification || 'NON_EU',
+    };
+}
+function requiresSampling(euClassification, destinationCountry, _productSamplingNormallyApplicable) {
+    return decideSampling({ contractEuClassification: euClassification, destinationCountryText: destinationCountry }).required;
 }
 function toKg(quantity, unit) {
     const u = (unit || 'KG').toUpperCase();

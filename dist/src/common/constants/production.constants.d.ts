@@ -70,6 +70,7 @@ export declare const SamplingStatus: {
     readonly READY_FOR_SAMPLING: "READY_FOR_SAMPLING";
     readonly SAMPLE_COLLECTED: "SAMPLE_COLLECTED";
     readonly TESTING_IN_PROGRESS: "TESTING_IN_PROGRESS";
+    readonly RESULT_RECEIVED: "RESULT_RECEIVED";
     readonly PASSED: "PASSED";
     readonly FAILED: "FAILED";
     readonly REPROCESSING_REQUIRED: "REPROCESSING_REQUIRED";
@@ -134,6 +135,9 @@ export declare const LedgerTxnType: {
     readonly JOB_WORK_INWARD_PROCESSED: "JOB_WORK_INWARD_PROCESSED";
     readonly JOB_WORK_INWARD_WASTAGE: "JOB_WORK_INWARD_WASTAGE";
     readonly JOB_WORK_INWARD_UNPROCESSED: "JOB_WORK_INWARD_UNPROCESSED";
+    readonly CONTAINER_DISPATCH: "CONTAINER_DISPATCH";
+    readonly AWAITING_PROCESS_RETURN: "AWAITING_PROCESS_RETURN";
+    readonly RECLASSIFICATION: "RECLASSIFICATION";
 };
 export type LedgerTxnType = (typeof LedgerTxnType)[keyof typeof LedgerTxnType];
 export declare const InwardTypeCode: {
@@ -163,7 +167,20 @@ export declare const KG_PER_MT = 1000;
 export declare const WASTAGE_ALERT_THRESHOLD_KEY = "HULLING_WASTAGE_ALERT_PCT";
 export declare const DEFAULT_WASTAGE_ALERT_PCT = 12;
 export declare const FULL_PROCESS_DEFAULT_PRODUCT_KEY = "FULL_PROCESS_DEFAULT_PRODUCT_ID";
-export declare const SAMPLING_REQUIRED_COUNTRIES: readonly ["RUSSIA", "RU"];
-export declare function requiresSampling(euClassification?: string | null, destinationCountry?: string | null, productSamplingNormallyApplicable?: boolean | null): boolean;
+export declare const SAMPLING_REQUIRED_NON_EU_COUNTRY_CODES: readonly ["RU"];
+export type SamplingDecision = {
+    required: boolean;
+    reason: string;
+    countryName: string | null;
+    euClassification: string | null;
+};
+export declare function decideSampling(input: {
+    countryName?: string | null;
+    countryCode?: string | null;
+    countryEuClassification?: string | null;
+    contractEuClassification?: string | null;
+    destinationCountryText?: string | null;
+}): SamplingDecision;
+export declare function requiresSampling(euClassification?: string | null, destinationCountry?: string | null, _productSamplingNormallyApplicable?: boolean | null): boolean;
 export declare function toKg(quantity: number, unit?: string): number;
 export declare function fromKg(kg: number, unit?: string): number;
