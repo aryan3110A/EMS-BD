@@ -28,17 +28,31 @@ export const ContractStatus = {
 } as const;
 export type ContractStatus = (typeof ContractStatus)[keyof typeof ContractStatus];
 
-/** Container-wise status (contract + production fulfilment). */
+/**
+ * Container operational stage (stored in ContractContainer.containerStatus).
+ * Since ERP Changes 22.11.26 the stage is DERIVED by ContainerWorkflowService from
+ * fulfilment, container details, sampling and dispatch records — never typed in freely.
+ */
 export const ContainerStatus = {
   DRAFT: 'DRAFT',
   UNDER_PREPARATION: 'UNDER_PREPARATION',
   PRODUCTION_ASSIGNED: 'PRODUCTION_ASSIGNED',
   UNDER_PROCESSING: 'UNDER_PROCESSING',
   PROCESSING_COMPLETED: 'PROCESSING_COMPLETED',
+  /** Not fulfilled (used when a container loses all its fulfilment) */
+  AWAITING_FULFILMENT: 'AWAITING_FULFILMENT',
   PARTIALLY_FULFILLED: 'PARTIALLY_FULFILLED',
+  /** Fulfilled — Container Details Pending */
   FULFILLED: 'FULFILLED',
+  CONTAINER_DETAILS_COMPLETED: 'CONTAINER_DETAILS_COMPLETED',
+  /** Sampling Pending (EU / Russia only) */
   READY_FOR_SAMPLING: 'READY_FOR_SAMPLING',
+  SAMPLE_SENT: 'SAMPLE_SENT',
+  AWAITING_SAMPLING_RESULT: 'AWAITING_SAMPLING_RESULT',
+  SAMPLING_RESULT_RECEIVED: 'SAMPLING_RESULT_RECEIVED',
+  /** Sampling Approved */
   SAMPLING_PASSED: 'SAMPLING_PASSED',
+  /** Sampling Rejected / On Hold */
   SAMPLING_FAILED: 'SAMPLING_FAILED',
   READY_FOR_DISPATCH: 'READY_FOR_DISPATCH',
   DISPATCHED_FROM_FACTORY: 'DISPATCHED_FROM_FACTORY',

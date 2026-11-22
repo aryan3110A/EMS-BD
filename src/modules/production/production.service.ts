@@ -24,12 +24,12 @@ import {
   WastageDisposition,
   WastageLotStatus,
   WastageStage,
-  requiresSampling,
   toKg,
 } from '../../common/constants/production.constants';
 import { NotificationService } from '../../common/services/notification.service';
 import { InventoryLedgerService } from './inventory-ledger.service';
 import { ProductionAuditService } from './production-audit.service';
+import { ContainerWorkflowService, COUNTED_ALLOCATION_STATUSES, type SyncResult } from '../container-workflow/container-workflow.service';
 import {
   AddInputDto,
   AllocateContainerDto,
@@ -56,7 +56,60 @@ export class ProductionService {
     private ledger: InventoryLedgerService,
     private audit: ProductionAuditService,
     private notifications: NotificationService,
+    private workflow: ContainerWorkflowService,
   ) {}
+
+  /** Containers that just became fully fulfilled → UI prompts for container details (PDF §8.1). */
+  private fulfilledSummary(results: (SyncResult | null)[]) {
+    const seen = new Set<string>();
+    return results
+      .filter((r): r is SyncResult => !!r && r.becameFulfilled && !seen.has(r.containerId) && !!seen.add(r.containerId))
+      .map((r) => ({
+        contractId: r.contractId,
+        contractNumber: r.contractNumber,
+        containerId: r.containerId,
+        containerIndex: r.containerIndex,
+        requiredKg: r.state.fulfilment.requiredKg,
+        fulfilledKg: r.state.fulfilment.fulfilledKg,
+      }));
+  }
+
+  private static isNaturalSesame(p?: { code: string; name: string } | null) {
+    return !!p && (p.code === 'NSS' || /natural\s+sesame/i.test(p.name));
+  }
+
+  private static isHulledSesame(p?: { code: string; name: string } | null) {
+    return !!p && (p.code === 'HSS' || /^hulled\s+sesame/i.test(p.name));
+  }
+
+  /**
+   * Where a run's good output goes (ERP Changes 22.11.26 §2):
+   *  - Natural Sesame + Hulling+Sortex → Hulled Sesame, FINAL processed stock
+   *  - Natural Sesame + Cleaning or Sortex only → stays Natural Sesame, Raw / Awaiting Factory Processing
+   *  - Hulled Sesame + Sortex → Hulled Sesame FINAL;  + Cleaning only → Hulled Sesame, Awaiting (Sortex still required)
+   *  - every other product: unchanged, FINAL processed stock
+   * There is never a "Natural Sesame Seeds (Processed)" finished product.
+   */
+  private async classifyOutput(run: { productId: string; processType: string }) {
+    const input = await this.prisma.product.findUnique({ where: { id: run.productId } });
+    const hullingSortex = run.processType === ProcessType.HULLING_SORTEX || run.processType === ProcessType.FULL_PROCESS;
+    if (ProductionService.isNaturalSesame(input)) {
+      if (!hullingSortex) {
+        return { productId: run.productId, category: StockCategory.RAW_MATERIAL, note: 'Natural Sesame awaiting Hulling + Sortex' };
+      }
+      const hss = await this.prisma.product.findFirst({
+        where: { OR: [{ code: 'HSS' }, { name: { equals: 'Hulled Sesame Seeds', mode: 'insensitive' } }], isActive: true },
+      });
+      if (!hss) {
+        throw new BadRequestException('Active product "Hulled Sesame Seeds" (code HSS) is required to finalise Hulling + Sortex output');
+      }
+      return { productId: hss.id, category: StockCategory.PROCESSED_AVAILABLE, note: 'Natural Sesame → Hulled Sesame (Hulling + Sortex)' };
+    }
+    if (ProductionService.isHulledSesame(input) && run.processType === ProcessType.CLEANING) {
+      return { productId: run.productId, category: StockCategory.RAW_MATERIAL, note: 'Hulled Sesame awaiting Sortex' };
+    }
+    return { productId: run.productId, category: StockCategory.PROCESSED_AVAILABLE, note: null as string | null };
+  }
 
   private async tx<T>(fn: (client: Prisma.TransactionClient) => Promise<T>): Promise<T> {
     try {
@@ -338,7 +391,7 @@ export class ProductionService {
     });
 
     const allocs = await this.prisma.containerAllocation.findMany({
-      where: { status: 'ACTIVE' },
+      where: { status: { in: COUNTED_ALLOCATION_STATUSES } },
       select: { containerId: true, productId: true, quantityKg: true, containerProductId: true },
     });
     const fulfilledMap = new Map<string, number>();
@@ -353,7 +406,12 @@ export class ProductionService {
     const rows = contracts
       .map((c) => {
         const containers = (c.containers || [])
-          .filter((ct) => !['SHIPPED', 'COMPLETED', 'CANCELLED', 'DISPATCHED_FROM_FACTORY'].includes(ct.containerStatus || ''))
+          .filter(
+            (ct) =>
+              !['SHIPPED', 'COMPLETED', 'CANCELLED', 'DISPATCHED_FROM_FACTORY', 'REACHED_PORT', 'ON_HOLD'].includes(
+                ct.containerStatus || '',
+              ) && !ct.dispatchedAt,
+          )
           .map((ct) => {
             const lines =
               ct.products?.length > 0
@@ -467,8 +525,9 @@ export class ProductionService {
   }
 
   // ── Production runs ──────────────────────────────────────
-  listRuns() {
+  listRuns(includeDeleted = false) {
     return this.prisma.productionRun.findMany({
+      where: includeDeleted ? {} : { deletedAt: null },
       include: {
         plant: true,
         product: true,
@@ -713,16 +772,26 @@ export class ProductionService {
     return this.getRun(run.id);
   }
 
+  /**
+   * Back to Stage 1 (ERP Changes 22.11.26 §5.3): correct Stage 1 any time before the
+   * production is finalised. Previous Stage 1 and Stage 2 entries are KEPT (as pre-filled
+   * values); WIP moves back to cleaning; Stage 2 must be re-confirmed against the new
+   * Stage 1 output. Finalised production cannot be reopened (posted stock never changes silently).
+   */
   async reopenCleaning(runId: string, user: JwtPayload, reason?: string) {
-    if (![UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN].includes(user.role as any)) {
-      throw new ForbiddenException('Only Admin can reopen cleaning');
-    }
     const run = await this.getRun(runId);
-    if (!run.cleaningFinalizedAt) throw new BadRequestException('Cleaning is not finalized');
-    if (run.hullingFinalizedAt) {
-      throw new BadRequestException('Cannot reopen cleaning after hulling is finalized');
+    if (run.deletedAt) throw new BadRequestException('This production run has been deleted');
+    if (run.finalisedAt || run.status === ProductionRunStatus.COMPLETED || run.status === ProductionRunStatus.CANCELLED) {
+      throw new BadRequestException('Finalised production cannot return to Stage 1. Use an authorised correction.');
     }
-    const hullingQty = run.hullingInputKg || 0;
+    if (!run.cleaningFinalizedAt) throw new BadRequestException('Stage 1 is not confirmed yet, so it is already editable');
+    const hullingQty = run.processType === ProcessType.CLEANING ? 0 : run.hullingInputKg || 0;
+    const previous = {
+      stage1OutputKg: run.processType === ProcessType.CLEANING ? run.netOutputKg : run.hullingInputKg,
+      cleaningWastageKg: run.cleaningWastageKg,
+      stage2Confirmed: !!run.hullingFinalizedAt,
+      stage2OutputKg: run.hullingFinalizedAt ? run.netOutputKg : null,
+    };
     await this.tx(async (tx) => {
       if (hullingQty > 0.001) {
         await this.ledger.postTxn(tx, {
@@ -736,17 +805,17 @@ export class ProductionService {
           quantityInKg: hullingQty,
           referenceType: 'PRODUCTION_RUN',
           referenceId: runId,
-          remarks: `Reopen cleaning: ${reason || 'Admin reopen'}`,
+          remarks: `Back to Stage 1: ${reason || 'Stage 1 correction'}`,
           createdById: user.sub,
         });
       }
-      await tx.cleaningWastageEntry.deleteMany({ where: { productionRunId: runId } });
+      // Entries are intentionally NOT deleted: the UI pre-fills them for correction.
       await tx.productionRun.update({
         where: { id: runId },
         data: {
           cleaningFinalizedAt: null,
-          cleaningWastageKg: 0,
-          hullingInputKg: 0,
+          hullingFinalizedAt: null,
+          wastageAlert: false,
           status: ProductionRunStatus.CLEANING_IN_PROGRESS,
         },
       });
@@ -755,9 +824,228 @@ export class ProductionService {
       module: 'PRODUCTION',
       recordType: 'ProductionRun',
       recordNumber: run.productionNumber,
-      action: 'REOPEN_CLEANING',
+      action: 'BACK_TO_STAGE_1',
       changedById: user.sub,
-      newValue: reason || null,
+      oldValue: JSON.stringify(previous),
+      reason: reason || undefined,
+    });
+    return this.getRun(runId);
+  }
+
+  /** Who may delete production runs: Owner (SUPER_ADMIN) or users explicitly granted it (PDF §4.1). */
+  private async canDeleteProduction(user: JwtPayload) {
+    if (user.role === UserRole.SUPER_ADMIN) return true;
+    const u = await this.prisma.user.findUnique({ where: { id: user.sub }, select: { canDeleteProduction: true, isActive: true } });
+    return !!u?.isActive && !!u.canDeleteProduction;
+  }
+
+  /**
+   * Soft-delete a production run with safe stock reversal (PDF §4.2).
+   * - Not finalised: all WIP returns to the exact sources it was issued from.
+   * - Finalised: allowed only while its output and wastage lots are untouched (no allocation,
+   *   transfer, reuse, sampling, merge or outward); output + wastage are reversed and the
+   *   inputs restored, so inventory ends exactly as before the run.
+   * The run row, entries and audit history are preserved and marked deleted.
+   */
+  async deleteRun(runId: string, reason: string, user: JwtPayload) {
+    if (!(await this.canDeleteProduction(user))) {
+      throw new ForbiddenException('You are not authorised to delete production records');
+    }
+    if (!reason?.trim()) throw new BadRequestException('A reason is required to delete a production record');
+    const run = await this.prisma.productionRun.findUnique({
+      where: { id: runId },
+      include: { inputs: true, outputLots: true, wastageLots: true, allocations: true },
+    });
+    if (!run) throw new NotFoundException('Production run not found');
+    if (run.deletedAt) throw new BadRequestException('Production run is already deleted');
+
+    const finalised = !!run.finalisedAt || run.status === ProductionRunStatus.COMPLETED;
+    const blockers: string[] = [];
+    if (run.allocations.length) blockers.push(`${run.allocations.length} container allocation(s) reference this run`);
+    if (finalised) {
+      for (const lot of run.outputLots) {
+        if (Math.abs(lot.availableKg - lot.quantityKg) > 0.001 || (lot.reservedKg || 0) > 0.001 || lot.status !== 'AVAILABLE') {
+          blockers.push(`output lot ${lot.lotNumber} has already been used (available ${lot.availableKg} of ${lot.quantityKg} KG)`);
+        }
+      }
+      const lotIds = run.outputLots.map((l) => l.id);
+      if (lotIds.length) {
+        const [transfers, reuse, samples] = await Promise.all([
+          this.prisma.plantTransfer.count({ where: { processedLotId: { in: lotIds } } }),
+          this.prisma.productionInput.count({ where: { processedLotId: { in: lotIds } } }),
+          this.prisma.sampleRecord.count({ where: { OR: [{ processedLotId: { in: lotIds } }, { productionRunId: runId }] } }),
+        ]);
+        if (transfers) blockers.push('output was transferred to another plant');
+        if (reuse) blockers.push('output was used as input to another production run');
+        if (samples) blockers.push('output is linked to sampling records');
+      }
+      for (const wl of run.wastageLots) {
+        const untouched =
+          Math.abs(wl.availableKg - wl.quantityKg) <= 0.001 &&
+          (wl.reprocessedKg || 0) <= 0.001 &&
+          (wl.discardedKg || 0) <= 0.001 &&
+          wl.status === WastageLotStatus.AVAILABLE;
+        if (!untouched) blockers.push(`wastage lot ${wl.lotNumber} has been reprocessed, merged, discarded or sold`);
+      }
+      const childLots = await this.prisma.wastageLot.count({ where: { parentWastageLotId: { in: run.wastageLots.map((w) => w.id) } } });
+      if (childLots) blockers.push('wastage lots from this run were merged into other lots');
+    }
+    if (blockers.length) {
+      throw new BadRequestException(`This production cannot be deleted safely: ${blockers.join('; ')}.`);
+    }
+
+    await this.tx(async (tx) => {
+      const ref = { referenceType: 'PRODUCTION_RUN', referenceId: runId, createdById: user.sub };
+      const note = `Delete ${run.productionNumber}: ${reason.trim()}`;
+      if (finalised) {
+        // 1) remove the run's output from where finalisation put it
+        const outputLots = run.outputLots.filter((l) => l.quantityKg > 0.001);
+        for (const lot of outputLots) {
+          await this.ledger.postTxn(tx, {
+            txnType: LedgerTxnType.TRANSACTION_REVERSAL,
+            productId: lot.productId,
+            stockCategory: StockCategory.PROCESSED_AVAILABLE,
+            sourceLocationId: lot.plantId,
+            quantityOutKg: lot.quantityKg,
+            remarks: `${note} (output lot ${lot.lotNumber})`,
+            ...ref,
+          });
+          await tx.processedOutputLot.update({ where: { id: lot.id }, data: { availableKg: 0, status: 'DELETED' } });
+        }
+        if (run.outputStockCategory === StockCategory.RAW_MATERIAL && (run.netOutputKg || 0) > 0.001) {
+          await this.ledger.postTxn(tx, {
+            txnType: LedgerTxnType.TRANSACTION_REVERSAL,
+            productId: run.productId,
+            stockCategory: StockCategory.RAW_MATERIAL,
+            sourceLocationId: run.plantId,
+            quantityOutKg: run.netOutputKg,
+            remarks: `${note} (output returned to awaiting stock)`,
+            ...ref,
+          });
+        }
+        // 2) remove stored wastage lots
+        for (const wl of run.wastageLots) {
+          await this.ledger.postTxn(tx, {
+            txnType: LedgerTxnType.TRANSACTION_REVERSAL,
+            productId: wl.productId,
+            stockCategory: StockCategory.WASTAGE_INVENTORY,
+            sourceLocationId: wl.locationId,
+            quantityOutKg: wl.quantityKg,
+            remarks: `${note} (wastage lot ${wl.lotNumber})`,
+            ...ref,
+          });
+          await tx.wastageLot.update({ where: { id: wl.id }, data: { availableKg: 0, status: WastageLotStatus.CLOSED } });
+        }
+      } else if (run.cleaningFinalizedAt && run.processType !== ProcessType.CLEANING && (run.hullingInputKg || 0) > 0.001) {
+        // not finalised: bring Stage 2 WIP back to Stage 1 so all WIP sits in WIP_CLEANING
+        await this.ledger.postTxn(tx, {
+          txnType: LedgerTxnType.TRANSACTION_REVERSAL,
+          productId: run.productId,
+          stockCategory: StockCategory.WIP_HULLING,
+          locationId: run.plantId,
+          fromCategory: StockCategory.WIP_HULLING,
+          toCategory: StockCategory.WIP_CLEANING,
+          quantityOutKg: run.hullingInputKg,
+          quantityInKg: run.hullingInputKg,
+          remarks: note,
+          ...ref,
+        });
+      }
+
+      // 3) return every input to its exact source
+      for (const input of run.inputs) {
+        const qty = input.quantityKg;
+        if (qty <= 0.001) continue;
+        const sourceCategory = input.rejectedLotId
+          ? StockCategory.SAMPLE_REJECTED
+          : input.wastageLotId
+            ? StockCategory.WASTAGE_INVENTORY
+            : input.processedLotId
+              ? StockCategory.PROCESSED_AVAILABLE
+              : StockCategory.RAW_MATERIAL;
+        if (finalised) {
+          await this.ledger.postTxn(tx, {
+            txnType: LedgerTxnType.TRANSACTION_REVERSAL,
+            productId: input.productId,
+            stockCategory: sourceCategory,
+            destLocationId: run.plantId,
+            quantityInKg: qty,
+            remarks: `${note} (input restored)`,
+            ...ref,
+          });
+        } else {
+          await this.ledger.postTxn(tx, {
+            txnType: LedgerTxnType.TRANSACTION_REVERSAL,
+            productId: input.productId,
+            stockCategory: StockCategory.WIP_CLEANING,
+            locationId: run.plantId,
+            fromCategory: StockCategory.WIP_CLEANING,
+            toCategory: sourceCategory,
+            quantityOutKg: qty,
+            quantityInKg: qty,
+            remarks: `${note} (input returned)`,
+            ...ref,
+          });
+        }
+        if (input.processedLotId) {
+          await tx.processedOutputLot.update({ where: { id: input.processedLotId }, data: { availableKg: { increment: qty } } });
+        } else if (input.rejectedLotId) {
+          const lot = await tx.sampleRejectedLot.findUnique({ where: { id: input.rejectedLotId } });
+          if (lot) {
+            await tx.sampleRejectedLot.update({
+              where: { id: lot.id },
+              data: {
+                availableKg: { increment: qty },
+                reprocessedKg: Math.max(0, (lot.reprocessedKg || 0) - qty),
+                status: RejectedStockStatus.AVAILABLE_FOR_SORTEX,
+              },
+            });
+          }
+        } else if (input.wastageLotId) {
+          const wl = await tx.wastageLot.findUnique({ where: { id: input.wastageLotId } });
+          if (wl) {
+            const reprocessed = Math.max(0, (wl.reprocessedKg || 0) - qty);
+            await tx.wastageLot.update({
+              where: { id: wl.id },
+              data: {
+                availableKg: { increment: qty },
+                reprocessedKg: reprocessed,
+                status: reprocessed > 0.001 ? WastageLotStatus.PARTIALLY_REPROCESSED : WastageLotStatus.AVAILABLE,
+              },
+            });
+          }
+        }
+      }
+
+      await tx.productionRun.update({
+        where: { id: runId },
+        data: {
+          deletedAt: new Date(),
+          deletedById: user.sub,
+          deleteReason: reason.trim(),
+          status: ProductionRunStatus.CANCELLED,
+          cancelledAt: new Date(),
+          cancelledById: user.sub,
+          cancelReason: `Deleted: ${reason.trim()}`,
+        },
+      });
+    });
+
+    await this.audit.log({
+      module: 'PRODUCTION',
+      recordType: 'ProductionRun',
+      recordNumber: run.productionNumber,
+      action: 'DELETED',
+      changedById: user.sub,
+      oldValue: JSON.stringify({
+        status: run.status,
+        processType: run.processType,
+        totalInputKg: run.totalInputKg,
+        netOutputKg: run.netOutputKg,
+        finalised,
+      }),
+      newValue: 'DELETED (soft)',
+      reason: reason.trim(),
     });
     return this.getRun(runId);
   }
@@ -1080,20 +1368,10 @@ export class ProductionService {
     ) / 1000;
     const lotNumber = await this.nextNumber('OUT', 'lot');
 
-    // Section 9.1: Automatic Natural Sesame to Hulled Sesame conversion for HULLING_SORTEX
-    let outputProductId = run.productId;
-    const isHullingSortex = run.processType === ProcessType.HULLING_SORTEX || run.processType === ProcessType.FULL_PROCESS;
-    if (isHullingSortex) {
-      const inputProd = await this.prisma.product.findUnique({ where: { id: run.productId } });
-      if (inputProd && (inputProd.code === 'NSS' || /natural\s+sesame/i.test(inputProd.name))) {
-        const hssProduct = await this.prisma.product.findFirst({
-          where: { OR: [{ code: 'HSS' }, { name: { contains: 'Hulled Sesame', mode: 'insensitive' } }], isActive: true },
-        });
-        if (hssProduct) {
-          outputProductId = hssProduct.id;
-        }
-      }
-    }
+    // ERP 22.11.26 §2: output classification (final processed vs awaiting further process)
+    const output = await this.classifyOutput(run);
+    const outputProductId = output.productId;
+    const outputIsFinal = output.category === StockCategory.PROCESSED_AVAILABLE;
 
     // Section 10.2: Direct Fulfillment allocation at finalization
     const directAllocs = dto.directAllocations || [];
@@ -1107,7 +1385,37 @@ export class ProductionService {
         `Total direct allocation (${directAllocTotalKg} KG) cannot exceed finished output (${net} KG)`,
       );
     }
+    if (!outputIsFinal && directAllocs.length) {
+      throw new BadRequestException(
+        `${output.note}: this output is not a final product yet and cannot be allocated to a container`,
+      );
+    }
+    // PDF §7.4 / §15.3: never fulfil beyond a container line's remaining quantity
+    const plannedByLine = new Map<string, number>();
+    for (const alloc of directAllocs) {
+      const rem = await this.workflow.remainingFor(this.prisma, alloc.containerId);
+      if (rem.container.contractId !== alloc.contractId) throw new BadRequestException('Contract and container mismatch');
+      if (rem.dispatched) throw new BadRequestException(`Container ${rem.container.containerIndex} is already dispatched`);
+      const line = alloc.containerProductId
+        ? rem.lines.find((l) => l.id === alloc.containerProductId)
+        : rem.lines.find((l) => l.productId === outputProductId);
+      if (!line) {
+        throw new BadRequestException(
+          `Container ${rem.container.containerIndex} has no requirement for the finished product of this run`,
+        );
+      }
+      const key = `${alloc.containerId}:${line.id ?? line.productId}`;
+      const planned = Math.round(((plannedByLine.get(key) || 0) + alloc.quantityKg) * 1000) / 1000;
+      if (planned > line.remainingKg + 0.001) {
+        throw new BadRequestException(
+          `Over-fulfilment: container ${rem.container.containerIndex} needs only ${line.remainingKg} KG more of ${line.productName || 'this product'}`,
+        );
+      }
+      plannedByLine.set(key, planned);
+      if (!alloc.containerProductId && line.id) alloc.containerProductId = line.id;
+    }
     const remainingStoreKg = Math.round((net - directAllocTotalKg) * 1000) / 1000;
+    const syncResults: (SyncResult | null)[] = [];
 
     const fromWip =
       run.processType === ProcessType.CLEANING ? StockCategory.WIP_CLEANING : StockCategory.WIP_HULLING;
@@ -1210,7 +1518,25 @@ export class ProductionService {
       }
 
       let createdProcessedLot: any = null;
-      if (net > 0.001) {
+      if (net > 0.001 && !outputIsFinal) {
+        // Not a final product (e.g. Cleaning-only Natural Sesame): stays identifiable as the
+        // same product in Raw / Awaiting Factory Processing stock — no processed lot is created.
+        await this.ledger.postTxn(tx, {
+          txnType: LedgerTxnType.AWAITING_PROCESS_RETURN,
+          productId: outputProductId,
+          stockCategory: fromWip,
+          locationId: run.plantId,
+          fromCategory: fromWip,
+          toCategory: StockCategory.RAW_MATERIAL,
+          quantityOutKg: net,
+          quantityInKg: net,
+          referenceType: 'PRODUCTION_RUN',
+          referenceId: runId,
+          remarks: `${run.productionNumber}: ${output.note}`,
+          createdById: user.sub,
+        });
+      }
+      if (net > 0.001 && outputIsFinal) {
         createdProcessedLot = await tx.processedOutputLot.create({
           data: {
             lotNumber,
@@ -1292,7 +1618,7 @@ export class ProductionService {
             createdById: user.sub,
           });
 
-          await this.refreshContainerStatus(tx, alloc.contractId, alloc.containerId, user.sub);
+          syncResults.push(await this.refreshContainerStatus(tx, alloc.contractId, alloc.containerId, user.sub));
         }
       }
 
@@ -1310,8 +1636,9 @@ export class ProductionService {
       await tx.productionRun.update({
         where: { id: runId },
         data: {
-          storedProcessedKg: remainingStoreKg,
+          storedProcessedKg: outputIsFinal ? remainingStoreKg : 0,
           allocatedKg: directAllocTotalKg,
+          outputStockCategory: output.category,
           finalisedAt: new Date(),
           completionDate: new Date(),
           daysSpanned: Math.floor((Date.now() - new Date(run.startDate).getTime()) / 86400000) + 1,
@@ -1331,120 +1658,25 @@ export class ProductionService {
         storedKg: remainingStoreKg,
         directAllocTotalKg,
         outputProductId,
+        outputStockCategory: output.category,
+        outputNote: output.note,
         dispositions: effectiveDispositions,
       }),
     });
 
-    return this.getRun(runId);
+    const finalised = await this.getRun(runId);
+    return { ...finalised, fulfilledContainers: this.fulfilledSummary(syncResults) };
   }
 
   // ── Fulfilment ───────────────────────────────────────────
-  private async refreshContainerStatus(tx: Prisma.TransactionClient, contractId: string, containerId: string, userId: string) {
-    const contract = await tx.contract.findUnique({
-      where: { id: contractId },
-      select: {
-        euClassification: true,
-        contractNumber: true,
-        destinationCountry: true,
-        destinationPort: { include: { country: true } },
-      },
-    });
-    const container = await tx.contractContainer.findUnique({
-      where: { id: containerId },
-      include: {
-        products: true,
-        destinationPort: { include: { country: true } },
-      },
-    });
-    if (!container) return;
-
-    const allocs = await tx.containerAllocation.findMany({
-      where: { containerId, status: 'ACTIVE' },
-    });
-    const lines =
-      container.products.length > 0
-        ? container.products.map((p) => ({
-            id: p.id,
-            productId: p.productId,
-            requiredKg: (p.quantityMt || 0) * 1000,
-            fulfilledKg: allocs
-              .filter((a) => a.containerProductId === p.id || (!a.containerProductId && a.productId === p.productId))
-              .reduce((s, a) => s + a.quantityKg, 0),
-          }))
-        : [
-            {
-              id: null as string | null,
-              productId: container.productId,
-              requiredKg: (container.quantityMt || 0) * 1000,
-              fulfilledKg: allocs.filter((a) => a.productId === container.productId).reduce((s, a) => s + a.quantityKg, 0),
-            },
-          ];
-
-    const allDone = lines.every((l) => l.fulfilledKg >= l.requiredKg - 0.001);
-    const anyDone = lines.some((l) => l.fulfilledKg > 0.001);
-    const destCountry =
-      contract?.destinationCountry ||
-      container.destinationPort?.country?.name ||
-      contract?.destinationPort?.country?.name ||
-      '';
-    const productIds = [...new Set(lines.map((l) => l.productId).filter(Boolean))] as string[];
-    const products =
-      productIds.length > 0
-        ? await tx.product.findMany({
-            where: { id: { in: productIds } },
-            select: { id: true, samplingNormallyApplicable: true },
-          })
-        : [];
-    const productSampling = products.some((p) => p.samplingNormallyApplicable);
-    const needsSampling = requiresSampling(contract?.euClassification, destCountry, productSampling);
-
-    let nextStatus = container.containerStatus;
-    if (allDone) {
-      nextStatus = needsSampling ? ContainerStatus.READY_FOR_SAMPLING : ContainerStatus.READY_FOR_DISPATCH;
-    } else if (anyDone) {
-      nextStatus = ContainerStatus.PARTIALLY_FULFILLED;
-    }
-
-    if (nextStatus !== container.containerStatus) {
-      await tx.contractContainer.update({
-        where: { id: containerId },
-        data: { containerStatus: nextStatus },
-      });
-      await tx.containerStatusHistory.create({
-        data: {
-          containerId,
-          contractId,
-          fromStatus: container.containerStatus,
-          toStatus: nextStatus!,
-          updatedById: userId,
-          remarks: 'Updated by production fulfilment',
-        },
-      });
-    }
-
-    if (allDone && needsSampling) {
-      // One sampling workflow per container (not per product line duplication for Russia+EU)
-      const existingAny = await tx.sampleRecord.findFirst({
-        where: { containerId, status: { not: SamplingStatus.FAILED } },
-      });
-      if (!existingAny) {
-        for (const line of lines) {
-          const existing = await tx.sampleRecord.findFirst({
-            where: { containerId, productId: line.productId },
-          });
-          if (!existing) {
-            await tx.sampleRecord.create({
-              data: {
-                contractId,
-                containerId,
-                productId: line.productId,
-                status: SamplingStatus.READY_FOR_SAMPLING,
-              },
-            });
-          }
-        }
-      }
-    }
+  /** Recalculate the container's fulfilment + operational stage via the shared workflow engine. */
+  private async refreshContainerStatus(
+    tx: Prisma.TransactionClient,
+    _contractId: string,
+    containerId: string,
+    userId: string,
+  ): Promise<SyncResult | null> {
+    return this.workflow.sync(tx, containerId, userId, 'Updated by production fulfilment');
   }
 
   /** @deprecated Fulfilment removed from Production Run — use allocateFulfilmentFifo */
@@ -1469,6 +1701,17 @@ export class ProductionService {
       if (lot.availableKg < qtyKg - 0.001) {
         throw new BadRequestException(`Only ${lot.availableKg} KG is available`);
       }
+      const rem = await this.workflow.remainingFor(this.prisma, dto.containerId);
+      if (rem.container.contractId !== dto.contractId) throw new BadRequestException('Contract and container mismatch');
+      if (rem.dispatched) throw new BadRequestException('Container is already dispatched');
+      const line = dto.containerProductId
+        ? rem.lines.find((l) => l.id === dto.containerProductId)
+        : rem.lines.find((l) => l.productId === dto.productId);
+      if (!line || line.productId !== dto.productId) throw new BadRequestException('Container has no requirement for this product');
+      if (qtyKg > line.remainingKg + 0.001) {
+        throw new BadRequestException(`Cannot allocate above pending quantity (${line.remainingKg} KG)`);
+      }
+      let synced: SyncResult | null = null;
       await this.tx(async (tx) => {
         await this.applyLotAllocation(tx, {
           lot,
@@ -1479,7 +1722,7 @@ export class ProductionService {
           qtyKg,
           userId: user.sub,
         });
-        await this.refreshContainerStatus(tx, dto.contractId, dto.containerId, user.sub);
+        synced = await this.refreshContainerStatus(tx, dto.contractId, dto.containerId, user.sub);
       });
       await this.audit.log({
         module: 'FULFILMENT',
@@ -1489,7 +1732,7 @@ export class ProductionService {
         changedById: user.sub,
         newValue: String(qtyKg),
       });
-      return { ok: true };
+      return { ok: true, fulfilledContainers: this.fulfilledSummary([synced]) };
     }
     if (!dto.locationId) throw new BadRequestException('locationId is required for product-based fulfilment');
     return this.allocateFulfilmentFifo(
@@ -1669,6 +1912,7 @@ export class ProductionService {
 
     let remaining = qtyKg;
     const consumed: { lotId: string; lotNumber: string; quantityKg: number }[] = [];
+    let synced: SyncResult | null = null;
 
     await this.tx(async (tx) => {
       for (const lot of lots) {
@@ -1689,7 +1933,7 @@ export class ProductionService {
       if (remaining > 0.001) {
         throw new BadRequestException(`Only ${qtyKg - remaining} KG could be allocated`);
       }
-      await this.refreshContainerStatus(tx, dto.contractId, dto.containerId, user.sub);
+      synced = await this.refreshContainerStatus(tx, dto.contractId, dto.containerId, user.sub);
     });
 
     await this.audit.log({
@@ -1716,7 +1960,7 @@ export class ProductionService {
       ],
     });
 
-    return { ok: true, allocatedKg: qtyKg, consumedLots: consumed };
+    return { ok: true, allocatedKg: qtyKg, consumedLots: consumed, fulfilledContainers: this.fulfilledSummary([synced]) };
   }
 
   listProcessedLots() {
@@ -1992,6 +2236,73 @@ export class ProductionService {
     return { year: selectedYear, totalTrucks, monthly };
   }
 
+  /**
+   * Product stock summary in the PDF's terms (ERP 22.11.26 §3.1–3.2, §18):
+   * Final Processed = Unassigned + Allocated (sub-divisions, never added again).
+   */
+  async productStockSummary(productId: string, locationId?: string, pending?: any[]) {
+    const product = await this.prisma.product.findUnique({ where: { id: productId } });
+    if (!product) throw new NotFoundException('Product not found');
+    const [balances, lots] = await Promise.all([
+      this.prisma.inventoryBalance.findMany({ where: { productId, ...(locationId ? { locationId } : {}) } }),
+      this.prisma.processedOutputLot.aggregate({
+        where: { productId, status: 'AVAILABLE', availableKg: { gt: 0.001 }, ...(locationId ? { plantId: locationId } : {}) },
+        _sum: { availableKg: true },
+        _count: { _all: true },
+      }),
+    ]);
+    const sum = (cats: string[]) =>
+      Math.round(balances.filter((b) => cats.includes(b.stockCategory)).reduce((s, b) => s + b.quantityKg, 0) * 1000) / 1000;
+    const rawKg = sum([StockCategory.RAW_MATERIAL]);
+    const wipKg = sum([StockCategory.WIP_CLEANING, StockCategory.WIP_HULLING]);
+    const allocatedKg = sum([StockCategory.PROCESSED_RESERVED]);
+    const unassignedKg = Math.round((lots._sum.availableKg || 0) * 1000) / 1000;
+    const finalProcessedKg = Math.round((unassignedKg + allocatedKg) * 1000) / 1000;
+    const pendingRows = pending ?? (await this.getPendingContracts());
+    const eligible = pendingRows.filter((c: any) =>
+      (c.containers || []).some((ct: any) => (ct.productLines || []).some((l: any) => l.productId === productId && l.pendingKg > 0.001)),
+    );
+    const pendingKg = eligible.reduce(
+      (s: number, c: any) =>
+        s +
+        c.containers.reduce(
+          (a: number, ct: any) =>
+            a + ct.productLines.filter((l: any) => l.productId === productId).reduce((x: number, l: any) => x + l.pendingKg, 0),
+          0,
+        ),
+      0,
+    );
+    const nss = ProductionService.isNaturalSesame(product);
+    const hss = ProductionService.isHulledSesame(product);
+    const fmt = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 3 });
+    return {
+      productId,
+      productCode: product.code,
+      productName: product.name,
+      rawLabel: hss
+        ? 'Purchased Hulled Awaiting Sortex (Raw / Awaiting Factory Processing)'
+        : nss
+          ? 'Natural Sesame Awaiting Hulling + Sortex'
+          : 'Raw / Awaiting Factory Processing',
+      rawKg,
+      wipKg,
+      finalProcessedKg,
+      unassignedKg,
+      allocatedKg,
+      unassignedLots: lots._count._all,
+      eligiblePendingContracts: eligible.length,
+      eligiblePendingKg: Math.round(pendingKg * 1000) / 1000,
+      unassignedMessage:
+        unassignedKg > 0.001
+          ? eligible.length
+            ? `${fmt(unassignedKg)} KG Unassigned — ${eligible.length} Pending Contract${eligible.length === 1 ? '' : 's'}`
+            : `${fmt(unassignedKg)} KG Unassigned — No Contracts Available to Assign`
+          : null,
+      /** Natural Sesame is never a finished product (§2.1); flag any legacy processed stock left */
+      legacyProcessedNaturalSesameKg: nss ? finalProcessedKg : 0,
+    };
+  }
+
   async getInventoryByProduct(locationId?: string) {
     const balances = await this.prisma.inventoryBalance.findMany({
       where: {
@@ -2089,9 +2400,23 @@ export class ProductionService {
       }
     }
 
+    const reserved = await this.prisma.inventoryBalance.groupBy({
+      by: ['productId'],
+      where: { stockCategory: StockCategory.PROCESSED_RESERVED, quantityKg: { gt: 0 }, ...(locationId ? { locationId } : {}) },
+      _sum: { quantityKg: true },
+    });
+    const reservedMap = new Map(reserved.map((r) => [r.productId, r._sum.quantityKg || 0]));
+    const pending = await this.getPendingContracts();
+    const pendingCount = (pid: string) =>
+      pending.filter((c: any) =>
+        (c.containers || []).some((ct: any) => (ct.productLines || []).some((l: any) => l.productId === pid && l.pendingKg > 0.001)),
+      ).length;
     return [...byProduct.values()]
       .map((r) => ({
         ...r,
+        allocatedKg: Math.round((reservedMap.get(r.productId) || 0) * 1000) / 1000,
+        finalProcessedKg: Math.round((r.processedKg + (reservedMap.get(r.productId) || 0)) * 1000) / 1000,
+        eligiblePendingContracts: pendingCount(r.productId),
         totalKg: Math.round(r.totalKg * 1000) / 1000,
         rawKg: Math.round(r.rawKg * 1000) / 1000,
         wipKg: Math.round(r.wipKg * 1000) / 1000,
@@ -2212,6 +2537,7 @@ export class ProductionService {
 
     return {
       product,
+      summary: await this.productStockSummary(productId, locationId),
       locations: byLoc,
       wastageByType,
       ledger,
@@ -2254,184 +2580,33 @@ export class ProductionService {
     }));
   }
 
+  /**
+   * Legacy Sampling-screen update, mapped onto the container workflow rules
+   * (sent → awaiting result → result received → approved). A passing result is no longer
+   * treated as approval (PDF §12.3).
+   */
   async updateSample(id: string, dto: SampleResultDto, user: JwtPayload) {
     const sample = await this.prisma.sampleRecord.findUnique({ where: { id } });
     if (!sample) throw new NotFoundException('Sample not found');
-
-    const result = (dto.result || dto.status || '').toUpperCase();
-    const passed = result === 'PASSED' || dto.status === SamplingStatus.PASSED;
-    const failed = result === 'FAILED' || dto.status === SamplingStatus.FAILED;
-
-    await this.tx(async (tx) => {
-      await tx.sampleRecord.update({
-        where: { id },
-        data: {
-          status: passed ? SamplingStatus.PASSED : failed ? SamplingStatus.FAILED : dto.status,
-          result: dto.result || (passed ? 'PASSED' : failed ? 'FAILED' : dto.status),
-          collectionDate: dto.collectionDate ? new Date(dto.collectionDate) : sample.collectionDate,
-          resultDate: dto.resultDate ? new Date(dto.resultDate) : new Date(),
-          testingAgency: dto.testingAgency,
-          reportReference: dto.reportReference,
-          remarks: dto.remarks,
-          updatedById: user.sub,
-        },
-      });
-
-      if (passed) {
-        const siblings = await tx.sampleRecord.findMany({ where: { containerId: sample.containerId } });
-        const allPassed = siblings.every((s) =>
-          s.id === id ? true : s.status === SamplingStatus.PASSED,
-        );
-        if (allPassed) {
-          const container = await tx.contractContainer.findUnique({ where: { id: sample.containerId } });
-          await tx.contractContainer.update({
-            where: { id: sample.containerId },
-            data: { containerStatus: ContainerStatus.READY_FOR_DISPATCH },
-          });
-          await tx.containerStatusHistory.create({
-            data: {
-              containerId: sample.containerId,
-              contractId: sample.contractId,
-              fromStatus: container?.containerStatus,
-              toStatus: ContainerStatus.READY_FOR_DISPATCH,
-              updatedById: user.sub,
-              remarks: 'All required samples passed',
-            },
-          });
-        }
+    const result = (dto.result || '').toUpperCase() || (['PASSED', 'FAILED'].includes(dto.status) ? dto.status : '');
+    const common = {
+      samplingDate: dto.collectionDate,
+      testingAgency: dto.testingAgency,
+      resultDate: dto.resultDate,
+      resultReference: dto.reportReference,
+      remarks: dto.remarks,
+    };
+    if (result === 'PASSED' || result === 'FAILED') {
+      if ([SamplingStatus.READY_FOR_SAMPLING, SamplingStatus.NOT_READY].includes(sample.status as any)) {
+        await this.workflow.updateSampleRecord(id, { step: 'SENT', ...common }, user);
       }
-
-      if (failed) {
-        const allocs = await tx.containerAllocation.findMany({
-          where: {
-            containerId: sample.containerId,
-            productId: sample.productId,
-            status: 'ACTIVE',
-          },
-        });
-        const qty = allocs.reduce((s, a) => s + a.quantityKg, 0);
-        const plantId =
-          (await tx.contractContainer.findUnique({ where: { id: sample.containerId } }))?.productionUnitId ||
-          (await tx.productionRun.findFirst({ where: { id: sample.productionRunId || undefined } }))?.plantId;
-
-        const loc =
-          plantId ||
-          (await tx.inventoryLocation.findFirst({ where: { isActive: true } }))?.id;
-        if (!loc) throw new BadRequestException('No plant location for rejected stock');
-
-        const lotNumber = await this.nextNumber('REJ', 'rejected');
-        // nextNumber uses prisma root — call outside or inline
-        const year = new Date().getFullYear();
-        const prefix = `REJ-${year}-`;
-        const latest = await tx.sampleRejectedLot.findFirst({
-          where: { lotNumber: { startsWith: prefix } },
-          orderBy: { lotNumber: 'desc' },
-        });
-        let next = 1;
-        if (latest) {
-          const n = parseInt(latest.lotNumber.split('-').pop() || '0', 10);
-          if (!isNaN(n)) next = n + 1;
-        }
-        const rejNo = `${prefix}${String(next).padStart(5, '0')}`;
-
-        await tx.sampleRejectedLot.create({
-          data: {
-            lotNumber: rejNo,
-            productId: sample.productId,
-            quantityKg: qty || 0,
-            availableKg: qty || 0,
-            plantId: loc,
-            productionRunId: sample.productionRunId,
-            contractId: sample.contractId,
-            containerId: sample.containerId,
-            sampleRecordId: sample.id,
-            failureDate: new Date(),
-            failureRemarks: dto.remarks,
-            status: RejectedStockStatus.AVAILABLE_FOR_SORTEX,
-          },
-        });
-
-        for (const a of allocs) {
-          await tx.containerAllocation.update({
-            where: { id: a.id },
-            data: { status: 'REJECTED' },
-          });
-          if (a.processedLotId) {
-            await tx.processedOutputLot.update({
-              where: { id: a.processedLotId },
-              data: { reservedKg: { decrement: a.quantityKg } },
-            });
-          }
-        }
-
-        if (qty > 0) {
-          await this.ledger.postTxn(tx, {
-            txnType: LedgerTxnType.SAMPLE_REJECTION,
-            productId: sample.productId,
-            stockCategory: StockCategory.PROCESSED_RESERVED,
-            locationId: loc,
-            fromCategory: StockCategory.PROCESSED_RESERVED,
-            toCategory: StockCategory.SAMPLE_REJECTED,
-            quantityOutKg: qty,
-            quantityInKg: qty,
-            referenceType: 'SAMPLE',
-            referenceId: sample.id,
-            createdById: user.sub,
-          });
-        }
-
-        const container = await tx.contractContainer.findUnique({ where: { id: sample.containerId } });
-        await tx.contractContainer.update({
-          where: { id: sample.containerId },
-          data: { containerStatus: ContainerStatus.SAMPLING_FAILED },
-        });
-        await tx.containerStatusHistory.create({
-          data: {
-            containerId: sample.containerId,
-            contractId: sample.contractId,
-            fromStatus: container?.containerStatus,
-            toStatus: ContainerStatus.SAMPLING_FAILED,
-            updatedById: user.sub,
-            remarks: 'Sample failed — quantity moved to rejected stock',
-          },
-        });
-      }
-    });
-
-    await this.audit.log({
-      module: 'SAMPLING',
-      recordType: 'SampleRecord',
-      recordNumber: id,
-      action: passed ? 'PASSED' : failed ? 'FAILED' : 'UPDATED',
-      changedById: user.sub,
-      oldValue: sample.status,
-      newValue: passed ? 'PASSED' : failed ? 'FAILED' : dto.status || sample.status,
-      reason: dto.remarks,
-    });
-
-    const contract = await this.prisma.contract.findUnique({
-      where: { id: sample.contractId },
-      select: { contractNumber: true },
-    });
-    await this.notifications.notifyChange({
-      type: passed ? 'SAMPLE_PASSED' : failed ? 'SAMPLE_FAILED' : 'SAMPLE_UPDATED',
-      message: `Sample ${passed ? 'passed' : failed ? 'failed' : 'updated'} for contract ${contract?.contractNumber || sample.contractId}`,
-      contractId: sample.contractId,
-      containerId: sample.containerId,
-      changedById: user.sub,
-      targetRoles: [
-        UserRole.SUPER_ADMIN,
-        UserRole.OFFICE_ADMIN,
-        UserRole.PRODUCTION_TEAM,
-        UserRole.SUPER_SALES,
-        UserRole.CONTRACT_TEAM,
-      ],
-    });
-
-    return this.prisma.sampleRecord.findUnique({
-      where: { id },
-      include: { product: true },
-    });
+      return this.workflow.updateSampleRecord(id, { step: 'RESULT', result, ...common }, user);
+    }
+    if (dto.status === SamplingStatus.SAMPLE_COLLECTED) return this.workflow.updateSampleRecord(id, { step: 'SENT', ...common }, user);
+    if (dto.status === SamplingStatus.TESTING_IN_PROGRESS) {
+      return this.workflow.updateSampleRecord(id, { step: 'AWAITING_RESULT', ...common }, user);
+    }
+    throw new BadRequestException('Unsupported sampling update. Use Container Status actions.');
   }
 
   listRejectedLots() {
@@ -2541,6 +2716,24 @@ export class ProductionService {
           where: { id: t.processedLotId },
           data: { availableKg: { decrement: t.quantityKg } },
         });
+      } else if (t.stockCategory === StockCategory.PROCESSED_AVAILABLE) {
+        // Product-level processed transfer: consume source lots FIFO so lot totals stay
+        // equal to the ledger, and remember the oldest source run for traceability.
+        const lots = await tx.processedOutputLot.findMany({
+          where: { productId: t.productId, plantId: t.sourceLocationId, status: 'AVAILABLE', availableKg: { gt: 0.001 } },
+          orderBy: { completionDate: 'asc' },
+        });
+        let remaining = t.quantityKg;
+        for (const lot of lots) {
+          if (remaining <= 0.001) break;
+          const take = Math.min(lot.availableKg, remaining);
+          await tx.processedOutputLot.update({ where: { id: lot.id }, data: { availableKg: { decrement: take } } });
+          remaining = Math.round((remaining - take) * 1000) / 1000;
+        }
+        if (remaining > 0.001) throw new BadRequestException(`Only ${t.quantityKg - remaining} KG of processed lots available to transfer`);
+        if (!t.productionRunId && lots[0]?.productionRunId) {
+          await tx.plantTransfer.update({ where: { id }, data: { productionRunId: lots[0].productionRunId } });
+        }
       }
       await this.ledger.postTxn(tx, {
         txnType: LedgerTxnType.PLANT_TRANSFER_OUT,
@@ -2619,6 +2812,28 @@ export class ProductionService {
         createdById: user.sub,
       });
 
+      if (t.stockCategory === StockCategory.PROCESSED_AVAILABLE) {
+        // PDF §3.3: finalised stock keeps its Final Processed classification at the destination,
+        // as a real lot (so Inventory and Fulfilment can see it) with its origin preserved.
+        const srcLot = t.processedLotId ? await tx.processedOutputLot.findUnique({ where: { id: t.processedLotId } }) : null;
+        const fresh = await tx.plantTransfer.findUnique({ where: { id }, select: { productionRunId: true } });
+        await tx.processedOutputLot.create({
+          data: {
+            lotNumber: `${t.transferNumber}-DST`,
+            productionRunId: srcLot?.productionRunId || fresh?.productionRunId || null,
+            productId: t.productId,
+            plantId: t.destLocationId,
+            processType: srcLot?.processType || 'TRANSFER',
+            quantityKg: t.quantityKg,
+            availableKg: t.quantityKg,
+            completionDate: srcLot?.completionDate || new Date(),
+            status: 'AVAILABLE',
+            productionSource: srcLot?.productionSource || ProductionSource.IN_HOUSE,
+            jobWorkId: srcLot?.jobWorkId || null,
+            reprocessingCycle: srcLot?.reprocessingCycle || 0,
+          },
+        });
+      }
       if (t.rejectedLotId) {
         await tx.sampleRejectedLot.create({
           data: {
@@ -2722,7 +2937,7 @@ export class ProductionService {
     }
 
     const wastageAlerts = await this.prisma.productionRun.findMany({
-      where: { wastageAlert: true },
+      where: { wastageAlert: true, deletedAt: null },
       include: {
         plant: true,
         product: true,
@@ -2815,7 +3030,7 @@ export class ProductionService {
     }
 
     const activeRuns = await this.prisma.productionRun.count({
-      where: { status: { notIn: [ProductionRunStatus.COMPLETED, ProductionRunStatus.CANCELLED] } },
+      where: { deletedAt: null, status: { notIn: [ProductionRunStatus.COMPLETED, ProductionRunStatus.CANCELLED] } },
     });
 
     const completedToday = await this.prisma.productionRun.findMany({
@@ -2959,7 +3174,42 @@ export class ProductionService {
       };
     });
 
+    // ERP 22.11.26 §18 inventory KPIs and §17.5 lot KPIs
+    const allocatedKgTotal = byCategory[StockCategory.PROCESSED_RESERVED] || 0;
+    const wipKgTotal = (byCategory[StockCategory.WIP_CLEANING] || 0) + (byCategory[StockCategory.WIP_HULLING] || 0);
+    const [lotsUnassigned, lotsFinalised, allocatedLots] = await Promise.all([
+      this.prisma.processedOutputLot.count({ where: { status: 'AVAILABLE', availableKg: { gt: 0.001 } } }),
+      this.prisma.processedOutputLot.count({ where: { status: { notIn: ['DELETED', 'RECLASSIFIED_AWAITING'] } } }),
+      this.prisma.containerAllocation.findMany({
+        where: { status: 'ACTIVE', processedLotId: { not: null } },
+        select: { processedLotId: true },
+        distinct: ['processedLotId'],
+      }),
+    ]);
+    const unassignedLotIds = await this.prisma.processedOutputLot.findMany({
+      where: { status: 'AVAILABLE', availableKg: { gt: 0.001 } },
+      select: { id: true },
+    });
+    const inFactory = new Set([...unassignedLotIds.map((l) => l.id), ...allocatedLots.map((a) => a.processedLotId as string)]);
+    const hssProduct = await this.prisma.product.findFirst({ where: { code: 'HSS' } });
+    const pendingForSummary = await this.getPendingContracts();
+
     return {
+      kpis: {
+        rawAwaitingKg: Math.round((byCategory[StockCategory.RAW_MATERIAL] || 0) * 1000) / 1000,
+        finalProcessedKg: Math.round((processedAvailableKg + allocatedKgTotal) * 1000) / 1000,
+        materialInProductionKg: Math.round(wipKgTotal * 1000) / 1000,
+        unassignedKg: Math.round(processedAvailableKg * 1000) / 1000,
+        allocatedKg: Math.round(allocatedKgTotal * 1000) / 1000,
+      },
+      lots: {
+        inFactory: inFactory.size,
+        inProduction: activeRuns,
+        finalised: lotsFinalised,
+        unassigned: lotsUnassigned,
+        allocated: allocatedLots.length,
+      },
+      hulledSesame: hssProduct ? await this.productStockSummary(hssProduct.id, undefined, pendingForSummary) : null,
       inventory: {
         byCategory,
         byLocation,

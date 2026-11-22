@@ -24,12 +24,12 @@ export declare class ContractAuditService {
         id: string;
         createdAt: Date;
         contractNumber: string | null;
-        containerIndex: number | null;
-        contractId: string;
-        containerId: string | null;
         fieldName: string;
-        previousValue: string | null;
         newValue: string | null;
         changedById: string;
+        previousValue: string | null;
+        contractId: string;
+        containerId: string | null;
+        containerIndex: number | null;
     })[]>;
 }

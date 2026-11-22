@@ -31,6 +31,8 @@ model User {
   role         String
   officeId     String?
   isActive     Boolean  @default(true)
+  /// Per-user permission to soft-delete production runs (PDF 22.11.26 §4). SUPER_ADMIN always may.
+  canDeleteProduction Boolean @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -429,6 +431,20 @@ model ContractContainer {
   /// Future production hooks (not finalized — do not expose in UI yet)
   productionUnitId     String?
   productionRemarks    String?
+  /// Container workflow (PDF 22.11.26 §6–§20). The operational stage is kept in containerStatus.
+  shippingLineName        String?
+  containerDetailsRemarks String?
+  detailsUpdatedAt        DateTime?
+  detailsUpdatedById      String?
+  detailsCompletedAt      DateTime?
+  firstAllocatedAt        DateTime?
+  fulfilledAt             DateTime?
+  samplingStartedAt       DateTime?
+  readyForDispatchAt      DateTime?
+  readyForDispatchById    String?
+  dispatchedAt            DateTime?
+  dispatchedById          String?
+  dispatchRemarks         String?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
@@ -845,6 +861,12 @@ model ProductionRun {
   cancelledAt          DateTime?
   cancelReason         String?
   cancelledById        String?
+  /// Soft delete (PDF 22.11.26 §4)
+  deletedAt            DateTime?
+  deletedById          String?
+  deleteReason         String?
+  /// Where good output was posted: PROCESSED_AVAILABLE (final) or RAW_MATERIAL (awaiting further process)
+  outputStockCategory  String?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
@@ -870,6 +892,7 @@ model ProductionRun {
   @@index([startDate])
   @@index([wastageAlert])
   @@index([jobWorkId])
+  @@index([deletedAt])
 }
 
 model ProductionInput {
@@ -1072,6 +1095,10 @@ model SampleRecord {
   reportReference String?
   reportPath      String?
   remarks         String?
+  samplingType    String?
+  sampleReference String?
+  approvedAt      DateTime?
+  approvedById    String?
   updatedById     String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

@@ -186,8 +186,8 @@ export class ProductionController {
 
   @Roles(...READ_ROLES)
   @Get('runs')
-  listRuns() {
-    return this.production.listRuns();
+  listRuns(@Query('includeDeleted') includeDeleted?: string) {
+    return this.production.listRuns(includeDeleted === 'true');
   }
 
   @Roles(...PRODUCTION_OPS)
@@ -208,7 +208,8 @@ export class ProductionController {
     return this.production.addInput(id, dto, user);
   }
 
-  @Roles(UserRole.SUPER_ADMIN, UserRole.OFFICE_ADMIN)
+  /** Back to Stage 1 (PDF 22.11.26 §5.3) — any production user, before finalisation. */
+  @Roles(...PRODUCTION_OPS)
   @Post('runs/:id/reopen-cleaning')
   reopenCleaning(
     @Param('id') id: string,
@@ -216,6 +217,23 @@ export class ProductionController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.production.reopenCleaning(id, user, body?.reason);
+  }
+
+  @Roles(...PRODUCTION_OPS)
+  @Post('runs/:id/back-to-stage-1')
+  backToStage1(
+    @Param('id') id: string,
+    @Body() body: { reason?: string },
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.production.reopenCleaning(id, user, body?.reason);
+  }
+
+  /** Soft delete (PDF 22.11.26 §4) — Owner or explicitly authorised user; checked in the service. */
+  @Roles(...PRODUCTION_OPS)
+  @Post('runs/:id/delete')
+  deleteRun(@Param('id') id: string, @Body() body: { reason?: string }, @CurrentUser() user: JwtPayload) {
+    return this.production.deleteRun(id, body?.reason || '', user);
   }
 
   @Roles(...PRODUCTION_OPS)

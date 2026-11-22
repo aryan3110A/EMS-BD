@@ -355,7 +355,7 @@ async function main() {
         { code: 'HUL-REJ1', nameEn: 'Rejection 1' },
         { code: 'HUL-REJ2', nameEn: 'Rejection 2' },
         { code: 'HUL-UDTU', nameEn: 'Udtu' },
-        { code: 'HUL-MATI', nameEn: 'Mati' },
+        { code: 'HUL-MATI', nameEn: 'Barik' },
         { code: 'HUL-POWDER', nameEn: 'Powder' },
         { code: 'HUL-PATHTHAR', nameEn: 'Paththar Maal' },
         { code: 'HUL-KODI', nameEn: 'Kodi' },

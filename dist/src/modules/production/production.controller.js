@@ -106,8 +106,8 @@ let ProductionController = class ProductionController {
     pendingContracts() {
         return this.production.getPendingContracts();
     }
-    listRuns() {
-        return this.production.listRuns();
+    listRuns(includeDeleted) {
+        return this.production.listRuns(includeDeleted === 'true');
     }
     startRun(dto, user) {
         return this.production.startRun(dto, user);
@@ -120,6 +120,12 @@ let ProductionController = class ProductionController {
     }
     reopenCleaning(id, body, user) {
         return this.production.reopenCleaning(id, user, body?.reason);
+    }
+    backToStage1(id, body, user) {
+        return this.production.reopenCleaning(id, user, body?.reason);
+    }
+    deleteRun(id, body, user) {
+        return this.production.deleteRun(id, body?.reason || '', user);
     }
     cleaning(id, dto, user) {
         return this.production.submitCleaning(id, dto, user);
@@ -362,8 +368,9 @@ __decorate([
 __decorate([
     (0, roles_decorator_1.Roles)(...READ_ROLES),
     (0, common_1.Get)('runs'),
+    __param(0, (0, common_1.Query)('includeDeleted')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], ProductionController.prototype, "listRuns", null);
 __decorate([
@@ -394,7 +401,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ProductionController.prototype, "addInput", null);
 __decorate([
-    (0, roles_decorator_1.Roles)(enums_1.UserRole.SUPER_ADMIN, enums_1.UserRole.OFFICE_ADMIN),
+    (0, roles_decorator_1.Roles)(...PRODUCTION_OPS),
     (0, common_1.Post)('runs/:id/reopen-cleaning'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
@@ -403,6 +410,26 @@ __decorate([
     __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", void 0)
 ], ProductionController.prototype, "reopenCleaning", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...PRODUCTION_OPS),
+    (0, common_1.Post)('runs/:id/back-to-stage-1'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "backToStage1", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(...PRODUCTION_OPS),
+    (0, common_1.Post)('runs/:id/delete'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "deleteRun", null);
 __decorate([
     (0, roles_decorator_1.Roles)(...PRODUCTION_OPS),
     (0, common_1.Post)('runs/:id/cleaning'),

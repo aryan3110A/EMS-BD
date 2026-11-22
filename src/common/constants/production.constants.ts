@@ -82,6 +82,8 @@ export const SamplingStatus = {
   READY_FOR_SAMPLING: 'READY_FOR_SAMPLING',
   SAMPLE_COLLECTED: 'SAMPLE_COLLECTED',
   TESTING_IN_PROGRESS: 'TESTING_IN_PROGRESS',
+  /** Result entered and passing, but not yet approved for dispatch (PDF 22.11.26 §12.3) */
+  RESULT_RECEIVED: 'RESULT_RECEIVED',
   PASSED: 'PASSED',
   FAILED: 'FAILED',
   REPROCESSING_REQUIRED: 'REPROCESSING_REQUIRED',
@@ -152,6 +154,12 @@ export const LedgerTxnType = {
   JOB_WORK_INWARD_PROCESSED: 'JOB_WORK_INWARD_PROCESSED',
   JOB_WORK_INWARD_WASTAGE: 'JOB_WORK_INWARD_WASTAGE',
   JOB_WORK_INWARD_UNPROCESSED: 'JOB_WORK_INWARD_UNPROCESSED',
+  /** Physical container dispatch: stock leaves PROCESSED_RESERVED (posted once per container) */
+  CONTAINER_DISPATCH: 'CONTAINER_DISPATCH',
+  /** Stage output that is not yet a final product goes back to Raw / Awaiting Factory Processing */
+  AWAITING_PROCESS_RETURN: 'AWAITING_PROCESS_RETURN',
+  /** Inventory reclassification correction (audited data fix) */
+  RECLASSIFICATION: 'RECLASSIFICATION',
 } as const;
 export type LedgerTxnType = (typeof LedgerTxnType)[keyof typeof LedgerTxnType];
 
@@ -188,22 +196,66 @@ export const WASTAGE_ALERT_THRESHOLD_KEY = 'HULLING_WASTAGE_ALERT_PCT';
 export const DEFAULT_WASTAGE_ALERT_PCT = 12;
 export const FULL_PROCESS_DEFAULT_PRODUCT_KEY = 'FULL_PROCESS_DEFAULT_PRODUCT_ID';
 
-/** Countries that always require sampling regardless of EU classification */
-export const SAMPLING_REQUIRED_COUNTRIES = ['RUSSIA', 'RU'] as const;
+/** Countries that require sampling although they are not EU members (PDF 22.11.26 §10). */
+export const SAMPLING_REQUIRED_NON_EU_COUNTRY_CODES = ['RU'] as const;
 
+export type SamplingDecision = {
+  required: boolean;
+  /** 'EU' | 'RUSSIA' | 'NOT_REQUIRED' | 'UNKNOWN_DESTINATION' */
+  reason: string;
+  countryName: string | null;
+  euClassification: string | null;
+};
+
+/**
+ * Sampling is required only for EU member destinations or Russia (PDF 22.11.26 §10.1–10.3).
+ * Uses the stored country (code + EU classification), never free-text "EU" matching.
+ * Russia is checked separately and is never treated as EU. Product flags no longer apply.
+ */
+export function decideSampling(input: {
+  countryName?: string | null;
+  countryCode?: string | null;
+  countryEuClassification?: string | null;
+  /** Contract-level EU/Non-EU — used only when no destination country is known */
+  contractEuClassification?: string | null;
+  /** Free-text destination country on the contract (legacy) */
+  destinationCountryText?: string | null;
+}): SamplingDecision {
+  const code = (input.countryCode || '').trim().toUpperCase();
+  const name = (input.countryName || input.destinationCountryText || '').trim();
+  const upperName = name.toUpperCase();
+  const isRussia =
+    (SAMPLING_REQUIRED_NON_EU_COUNTRY_CODES as readonly string[]).includes(code) ||
+    upperName === 'RUSSIA' ||
+    upperName === 'RUSSIAN FEDERATION';
+  if (isRussia) {
+    return { required: true, reason: 'RUSSIA', countryName: name || 'Russia', euClassification: 'NON_EU' };
+  }
+  const hasCountry = !!(input.countryCode || input.countryName);
+  const eu = hasCountry
+    ? (input.countryEuClassification || '').toUpperCase() === 'EU'
+    : (input.contractEuClassification || '').toUpperCase() === 'EU';
+  if (eu) {
+    return { required: true, reason: 'EU', countryName: name || null, euClassification: 'EU' };
+  }
+  if (!hasCountry && !input.contractEuClassification && !input.destinationCountryText) {
+    return { required: false, reason: 'UNKNOWN_DESTINATION', countryName: null, euClassification: null };
+  }
+  return {
+    required: false,
+    reason: 'NOT_REQUIRED',
+    countryName: name || null,
+    euClassification: input.countryEuClassification || input.contractEuClassification || 'NON_EU',
+  };
+}
+
+/** @deprecated kept for older call sites — prefer decideSampling(). Product flags are ignored. */
 export function requiresSampling(
   euClassification?: string | null,
   destinationCountry?: string | null,
-  productSamplingNormallyApplicable?: boolean | null,
+  _productSamplingNormallyApplicable?: boolean | null,
 ): boolean {
-  const eu = (euClassification || '').toUpperCase() === 'EU';
-  const country = (destinationCountry || '').trim().toUpperCase();
-  const russia =
-    country === 'RUSSIA' ||
-    country === 'RU' ||
-    country.includes('RUSSIA');
-  // Other Non-EU skip sampling unless the product is flagged for sampling.
-  return eu || russia || !!productSamplingNormallyApplicable;
+  return decideSampling({ contractEuClassification: euClassification, destinationCountryText: destinationCountry }).required;
 }
 
 /** Convert UI quantity to kilograms for storage. Default unit is KG. */

@@ -20,6 +20,7 @@ const production_module_1 = require("./modules/production/production.module");
 const jwt_auth_guard_1 = require("./common/guards/jwt-auth.guard");
 const roles_guard_1 = require("./common/guards/roles.guard");
 const health_controller_1 = require("./health.controller");
+const container_workflow_module_1 = require("./modules/container-workflow/container-workflow.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -28,6 +29,7 @@ exports.AppModule = AppModule = __decorate([
         imports: [
             config_1.ConfigModule.forRoot({ isGlobal: true }),
             prisma_module_1.PrismaModule,
+            container_workflow_module_1.ContainerWorkflowModule,
             auth_module_1.AuthModule,
             offices_module_1.OfficesModule,
             masters_module_1.MastersModule,

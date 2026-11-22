@@ -28,16 +28,16 @@ export declare class InventoryLedgerService {
         productId: string;
         remarks: string | null;
         createdById: string | null;
-        stockCategory: string;
         txnNumber: string;
         txnType: string;
-        sourceLocationId: string | null;
-        destLocationId: string | null;
+        stockCategory: string;
         quantityInKg: number;
         quantityOutKg: number;
         balanceKg: number | null;
         referenceType: string | null;
         referenceId: string | null;
+        sourceLocationId: string | null;
+        destLocationId: string | null;
     }>;
     getAvailableKg(productId: string, locationId: string, stockCategory?: string): Promise<number>;
 }

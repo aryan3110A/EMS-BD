@@ -16,16 +16,16 @@ export declare class ProductionAuditService {
     }): Promise<{
         id: string;
         createdAt: Date;
-        fieldName: string | null;
-        newValue: string | null;
-        changedById: string | null;
         module: string;
-        action: string;
-        reason: string | null;
-        oldValue: string | null;
         recordType: string;
         recordNumber: string | null;
+        action: string;
+        fieldName: string | null;
+        oldValue: string | null;
+        newValue: string | null;
+        reason: string | null;
         ipAddress: string | null;
+        changedById: string | null;
     }>;
     list(query: {
         module?: string;
@@ -40,15 +40,15 @@ export declare class ProductionAuditService {
     } & {
         id: string;
         createdAt: Date;
-        fieldName: string | null;
-        newValue: string | null;
-        changedById: string | null;
         module: string;
-        action: string;
-        reason: string | null;
-        oldValue: string | null;
         recordType: string;
         recordNumber: string | null;
+        action: string;
+        fieldName: string | null;
+        oldValue: string | null;
+        newValue: string | null;
+        reason: string | null;
         ipAddress: string | null;
+        changedById: string | null;
     })[]>;
 }
